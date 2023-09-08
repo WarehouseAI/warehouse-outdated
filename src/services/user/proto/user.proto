@@ -1,0 +1,35 @@
+syntax = 'proto3';
+option go_package = "/gen";
+
+message User {
+  string id = 1;
+  string username = 2;
+  string password = 3;
+  string picture = 4;
+  string email = 5;
+  bool viaGoogle = 6;
+}
+
+// REQ's and RES's
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message CreateUserRequest {
+  User user = 1;
+}
+
+message CreateUserResponse {
+  string user_id = 1;
+}
+
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+}
+

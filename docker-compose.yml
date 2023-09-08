@@ -1,0 +1,65 @@
+version: '3'
+
+networks:
+  auth-network:
+    driver: bridge
+  user-network:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:14.1-alpine
+    container_name: data_db
+    networks:
+      - user-network
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: '${POSTGRES_USER}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
+      POSTGRES_DB: '${POSTGRES_NAME}'
+    ports:
+      - 5432:5432
+
+  session:
+    image: redis:6.2-alpine
+    container_name: session_db
+    restart: always
+    networks:
+      - auth-network
+    env_file:
+      - .env
+    environment:
+      REDIS_PASSWORD: '${REDIS_PASSWORD}'
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+
+  auth:
+    container_name: auth-service
+    networks:
+      - auth-network
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    command: ./auth
+    depends_on:
+      - session
+    env_file: .env
+    ports:
+      - 8080:8080
+
+  user:
+    container_name: user-service
+    networks:
+      - user-network
+    build:
+      context: ./services/user
+      dockerfile: Dockerfile
+    command: ./user
+    depends_on:
+      - db
+    env_file: .env
+    ports:
+      - 8081:8081
