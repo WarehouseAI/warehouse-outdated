@@ -29,10 +29,12 @@ func (api *AuthAPI) RegisterHandler(c *fiber.Ctx) error {
 
 	userId, err := api.svc.Register(context.Background(), &userInfo)
 
-	if err != nil && errors.Is(err, im.ExistError) {
-		return c.Status(fiber.StatusConflict).JSON(im.ErrorResponse{Message: "User already exist"})
-	} else if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(im.ErrorResponse{Message: "Internal server error"})
+	if err != nil && errors.Is(err, im.InternalError) {
+		return c.Status(fiber.StatusInternalServerError).JSON(im.ErrorResponse{Message: err.Error()})
+	}
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(im.ErrorResponse{Message: err.Error()})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(userId)

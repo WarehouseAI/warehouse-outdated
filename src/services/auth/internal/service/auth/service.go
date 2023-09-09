@@ -37,6 +37,10 @@ func NewAuthService(rClient *redis.Client, logger *logrus.Logger) m.AuthService 
 // }
 
 func (cfg *AuthServiceConfig) Register(ctx context.Context, userInfo *gen.CreateUserRequest) (*model.UserIdResponse, error) {
+	if len(userInfo.Password) > 72 {
+		return nil, errors.New("Password is too long")
+	}
+
 	userId, err := gw.CreateUser(ctx, userInfo)
 
 	cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": userId}).Info("Register user")

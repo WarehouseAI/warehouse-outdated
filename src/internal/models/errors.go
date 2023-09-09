@@ -8,5 +8,5 @@ type (
 	}
 )
 
-var InternalError = errors.New("Internal")
-var ExistError = errors.New("Exist")
+var InternalError = errors.New("Internal Server Error.")
+var ExistError = errors.New("Entity already exist.")
