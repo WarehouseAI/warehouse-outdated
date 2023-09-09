@@ -35,5 +35,5 @@ func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &gen.CreateUserResponse{UserId: m.UserToProto(*user).Id}, nil
+	return &gen.CreateUserResponse{Id: m.UserToProto(*user).Id}, nil
 }

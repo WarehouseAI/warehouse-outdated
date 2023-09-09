@@ -6,6 +6,6 @@ import (
 
 func UserIdFromProto(m *gen.CreateUserResponse) *UserIdResponse {
 	return &UserIdResponse{
-		ID: m.UserId,
+		ID: m.Id,
 	}
 }

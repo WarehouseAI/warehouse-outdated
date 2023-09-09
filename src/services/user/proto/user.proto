@@ -23,15 +23,15 @@ message GetUserResponse {
 }
 
 message CreateUserRequest {
-  string username = 2;
-  string password = 3;
-  string picture = 4;
-  string email = 5;
-  bool viaGoogle = 6;
+  string username = 1;
+  string password = 2;
+  string picture = 3;
+  string email = 4;
+  bool viaGoogle = 5;
 }
 
 message CreateUserResponse {
-  string user_id = 1;
+  string id = 1;
 }
 
 service UserService {
