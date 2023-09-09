@@ -58,25 +58,15 @@ func main() {
 	publicApp := pubApi.Init()
 	privateApp := grpc.NewServer()
 
-	go func() {
-		fmt.Println("Start Public API")
-		if err := publicApp.Listen(":8000"); err != nil {
-			fmt.Println("❌Failed to start the Public API.")
-			log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("UserMicroservice")
-			panic(err)
-		}
-	}()
+	fmt.Println("Start Private API")
+	lis, err := net.Listen("tcp", "user-service:8001")
+	if err != nil {
+		fmt.Println("❌Failed to listen the Private API port.")
+		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("UserMicroservice")
+		panic(err)
+	}
 
 	go func() {
-		fmt.Println("Start Private API")
-		lis, err := net.Listen("tcp", "localhost:8001")
-
-		if err != nil {
-			fmt.Println("❌Failed to listen the Private API port.")
-			log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("UserMicroservice")
-			panic(err)
-		}
-
 		gen.RegisterUserServiceServer(privateApp, pvtApi)
 		if err := privateApp.Serve(lis); err != nil {
 			fmt.Println("❌Failed to start the Private API.")
@@ -84,4 +74,11 @@ func main() {
 			panic(err)
 		}
 	}()
+
+	fmt.Println("Start Public API")
+	if err := publicApp.Listen(":8000"); err != nil {
+		fmt.Println("❌Failed to start the Public API.")
+		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("UserMicroservice")
+		panic(err)
+	}
 }

@@ -8,6 +8,8 @@ message User {
   string picture = 4;
   string email = 5;
   bool viaGoogle = 6;
+  string createdAt = 7;
+  string updatedAt = 8;
 }
 
 // REQ's and RES's
@@ -21,7 +23,11 @@ message GetUserResponse {
 }
 
 message CreateUserRequest {
-  User user = 1;
+  string username = 2;
+  string password = 3;
+  string picture = 4;
+  string email = 5;
+  bool viaGoogle = 6;
 }
 
 message CreateUserResponse {

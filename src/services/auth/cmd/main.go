@@ -53,7 +53,7 @@ func main() {
 
 	app := api.Init()
 
-	if err := app.Listen(":8080"); err != nil {
+	if err := app.Listen(":8010"); err != nil {
 		fmt.Println("❌Failed to start the AuthMicroservice.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("AuthMicroservice")
 		panic(err)

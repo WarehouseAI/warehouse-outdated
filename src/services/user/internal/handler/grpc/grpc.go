@@ -23,7 +23,7 @@ func NewUserPrivateAPI(svc m.UserService) *UserPrivateAPI {
 }
 
 func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRequest) (*gen.CreateUserResponse, error) {
-	if req == nil || req.User.Email == "" {
+	if req == nil || req.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or user payload")
 	}
 

@@ -25,20 +25,20 @@ func NewUserService(operations d.Operations, logger *logrus.Logger) m.UserServic
 }
 
 func (cfg *UserServiceConfig) Create(ctx context.Context, userInfo *gen.CreateUserRequest) (*d.User, error) {
-	user := m.UserPayloadToEntity(userInfo)
+	userEntity := m.UserPayloadToEntity(userInfo)
 
-	existUser, _ := cfg.operations.GetOneBy("email", user.Email)
+	existUser, _ := cfg.operations.GetOneBy("email", userEntity.Email)
 
 	if existUser != nil {
 		return nil, im.ExistError
 	}
 
-	err := cfg.operations.Add(user)
+	err := cfg.operations.Add(userEntity)
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Add user")
 		return nil, im.InternalError
 	}
 
-	return user, nil
+	return userEntity, nil
 }

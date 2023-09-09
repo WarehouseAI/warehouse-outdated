@@ -5,6 +5,8 @@ networks:
     driver: bridge
   user-network:
     driver: bridge
+  svc-network:
+    driver: bridge
 
 services:
   db:
@@ -39,27 +41,33 @@ services:
   auth:
     container_name: auth-service
     networks:
-      - auth-network
+      auth-network:
+      svc-network:
     build:
-      context: ./services/auth
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: auth.Dockerfile
     command: ./auth
     depends_on:
       - session
+      - user
     env_file: .env
+    expose:
+      - 8001
     ports:
-      - 8080:8080
+      - 8010:8010
 
   user:
     container_name: user-service
     networks:
-      - user-network
+      user-network:
+      svc-network:
     build:
-      context: ./services/user
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: user.Dockerfile
     command: ./user
     depends_on:
       - db
     env_file: .env
     ports:
-      - 8081:8081
+      - 8000:8000
+      - 8001:8001

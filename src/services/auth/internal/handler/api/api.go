@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"warehouse/gen"
 	im "warehouse/src/internal/models"
 	m "warehouse/src/services/auth/pkg/model"
@@ -28,6 +29,8 @@ func (api *AuthAPI) RegisterHandler(c *fiber.Ctx) error {
 	}
 
 	userId, err := api.svc.Register(context.Background(), &userInfo)
+
+	fmt.Println(err)
 
 	if err != nil && errors.Is(err, im.ExistError) {
 		return c.Status(fiber.StatusConflict).JSON(im.ErrorResponse{Message: "User already exist"})

@@ -4,10 +4,11 @@ import (
 	"context"
 	"warehouse/gen"
 	utils "warehouse/src/internal/utils/grpc"
+	m "warehouse/src/services/auth/pkg/model"
 )
 
-func CreateUser(ctx context.Context, userInfo *gen.CreateUserRequest) (*string, error) {
-	conn, err := utils.ServiceConnection(ctx, "localhost:8001")
+func CreateUser(ctx context.Context, userInfo *gen.CreateUserRequest) (*m.UserIdResponse, error) {
+	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
 
 	if err != nil {
 		return nil, err
@@ -22,5 +23,5 @@ func CreateUser(ctx context.Context, userInfo *gen.CreateUserRequest) (*string, 
 		return nil, err
 	}
 
-	return &resp.UserId, nil
+	return m.UserIdFromProto(resp), nil
 }

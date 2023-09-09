@@ -20,15 +20,15 @@ func UserToProto(m d.User) *gen.User {
 }
 
 func UserPayloadToEntity(m *gen.CreateUserRequest) *d.User {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(m.User.Password), 12)
+	hash, _ := bcrypt.GenerateFromPassword([]byte(m.Password), 12)
 
 	return &d.User{
 		ID:        uuid.Must(uuid.NewV4()),
-		Username:  m.User.Username,
+		Username:  m.Username,
 		Password:  string(hash),
-		Picture:   m.User.Picture,
-		Email:     m.User.Email,
-		ViaGoogle: m.User.ViaGoogle,
+		Picture:   m.Picture,
+		Email:     m.Email,
+		ViaGoogle: m.ViaGoogle,
 		CreatedAt: time.Now(),
 		UpdateAt:  time.Now(),
 	}
