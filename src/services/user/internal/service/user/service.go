@@ -13,11 +13,11 @@ import (
 )
 
 type UserServiceConfig struct {
-	operations d.Operations
+	operations d.UserDatabaseOperations
 	logger     *logrus.Logger
 }
 
-func NewUserService(operations d.Operations, logger *logrus.Logger) m.UserService {
+func NewUserService(operations d.UserDatabaseOperations, logger *logrus.Logger) m.UserService {
 	return &UserServiceConfig{
 		operations: operations,
 		logger:     logger,
@@ -41,4 +41,18 @@ func (cfg *UserServiceConfig) Create(ctx context.Context, userInfo *gen.CreateUs
 	}
 
 	return userEntity, nil
+}
+
+func (cfg *UserServiceConfig) Get(ctx context.Context, userInfo *gen.GetUserRequest) (*d.User, error) {
+	existUser, err := cfg.operations.GetOneBy("email", userInfo.Email)
+
+	if err != nil {
+		return nil, im.InternalError
+	}
+
+	if existUser == nil {
+		return nil, im.NotFoundError
+	}
+
+	return existUser, nil
 }

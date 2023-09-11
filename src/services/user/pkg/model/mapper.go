@@ -6,10 +6,9 @@ import (
 	d "warehouse/src/services/user/internal/datastore"
 
 	"github.com/gofrs/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
-func UserToProto(m d.User) *gen.User {
+func UserToProto(m *d.User) *gen.User {
 	return &gen.User{
 		Id:        m.ID.String(),
 		Username:  m.Username,
@@ -23,12 +22,10 @@ func UserToProto(m d.User) *gen.User {
 }
 
 func UserPayloadToEntity(m *gen.CreateUserRequest) *d.User {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(m.Password), 12)
-
 	return &d.User{
 		ID:        uuid.Must(uuid.NewV4()),
 		Username:  m.Username,
-		Password:  string(hash),
+		Password:  m.Password,
 		Picture:   m.Picture,
 		Email:     m.Email,
 		ViaGoogle: m.ViaGoogle,

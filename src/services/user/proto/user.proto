@@ -15,7 +15,7 @@ message User {
 // REQ's and RES's
 
 message GetUserRequest {
-  string user_id = 1;
+  string email = 1;
 }
 
 message GetUserResponse {

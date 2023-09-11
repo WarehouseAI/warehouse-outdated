@@ -9,6 +9,7 @@ import (
 type (
 	UserService interface {
 		Create(context.Context, *gen.CreateUserRequest) (*d.User, error)
+		Get(context.Context, *gen.GetUserRequest) (*d.User, error)
 	}
 
 	CreateUserDTO struct {

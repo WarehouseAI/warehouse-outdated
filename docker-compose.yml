@@ -39,6 +39,7 @@ services:
     command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
 
   auth:
+    restart: always
     container_name: auth-service
     networks:
       auth-network:
@@ -57,6 +58,7 @@ services:
       - 8010:8010
 
   user:
+    restart: always
     container_name: user-service
     networks:
       user-network:
@@ -64,10 +66,12 @@ services:
     build:
       context: .
       dockerfile: user.Dockerfile
-    command: ./user
+    command: ./wait-4-postgres.sh data_db ./user
     depends_on:
       - db
     env_file: .env
+    environment:
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
     ports:
       - 8000:8000
       - 8001:8001

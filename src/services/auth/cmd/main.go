@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	d "warehouse/src/services/auth/internal/datastore"
 	"warehouse/src/services/auth/internal/handler/api"
 	svc "warehouse/src/services/auth/internal/service/auth"
 
@@ -48,7 +49,8 @@ func main() {
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the AuthMicroservice...")
-	svc := svc.NewAuthService(rClient, log)
+	operations := d.NewSessionOperations(rClient)
+	svc := svc.NewAuthService(operations, log)
 	api := api.NewAuthAPI(svc)
 
 	app := api.Init()

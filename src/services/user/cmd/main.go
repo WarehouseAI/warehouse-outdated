@@ -50,7 +50,7 @@ func main() {
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the UserMicroservice...")
-	operations := d.NewOperations(db)
+	operations := d.NewUserOperations(db)
 	svc := svc.NewUserService(operations, log)
 	pvtApi := pvtAPI.NewUserPrivateAPI(svc)
 	pubApi := pubAPI.NewUserPublicAPI(svc)

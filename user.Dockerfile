@@ -10,6 +10,13 @@ RUN mkdir user
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Download alpine package and install psql-client for the script
+COPY wait-4-postgres.sh ./
+RUN apk update
+RUN apk add postgresql-client
+
+RUN chmod +x wait-4-postgres.sh
+
 COPY /gen ./gen
 COPY /src/services/user ./src/services/user
 COPY /src/internal ./src/internal

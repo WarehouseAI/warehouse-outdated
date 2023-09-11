@@ -24,7 +24,7 @@ func NewUserPrivateAPI(svc m.UserService) *UserPrivateAPI {
 
 func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRequest) (*gen.CreateUserResponse, error) {
 	if req == nil || req.Email == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "nil req or user payload")
+		return nil, status.Errorf(codes.InvalidArgument, im.BadRequestError.Error())
 	}
 
 	user, err := api.svc.Create(ctx, req)
@@ -35,5 +35,21 @@ func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &gen.CreateUserResponse{Id: m.UserToProto(*user).Id}, nil
+	return &gen.CreateUserResponse{Id: m.UserToProto(user).Id}, nil
+}
+
+func (api *UserPrivateAPI) GetUser(ctx context.Context, req *gen.GetUserRequest) (*gen.GetUserResponse, error) {
+	if req == nil || req.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, im.BadRequestError.Error())
+	}
+
+	user, err := api.svc.Get(ctx, req)
+
+	if err != nil && errors.Is(err, im.NotFoundError) {
+		return nil, status.Errorf(codes.NotFound, err.Error())
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &gen.GetUserResponse{User: m.UserToProto(user)}, nil
 }
