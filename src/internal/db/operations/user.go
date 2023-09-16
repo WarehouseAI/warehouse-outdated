@@ -1,14 +1,15 @@
-package datastore
+package operations
 
 import (
 	"errors"
+	dbm "warehouse/src/internal/db/models"
 
 	"gorm.io/gorm"
 )
 
 type UserDatabaseOperations interface {
-	Add(user *User) error
-	GetOneBy(key string, value interface{}) (*User, error)
+	Add(user *dbm.User) error
+	GetOneBy(key string, value interface{}) (*dbm.User, error)
 }
 
 type UserOperationsConfig struct {
@@ -21,7 +22,7 @@ func NewUserOperations(db *gorm.DB) UserDatabaseOperations {
 	}
 }
 
-func (cfg *UserOperationsConfig) Add(user *User) error {
+func (cfg *UserOperationsConfig) Add(user *dbm.User) error {
 	result := cfg.db.Create(&user)
 
 	if result.Error != nil {
@@ -31,8 +32,8 @@ func (cfg *UserOperationsConfig) Add(user *User) error {
 	return nil
 }
 
-func (cfg *UserOperationsConfig) GetOneBy(key string, value interface{}) (*User, error) {
-	var user User
+func (cfg *UserOperationsConfig) GetOneBy(key string, value interface{}) (*dbm.User, error) {
+	var user dbm.User
 
 	result := cfg.db.Where(map[string]interface{}{key: value}).First(&user)
 

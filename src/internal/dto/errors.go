@@ -1,10 +1,10 @@
-package models
+package dto
 
 import "errors"
 
 type (
 	ErrorResponse struct {
-		Code    string `json:"code"`
+		Code    int    `json:"code"`
 		Message string `json:"message"`
 	}
 )

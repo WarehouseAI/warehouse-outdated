@@ -6,8 +6,9 @@ import (
 	"os"
 	"time"
 	"warehouse/gen"
-	d "warehouse/src/services/user/internal/datastore"
 
+	dbm "warehouse/src/internal/db/models"
+	dbo "warehouse/src/internal/db/operations"
 	pvtAPI "warehouse/src/services/user/internal/handler/grpc"
 	pubAPI "warehouse/src/services/user/internal/handler/http"
 	svc "warehouse/src/services/user/internal/service/user"
@@ -44,13 +45,13 @@ func main() {
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("Database")
 		panic(err)
 	}
-	db.AutoMigrate(&d.User{})
+	db.AutoMigrate(&dbm.User{})
 
 	fmt.Println("✅Database successfully set up.")
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the UserMicroservice...")
-	operations := d.NewUserOperations(db)
+	operations := dbo.NewUserOperations(db)
 	svc := svc.NewUserService(operations, log)
 	pvtApi := pvtAPI.NewUserPrivateAPI(svc)
 	pubApi := pubAPI.NewUserPublicAPI(svc)

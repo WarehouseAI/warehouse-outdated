@@ -1,14 +1,14 @@
-package model
+package models
 
 import (
 	"time"
 	"warehouse/gen"
-	d "warehouse/src/services/user/internal/datastore"
+	dbm "warehouse/src/internal/db/models"
 
 	"github.com/gofrs/uuid"
 )
 
-func UserToProto(m *d.User) *gen.User {
+func UserToProto(m *dbm.User) *gen.User {
 	return &gen.User{
 		Id:        m.ID.String(),
 		Username:  m.Username,
@@ -21,8 +21,8 @@ func UserToProto(m *d.User) *gen.User {
 	}
 }
 
-func UserPayloadToEntity(m *gen.CreateUserRequest) *d.User {
-	return &d.User{
+func UserPayloadToEntity(m *gen.CreateUserRequest) *dbm.User {
+	return &dbm.User{
 		ID:        uuid.Must(uuid.NewV4()),
 		Username:  m.Username,
 		Password:  m.Password,

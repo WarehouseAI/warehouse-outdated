@@ -1,16 +1,16 @@
 package http
 
 import (
-	m "warehouse/src/services/user/pkg/model"
+	svc "warehouse/src/services/user/internal/service/user"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type UserPublicAPI struct {
-	svc m.UserService
+	svc svc.UserService
 }
 
-func NewUserPublicAPI(svc m.UserService) *UserPublicAPI {
+func NewUserPublicAPI(svc svc.UserService) *UserPublicAPI {
 	return &UserPublicAPI{
 		svc: svc,
 	}

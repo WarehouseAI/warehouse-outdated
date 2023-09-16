@@ -5,11 +5,12 @@ import (
 	"errors"
 	"time"
 	"warehouse/gen"
-	im "warehouse/src/internal/models"
-	d "warehouse/src/services/auth/internal/datastore"
+	dbm "warehouse/src/internal/db/models"
+	dbo "warehouse/src/internal/db/operations"
+
+	"warehouse/src/internal/dto"
 	gw "warehouse/src/services/auth/internal/gateway"
-	"warehouse/src/services/auth/pkg/model"
-	m "warehouse/src/services/auth/pkg/model"
+	m "warehouse/src/services/auth/pkg/models"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -17,38 +18,49 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type AuthService interface {
+	Login(context.Context, *m.LoginRequest) (*dbm.Session, error)
+	Register(context.Context, *gen.CreateUserRequest) (*m.RegisterResponse, error)
+	Logout(context.Context, string) error
+}
+
 type AuthServiceConfig struct {
-	operations d.SessionDatabaseOperations
+	operations dbo.SessionDatabaseOperations
 	logger     *logrus.Logger
 }
 
-func NewAuthService(operations d.SessionDatabaseOperations, logger *logrus.Logger) m.AuthService {
+func NewAuthService(operations dbo.SessionDatabaseOperations, logger *logrus.Logger) AuthService {
 	return &AuthServiceConfig{
 		operations: operations,
 		logger:     logger,
 	}
 }
 
-// func (s *AuthService) Refresh(ctx context.Context) (m.TokenPair, error) {
+func (cfg *AuthServiceConfig) Logout(ctx context.Context, sessionId string) error {
+	if err := cfg.operations.DeleteSession(ctx, sessionId); err != nil {
+		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Logout user")
+		return err
+	}
 
-// }
+	return nil
+}
 
-func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *model.LoginRequest) (*m.Session, error) {
+func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *m.LoginRequest) (*dbm.Session, error) {
 	user, err := gw.GetUser(ctx, &gen.GetUserRequest{Email: userInfo.Email})
 
-	if err != nil && errors.Is(err, status.Errorf(codes.NotFound, im.NotFoundError.Error())) {
+	if err != nil && errors.Is(err, status.Errorf(codes.NotFound, dto.NotFoundError.Error())) {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, im.NotFoundError
+		return nil, dto.NotFoundError
 	}
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, im.InternalError
+		return nil, dto.InternalError
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.User.Password), []byte(userInfo.Password)); err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, im.BadRequestError
+		return nil, dto.BadRequestError
 	}
 
 	// Сохраняем сессию
@@ -56,13 +68,13 @@ func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *model.LoginRe
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, im.InternalError
+		return nil, dto.InternalError
 	}
 
 	return session, nil
 }
 
-func (cfg *AuthServiceConfig) Register(ctx context.Context, userInfo *gen.CreateUserRequest) (*model.UserIdResponse, error) {
+func (cfg *AuthServiceConfig) Register(ctx context.Context, userInfo *gen.CreateUserRequest) (*m.RegisterResponse, error) {
 	if len(userInfo.Password) > 72 {
 		return nil, errors.New("Password is too long")
 	}
@@ -71,19 +83,19 @@ func (cfg *AuthServiceConfig) Register(ctx context.Context, userInfo *gen.Create
 	userInfo.Password = string(hash)
 	userId, err := gw.CreateUser(ctx, userInfo)
 
-	if err != nil && errors.Is(err, status.Errorf(codes.AlreadyExists, im.ExistError.Error())) {
+	if err != nil && errors.Is(err, status.Errorf(codes.AlreadyExists, dto.ExistError.Error())) {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
-		return nil, im.ExistError
+		return nil, dto.ExistError
 	}
 
-	if err != nil && errors.Is(err, status.Errorf(codes.InvalidArgument, im.BadRequestError.Error())) {
+	if err != nil && errors.Is(err, status.Errorf(codes.InvalidArgument, dto.BadRequestError.Error())) {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
-		return nil, im.BadRequestError
+		return nil, dto.BadRequestError
 	}
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
-		return nil, im.InternalError
+		return nil, dto.InternalError
 	}
 
 	return userId, nil

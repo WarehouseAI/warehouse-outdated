@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"warehouse/gen"
-	im "warehouse/src/internal/models"
-	m "warehouse/src/services/user/pkg/model"
+	"warehouse/src/internal/dto"
+	svc "warehouse/src/services/user/internal/service/user"
+	m "warehouse/src/services/user/pkg/models"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,10 +14,10 @@ import (
 
 type UserPrivateAPI struct {
 	gen.UnimplementedUserServiceServer
-	svc m.UserService
+	svc svc.UserService
 }
 
-func NewUserPrivateAPI(svc m.UserService) *UserPrivateAPI {
+func NewUserPrivateAPI(svc svc.UserService) *UserPrivateAPI {
 	return &UserPrivateAPI{
 		svc: svc,
 	}
@@ -24,12 +25,12 @@ func NewUserPrivateAPI(svc m.UserService) *UserPrivateAPI {
 
 func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRequest) (*gen.CreateUserResponse, error) {
 	if req == nil || req.Email == "" {
-		return nil, status.Errorf(codes.InvalidArgument, im.BadRequestError.Error())
+		return nil, status.Errorf(codes.InvalidArgument, dto.BadRequestError.Error())
 	}
 
 	user, err := api.svc.Create(ctx, req)
 
-	if err != nil && errors.Is(err, im.ExistError) {
+	if err != nil && errors.Is(err, dto.ExistError) {
 		return nil, status.Errorf(codes.AlreadyExists, err.Error())
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -40,12 +41,12 @@ func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRe
 
 func (api *UserPrivateAPI) GetUser(ctx context.Context, req *gen.GetUserRequest) (*gen.GetUserResponse, error) {
 	if req == nil || req.Email == "" {
-		return nil, status.Error(codes.InvalidArgument, im.BadRequestError.Error())
+		return nil, status.Error(codes.InvalidArgument, dto.BadRequestError.Error())
 	}
 
 	user, err := api.svc.Get(ctx, req)
 
-	if err != nil && errors.Is(err, im.NotFoundError) {
+	if err != nil && errors.Is(err, dto.NotFoundError) {
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

@@ -4,10 +4,10 @@ import (
 	"context"
 	"warehouse/gen"
 	utils "warehouse/src/internal/utils/grpc"
-	m "warehouse/src/services/auth/pkg/model"
+	m "warehouse/src/services/auth/pkg/models"
 )
 
-func CreateUser(ctx context.Context, userInfo *gen.CreateUserRequest) (*m.UserIdResponse, error) {
+func CreateUser(ctx context.Context, userInfo *gen.CreateUserRequest) (*m.RegisterResponse, error) {
 	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
 
 	if err != nil {
