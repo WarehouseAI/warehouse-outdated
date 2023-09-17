@@ -10,40 +10,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type MiddlewareService interface {
-	Session(c *fiber.Ctx) error
+type SessionMiddleware struct {
+	sessionOperations dbo.SessionDatabaseOperations
+	logger            *logrus.Logger
 }
 
-type MiddlewareConfig struct {
-	operations dbo.SessionDatabaseOperations
-	logger     *logrus.Logger
-}
-
-func NewMiddlewareService(operations dbo.SessionDatabaseOperations, logger *logrus.Logger) MiddlewareService {
-	return &MiddlewareConfig{
-		operations: operations,
-		logger:     logger,
+func NewSessionMiddleware(sessionOperations dbo.SessionDatabaseOperations, logger *logrus.Logger) *SessionMiddleware {
+	return &SessionMiddleware{
+		sessionOperations: sessionOperations,
+		logger:            logger,
 	}
 }
 
-func (cfg *MiddlewareConfig) Session(c *fiber.Ctx) error {
-	sessionId := c.Cookies("id")
+func (cfg *SessionMiddleware) Session(c *fiber.Ctx) error {
+	sessionId := c.Cookies("sessionId")
 
 	if sessionId == "" {
 		statusCode := fiber.StatusUnauthorized
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session has expired"})
+		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session is invalid"})
 	}
 
-	session, err := cfg.operations.GetSession(context.Background(), sessionId)
+	session, err := cfg.sessionOperations.GetSession(context.Background(), sessionId)
 
 	if session == nil {
 		c.Cookie(&fiber.Cookie{
-			Name:    "id",
+			Name:    "sessionId",
 			Value:   "",
 			Expires: time.Now().Add(-time.Hour),
 		})
 
-		statusCode := fiber.StatusUnauthorized
+		statusCode := fiber.StatusForbidden
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session has expired"})
 	}
 
@@ -53,7 +49,7 @@ func (cfg *MiddlewareConfig) Session(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
 	}
 
-	newSession, err := cfg.operations.UpdateSession(context.Background(), sessionId)
+	newSession, err := cfg.sessionOperations.UpdateSession(context.Background(), sessionId)
 
 	if err != nil {
 		statusCode := fiber.StatusInternalServerError
@@ -61,11 +57,11 @@ func (cfg *MiddlewareConfig) Session(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
 	}
 
+	c.Locals("userId", newSession.Payload.UserId)
 	c.Cookie(&fiber.Cookie{
-		Name:  "id",
+		Name:  "sessionId",
 		Value: newSession.ID,
 	})
 
 	return c.Next()
-
 }

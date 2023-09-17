@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"warehouse/gen"
 	"warehouse/src/internal/dto"
 	mv "warehouse/src/internal/middleware"
-	svc "warehouse/src/services/auth/internal/service/auth"
+	svc "warehouse/src/services/auth/internal/service"
 	m "warehouse/src/services/auth/pkg/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,13 +14,13 @@ import (
 
 type APIInstance struct {
 	svc svc.AuthService
-	mvs mv.MiddlewareService
+	sMw *mv.SessionMiddleware
 }
 
-func NewAuthAPI(svc svc.AuthService, mvs mv.MiddlewareService) *APIInstance {
+func NewAuthAPI(svc svc.AuthService, sessionMiddleware *mv.SessionMiddleware) *APIInstance {
 	return &APIInstance{
 		svc: svc,
-		mvs: mvs,
+		sMw: sessionMiddleware,
 	}
 }
 
@@ -66,7 +66,7 @@ func (api *APIInstance) LoginHandler(c *fiber.Ctx) error {
 	}
 
 	c.Cookie(&fiber.Cookie{
-		Name:  "id",
+		Name:  "sessionId",
 		Value: session.ID,
 	})
 
@@ -74,7 +74,7 @@ func (api *APIInstance) LoginHandler(c *fiber.Ctx) error {
 }
 
 func (api *APIInstance) LogoutHandler(c *fiber.Ctx) error {
-	sessionid := c.Cookies("id")
+	sessionid := c.Cookies("sessionId")
 
 	if err := api.svc.Logout(context.Background(), sessionid); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: dto.InternalError.Error()})
@@ -90,7 +90,7 @@ func (api *APIInstance) Init() *fiber.App {
 
 	route.Post("/register", api.RegisterHandler)
 	route.Post("/login", api.LoginHandler)
-	route.Delete("/logout", api.mvs.Session, api.LogoutHandler)
+	route.Delete("/logout", api.sMw.Session, api.LogoutHandler)
 
 	return app
 }

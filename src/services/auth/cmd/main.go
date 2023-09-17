@@ -6,8 +6,8 @@ import (
 	"time"
 	dbo "warehouse/src/internal/db/operations"
 	mv "warehouse/src/internal/middleware"
-	"warehouse/src/services/auth/internal/handler/api"
-	svc "warehouse/src/services/auth/internal/service/auth"
+	"warehouse/src/services/auth/internal/handler/http"
+	svc "warehouse/src/services/auth/internal/service"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -37,31 +37,31 @@ func main() {
 	// }
 	// fmt.Println("✅Environment successfully set up.")
 
-	// -----------SETUP DATABASE-----------
-	fmt.Println("Set up the database...")
-	DSN := fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
+	// -----------CONNECT TO DATABASE-----------
+	fmt.Println("Connect to the Session database...")
+	DSN := fmt.Sprintf("%s:%s", os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"))
 	fmt.Println(DSN)
 	rClient := redis.NewClient(&redis.Options{
 		Addr:     DSN,
-		Password: os.Getenv("REDIS_PASSWORD"),
+		Password: os.Getenv("SESSION_DB_PASSWORD"),
 		DB:       0,
 	})
-	fmt.Println("✅Database successfully set up.")
+	fmt.Println("✅Session database successfully connected.")
 
 	// -----------START SERVER-----------
-	fmt.Println("Start the AuthMicroservice...")
+	fmt.Println("Start the Auth Microservice...")
 	operations := dbo.NewSessionOperations(rClient)
 	svc := svc.NewAuthService(operations, log)
-	mvs := mv.NewMiddlewareService(operations, log)
-	api := api.NewAuthAPI(svc, mvs)
+	sMw := mv.NewSessionMiddleware(operations, log)
+	api := http.NewAuthAPI(svc, sMw)
 
 	app := api.Init()
 
 	if err := app.Listen(":8010"); err != nil {
-		fmt.Println("❌Failed to start the AuthMicroservice.")
-		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("AuthMicroservice")
+		fmt.Println("❌Failed to start the Auth Microservice.")
+		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("Auth Microservice")
 		panic(err)
 	}
 
-	fmt.Println("✅AuthMicroservice successfully started.")
+	fmt.Println("✅Auth Microservice successfully started.")
 }

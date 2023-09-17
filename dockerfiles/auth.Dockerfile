@@ -23,6 +23,7 @@ WORKDIR /
 
 COPY --from=build-stage /auth /auth
 
+EXPOSE 8001
 EXPOSE 8010
 
 ENTRYPOINT ["/auth"]

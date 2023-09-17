@@ -35,9 +35,9 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	// -----------SETUP DATABASE-------------
-	fmt.Println("Set up the database...")
-	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_NAME"), os.Getenv("POSTGRES_PORT"))
+	// -----------CONNECT TO DATABASE-------------
+	fmt.Println("Connect to the User database...")
+	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
 	if err != nil {
 		fmt.Println(DSN)
@@ -47,10 +47,10 @@ func main() {
 	}
 	db.AutoMigrate(&dbm.User{})
 
-	fmt.Println("✅Database successfully set up.")
+	fmt.Println("✅User database successfully connected.")
 
 	// -----------START SERVER-----------
-	fmt.Println("Start the UserMicroservice...")
+	fmt.Println("Start the User Microservice...")
 	operations := dbo.NewUserOperations(db)
 	svc := svc.NewUserService(operations, log)
 	pvtApi := pvtAPI.NewUserPrivateAPI(svc)
@@ -63,23 +63,24 @@ func main() {
 	lis, err := net.Listen("tcp", "user-service:8001")
 	if err != nil {
 		fmt.Println("❌Failed to listen the Private API port.")
-		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("UserMicroservice")
+		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)
 	}
 
 	go func() {
-		gen.RegisterUserServiceServer(privateApp, pvtApi)
-		if err := privateApp.Serve(lis); err != nil {
-			fmt.Println("❌Failed to start the Private API.")
-			log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("UserMicroservice")
+		fmt.Println("Start Public API")
+		if err := publicApp.Listen(":8000"); err != nil {
+			fmt.Println("❌Failed to start the Public API.")
+			log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 			panic(err)
 		}
+
 	}()
 
-	fmt.Println("Start Public API")
-	if err := publicApp.Listen(":8000"); err != nil {
-		fmt.Println("❌Failed to start the Public API.")
-		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("UserMicroservice")
+	gen.RegisterUserServiceServer(privateApp, pvtApi)
+	if err := privateApp.Serve(lis); err != nil {
+		fmt.Println("❌Failed to start the Private API.")
+		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)
 	}
 }

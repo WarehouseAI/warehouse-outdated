@@ -3,7 +3,7 @@ package gateway
 import (
 	"context"
 	"warehouse/gen"
-	utils "warehouse/src/internal/utils/grpc"
+	utils "warehouse/src/internal/utils/grpcutils"
 	m "warehouse/src/services/auth/pkg/models"
 )
 
