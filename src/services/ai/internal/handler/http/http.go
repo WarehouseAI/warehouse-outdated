@@ -27,7 +27,7 @@ func NewAiAPI(service svc.AIService, sessionMiddleware *mv.SessionMiddleware, us
 }
 
 func (api *APIInstance) CreateHandler(c *fiber.Ctx) error {
-	user := c.Locals("user").(dbm.User)
+	user := c.Locals("user").(*dbm.User)
 	var aiInfo m.CreateAIRequest
 
 	if err := c.BodyParser(&aiInfo); err != nil {

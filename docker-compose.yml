@@ -1,10 +1,6 @@
 version: '3'
 
 networks:
-  session-network:
-    driver: bridge
-  data-network:
-    driver: bridge
   svc-network:
     driver: bridge
 
@@ -13,7 +9,7 @@ services:
     image: postgres:14.1-alpine
     container_name: data_db
     networks:
-      - data-network
+      - svc-network
     restart: always
     env_file:
       - .env
@@ -31,7 +27,7 @@ services:
     container_name: session_db
     restart: always
     networks:
-      - session-network
+      - svc-network
     env_file:
       - .env
     environment:
@@ -44,8 +40,7 @@ services:
     restart: always
     container_name: auth-service
     networks:
-      session-network:
-      svc-network:
+      - svc-network
     build:
       context: .
       dockerfile: dockerfiles/auth.Dockerfile
@@ -63,8 +58,7 @@ services:
     restart: always
     container_name: user-service
     networks:
-      data-network:
-      svc-network:
+      - svc-network
     build:
       context: .
       dockerfile: dockerfiles/user.Dockerfile
@@ -80,9 +74,7 @@ services:
     restart: always
     container_name: ai-service
     networks:
-      data-network:
-      session-network:
-      # svc-network:
+      - svc-network
     build:
       context: .
       dockerfile: dockerfiles/ai.Dockerfile

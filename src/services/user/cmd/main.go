@@ -68,18 +68,17 @@ func main() {
 	}
 
 	go func() {
-		fmt.Println("Start Public API")
-		if err := publicApp.Listen(":8000"); err != nil {
-			fmt.Println("❌Failed to start the Public API.")
+		gen.RegisterUserServiceServer(privateApp, pvtApi)
+		if err := privateApp.Serve(lis); err != nil {
+			fmt.Println("❌Failed to start the Private API.")
 			log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 			panic(err)
 		}
-
 	}()
 
-	gen.RegisterUserServiceServer(privateApp, pvtApi)
-	if err := privateApp.Serve(lis); err != nil {
-		fmt.Println("❌Failed to start the Private API.")
+	fmt.Println("Start Public API")
+	if err := publicApp.Listen(":8000"); err != nil {
+		fmt.Println("❌Failed to start the Public API.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)
 	}

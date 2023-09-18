@@ -32,6 +32,12 @@ func (cfg *SessionMiddleware) Session(c *fiber.Ctx) error {
 
 	session, err := cfg.sessionOperations.GetSession(context.Background(), sessionId)
 
+	if err != nil {
+		statusCode := fiber.StatusInternalServerError
+		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Session middleware")
+		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
+	}
+
 	if session == nil {
 		c.Cookie(&fiber.Cookie{
 			Name:    "sessionId",
@@ -41,12 +47,6 @@ func (cfg *SessionMiddleware) Session(c *fiber.Ctx) error {
 
 		statusCode := fiber.StatusForbidden
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session has expired"})
-	}
-
-	if err != nil {
-		statusCode := fiber.StatusInternalServerError
-		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Session middleware")
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
 	}
 
 	newSession, err := cfg.sessionOperations.UpdateSession(context.Background(), sessionId)

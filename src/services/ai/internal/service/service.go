@@ -2,7 +2,8 @@ package service
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 )
 
 type AIService interface {
-	Create(context.Context, *m.CreateAIRequest, dbm.User) (*m.CreateAIResponse, error)
+	Create(context.Context, *m.CreateAIRequest, *dbm.User) (*m.CreateAIResponse, error)
 }
 
 type AIServiceConfig struct {
@@ -32,8 +33,9 @@ func NewAIService(operations dbo.AIDatabaseOperations, logger *logrus.Logger) AI
 	}
 }
 
-func (cfg *AIServiceConfig) Create(ctx context.Context, aiInfo *m.CreateAIRequest, user dbm.User) (*m.CreateAIResponse, error) {
+func (cfg *AIServiceConfig) Create(ctx context.Context, aiInfo *m.CreateAIRequest, user *dbm.User) (*m.CreateAIResponse, error) {
 	apiKeyPayload, err := u.GenerateRandomString(32)
+	hasher := md5.New()
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")
@@ -41,9 +43,9 @@ func (cfg *AIServiceConfig) Create(ctx context.Context, aiInfo *m.CreateAIReques
 	}
 
 	apiKey := fmt.Sprintf("wh.%s", apiKeyPayload)
-	hash := sha256.Sum256([]byte(apiKey))
+	hasher.Write([]byte(apiKey))
 
-	newAi := &dbm.AI{ID: uuid.Must(uuid.NewV4()), Name: aiInfo.Name, Owner: user.ID, AuthScheme: aiInfo.AuthScheme, ApiKey: string(hash[:]), CreatedAt: time.Now(), UpdateAt: time.Now()}
+	newAi := &dbm.AI{ID: uuid.Must(uuid.NewV4()), Name: aiInfo.Name, Owner: user.ID, AuthScheme: aiInfo.AuthScheme, ApiKey: hex.EncodeToString(hasher.Sum(nil)), CreatedAt: time.Now(), UpdateAt: time.Now()}
 
 	if err := cfg.operations.Add(newAi); err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")

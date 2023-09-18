@@ -33,7 +33,7 @@ func main() {
 
 	// -----------CONNECT TO DATABASE-----------
 	fmt.Println("Connect to the User database...")
-	pgDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
+	pgDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
 	psqlClient, err := gorm.Open(postgres.Open(pgDSN), &gorm.Config{})
 	if err != nil {
 		fmt.Println(pgDSN)
@@ -48,9 +48,8 @@ func main() {
 
 	fmt.Println("Connect to the Session database...")
 	rDSN := fmt.Sprintf("%s:%s", os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"))
-	fmt.Println(rDSN)
 	rClient := redis.NewClient(&redis.Options{
-		Addr:     pgDSN,
+		Addr:     rDSN,
 		Password: os.Getenv("SESSION_DB_PASSWORD"),
 		DB:       0,
 	})

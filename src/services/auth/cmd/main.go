@@ -40,7 +40,6 @@ func main() {
 	// -----------CONNECT TO DATABASE-----------
 	fmt.Println("Connect to the Session database...")
 	DSN := fmt.Sprintf("%s:%s", os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"))
-	fmt.Println(DSN)
 	rClient := redis.NewClient(&redis.Options{
 		Addr:     DSN,
 		Password: os.Getenv("SESSION_DB_PASSWORD"),
