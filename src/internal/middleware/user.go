@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"time"
 	dbo "warehouse/src/internal/db/operations"
 	"warehouse/src/internal/dto"
@@ -24,6 +25,9 @@ func NewUserMiddleware(userOperations dbo.UserDatabaseOperations, logger *logrus
 func (cfg *UserMiddleware) User(c *fiber.Ctx) error {
 	userId := c.Locals("userId")
 	user, err := cfg.userOperations.GetOneBy("id", userId)
+
+	fmt.Println("user, err")
+	fmt.Println(user, err)
 
 	if err != nil {
 		statusCode := fiber.StatusInternalServerError
