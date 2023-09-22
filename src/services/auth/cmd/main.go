@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-	dbo "warehouse/src/internal/db/operations"
 	mv "warehouse/src/internal/middleware"
 	"warehouse/src/services/auth/internal/handler/http"
 	svc "warehouse/src/services/auth/internal/service"
@@ -49,9 +48,8 @@ func main() {
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the Auth Microservice...")
-	operations := dbo.NewSessionOperations(rClient)
-	svc := svc.NewAuthService(operations, log)
-	sMw := mv.NewSessionMiddleware(operations, log)
+	svc := svc.NewAuthService(rClient, log)
+	sMw := mv.NewSessionMiddleware(rClient, log)
 	api := http.NewAuthAPI(svc, sMw)
 
 	app := api.Init()

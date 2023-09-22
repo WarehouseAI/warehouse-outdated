@@ -1,31 +1,49 @@
 package operations
 
 import (
+	"errors"
 	dbm "warehouse/src/internal/db/models"
 
 	"gorm.io/gorm"
 )
 
-type AIDatabaseOperations interface {
-	Add(*dbm.AI) error
+type AIDatabaseOperations[T dbm.All] interface {
+	Add(T) error
+	GetOneBy(key string, value interface{}) (*T, error)
 }
 
-type AIOperationsConfig struct {
+type AIOperationsConfig[T dbm.All] struct {
 	db *gorm.DB
 }
 
-func NewAIOperations(db *gorm.DB) AIDatabaseOperations {
-	return &AIOperationsConfig{
+func NewAIOperations[T dbm.All](db *gorm.DB) AIDatabaseOperations[T] {
+	return &AIOperationsConfig[T]{
 		db: db,
 	}
 }
 
-func (cfg *AIOperationsConfig) Add(ai *dbm.AI) error {
-	result := cfg.db.Create(&ai)
+func (cfg *AIOperationsConfig[T]) Add(item T) error {
+	result := cfg.db.Create(item)
 
 	if result.Error != nil {
 		return result.Error
 	}
 
 	return nil
+}
+
+func (cfg *AIOperationsConfig[T]) GetOneBy(key string, value interface{}) (*T, error) {
+	var item T
+
+	result := cfg.db.Where(map[string]interface{}{key: value}).First(&item)
+
+	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, result.Error
+		}
+
+		return nil, nil
+	}
+
+	return &item, nil
 }

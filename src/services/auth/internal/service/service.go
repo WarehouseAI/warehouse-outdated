@@ -12,6 +12,7 @@ import (
 	gw "warehouse/src/services/auth/internal/gateway"
 	m "warehouse/src/services/auth/pkg/models"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
@@ -25,19 +26,21 @@ type AuthService interface {
 }
 
 type AuthServiceConfig struct {
-	operations dbo.SessionDatabaseOperations
-	logger     *logrus.Logger
+	database *redis.Client
+	logger   *logrus.Logger
 }
 
-func NewAuthService(operations dbo.SessionDatabaseOperations, logger *logrus.Logger) AuthService {
+func NewAuthService(database *redis.Client, logger *logrus.Logger) AuthService {
 	return &AuthServiceConfig{
-		operations: operations,
-		logger:     logger,
+		database: database,
+		logger:   logger,
 	}
 }
 
 func (cfg *AuthServiceConfig) Logout(ctx context.Context, sessionId string) error {
-	if err := cfg.operations.DeleteSession(ctx, sessionId); err != nil {
+	sessionOperations := dbo.NewSessionOperations(cfg.database)
+
+	if err := sessionOperations.DeleteSession(ctx, sessionId); err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Logout user")
 		return err
 	}
@@ -46,6 +49,7 @@ func (cfg *AuthServiceConfig) Logout(ctx context.Context, sessionId string) erro
 }
 
 func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *m.LoginRequest) (*dbm.Session, error) {
+	sessionOperations := dbo.NewSessionOperations(cfg.database)
 	user, err := gw.GetUser(ctx, &gen.GetUserRequest{Email: userInfo.Email})
 
 	if err != nil && errors.Is(err, status.Errorf(codes.NotFound, dto.NotFoundError.Error())) {
@@ -64,7 +68,7 @@ func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *m.LoginReques
 	}
 
 	// Сохраняем сессию
-	session, err := cfg.operations.CreateSession(ctx, user.User.Id)
+	session, err := sessionOperations.CreateSession(ctx, user.User.Id)
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")

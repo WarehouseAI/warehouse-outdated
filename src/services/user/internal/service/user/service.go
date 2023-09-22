@@ -12,6 +12,7 @@ import (
 	m "warehouse/src/services/user/pkg/models"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -20,27 +21,28 @@ type UserService interface {
 }
 
 type UserServiceConfig struct {
-	operations dbo.UserDatabaseOperations
-	logger     *logrus.Logger
+	database *gorm.DB
+	logger   *logrus.Logger
 }
 
-func NewUserService(operations dbo.UserDatabaseOperations, logger *logrus.Logger) UserService {
+func NewUserService(database *gorm.DB, logger *logrus.Logger) UserService {
 	return &UserServiceConfig{
-		operations: operations,
-		logger:     logger,
+		database: database,
+		logger:   logger,
 	}
 }
 
 func (cfg *UserServiceConfig) Create(ctx context.Context, userInfo *gen.CreateUserRequest) (*dbm.User, error) {
+	userOperations := dbo.NewUserOperations(cfg.database)
 	userEntity := m.UserPayloadToEntity(userInfo)
 
-	existUser, _ := cfg.operations.GetOneBy("email", userEntity.Email)
+	existUser, _ := userOperations.GetOneBy("email", userEntity.Email)
 
 	if existUser != nil {
 		return nil, dto.ExistError
 	}
 
-	err := cfg.operations.Add(userEntity)
+	err := userOperations.Add(userEntity)
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Add user")
@@ -51,7 +53,8 @@ func (cfg *UserServiceConfig) Create(ctx context.Context, userInfo *gen.CreateUs
 }
 
 func (cfg *UserServiceConfig) Get(ctx context.Context, userInfo *gen.GetUserRequest) (*dbm.User, error) {
-	existUser, err := cfg.operations.GetOneBy("email", userInfo.Email)
+	userOperations := dbo.NewUserOperations(cfg.database)
+	existUser, err := userOperations.GetOneBy("email", userInfo.Email)
 
 	if err != nil {
 		return nil, dto.InternalError

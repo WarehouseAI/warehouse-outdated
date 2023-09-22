@@ -13,9 +13,9 @@ type (
 		Picture   string    `json:"picture" gorm:"type:string"`
 		Password  string    `json:"-" gorm:"type:string;not null"`
 		Email     string    `json:"email" gorm:"type:string;not null;unique"`
-		ViaGoogle bool      `json:"viaGoogle" gorm:"default:false;not null"`
-		CreatedAI []AI      `json:"createdId" gorm:"foreignKey:Owner"`
-		CreatedAt time.Time `json:"createdAt" gorm:"type:time"`
-		UpdateAt  time.Time `json:"updatedAt" gorm:"type:time"`
+		ViaGoogle bool      `json:"via_google" gorm:"default:false;not null"`
+		OwnedAi   []AI      `json:"owned_ai" gorm:"foreignKey:Owner"`
+		CreatedAt time.Time `json:"created_at" gorm:"type:time"`
+		UpdateAt  time.Time `json:"updated_at" gorm:"type:time"`
 	}
 )

@@ -47,12 +47,28 @@ func (api *APIInstance) CreateHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(apiInfo)
 }
 
+func (api *APIInstance) AddCommandHandler(c *fiber.Ctx) error {
+	var commandInfo m.AddCommandRequest
+
+	if err := c.BodyParser(&commandInfo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+	}
+
+	if err := api.svc.AddCommand(context.Background(), &commandInfo); err != nil {
+		statusCode := fiber.StatusInternalServerError
+		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusCreated)
+}
+
 // INIT
 func (api *APIInstance) Init() *fiber.App {
 	app := fiber.New()
 	route := app.Group("/ai")
 
 	route.Post("/create", api.sMw.Session, api.uMw.User, api.CreateHandler)
+	route.Post("/command/create", api.sMw.Session, api.AddCommandHandler)
 
 	return app
 }

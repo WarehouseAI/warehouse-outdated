@@ -1,10 +1,23 @@
 package models
 
-import dbm "warehouse/src/internal/db/models"
+import (
+	dbm "warehouse/src/internal/db/models"
+
+	"github.com/gofrs/uuid"
+)
 
 type (
 	CreateAIRequest struct {
 		Name       string         `json:"name"`
-		AuthScheme dbm.AuthScheme `json:"authScheme"`
+		AuthScheme dbm.AuthScheme `json:"auth_scheme"`
+	}
+
+	AddCommandRequest struct {
+		Name        string                 `json:"name"`
+		AiID        uuid.UUID              `json:"ai_id"`
+		Payload     map[string]interface{} `json:"payload"`
+		PayloadType dbm.PayloadType        `json:"payload_type"`
+		RequestType dbm.RequestType        `json:"request_type"`
+		URL         string                 `json:"url"`
 	}
 )

@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 	dbm "warehouse/src/internal/db/models"
-	dbo "warehouse/src/internal/db/operations"
 	mw "warehouse/src/internal/middleware"
 	"warehouse/src/services/ai/internal/handler/http"
 	"warehouse/src/services/ai/internal/service"
@@ -54,7 +53,9 @@ func main() {
 	}
 
 	pgAiClient.Exec("CREATE TYPE authscheme AS ENUM ('Bearer', 'Basic','ApiKey');")
-	pgAiClient.AutoMigrate(&dbm.AI{})
+	pgAiClient.Exec("CREATE TYPE payloadtype AS ENUM ('JSON', 'FormData');")
+	pgAiClient.Exec("CREATE TYPE requesttype AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');")
+	pgAiClient.AutoMigrate(&dbm.AI{}, &dbm.Command{})
 	fmt.Println("✅Databases successfully connected.")
 
 	fmt.Println("Connect to the Session database...")
@@ -68,13 +69,10 @@ func main() {
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the AI Microservice...")
-	aiOperations := dbo.NewAIOperations(pgAiClient)
-	userOperations := dbo.NewUserOperations(pgUserClient)
-	sessionOperations := dbo.NewSessionOperations(rClient)
 
-	svc := service.NewAIService(aiOperations, log)
-	sMw := mw.NewSessionMiddleware(sessionOperations, log)
-	uMw := mw.NewUserMiddleware(userOperations, log)
+	svc := service.NewAIService(pgAiClient, log)
+	sMw := mw.NewSessionMiddleware(rClient, log)
+	uMw := mw.NewUserMiddleware(pgUserClient, log)
 	api := http.NewAiAPI(svc, sMw, uMw)
 
 	app := api.Init()

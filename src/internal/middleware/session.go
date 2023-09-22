@@ -7,22 +7,24 @@ import (
 	"warehouse/src/internal/dto"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
 type SessionMiddleware struct {
-	sessionOperations dbo.SessionDatabaseOperations
-	logger            *logrus.Logger
+	database *redis.Client
+	logger   *logrus.Logger
 }
 
-func NewSessionMiddleware(sessionOperations dbo.SessionDatabaseOperations, logger *logrus.Logger) *SessionMiddleware {
+func NewSessionMiddleware(database *redis.Client, logger *logrus.Logger) *SessionMiddleware {
 	return &SessionMiddleware{
-		sessionOperations: sessionOperations,
-		logger:            logger,
+		database: database,
+		logger:   logger,
 	}
 }
 
 func (cfg *SessionMiddleware) Session(c *fiber.Ctx) error {
+	sessionOperations := dbo.NewSessionOperations(cfg.database)
 	sessionId := c.Cookies("sessionId")
 
 	if sessionId == "" {
@@ -30,7 +32,7 @@ func (cfg *SessionMiddleware) Session(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session is invalid"})
 	}
 
-	session, err := cfg.sessionOperations.GetSession(context.Background(), sessionId)
+	session, err := sessionOperations.GetSession(context.Background(), sessionId)
 
 	if err != nil {
 		statusCode := fiber.StatusInternalServerError
@@ -39,17 +41,13 @@ func (cfg *SessionMiddleware) Session(c *fiber.Ctx) error {
 	}
 
 	if session == nil {
-		c.Cookie(&fiber.Cookie{
-			Name:    "sessionId",
-			Value:   "",
-			Expires: time.Now().Add(-time.Hour),
-		})
+		c.ClearCookie("sessionId")
 
 		statusCode := fiber.StatusForbidden
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session has expired"})
 	}
 
-	newSession, err := cfg.sessionOperations.UpdateSession(context.Background(), sessionId)
+	newSession, err := sessionOperations.UpdateSession(context.Background(), sessionId)
 
 	if err != nil {
 		statusCode := fiber.StatusInternalServerError

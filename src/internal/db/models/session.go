@@ -10,7 +10,7 @@ type (
 	}
 
 	SessionPayload struct {
-		UserId    string    `json:"userId"`
-		CreatedAt time.Time `json:"createdAt"`
+		UserId    string    `json:"user_id"`
+		CreatedAt time.Time `json:"created_at"`
 	}
 )

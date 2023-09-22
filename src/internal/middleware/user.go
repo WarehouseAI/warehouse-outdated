@@ -8,23 +8,25 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type UserMiddleware struct {
-	userOperations dbo.UserDatabaseOperations
-	logger         *logrus.Logger
+	database *gorm.DB
+	logger   *logrus.Logger
 }
 
-func NewUserMiddleware(userOperations dbo.UserDatabaseOperations, logger *logrus.Logger) *UserMiddleware {
+func NewUserMiddleware(database *gorm.DB, logger *logrus.Logger) *UserMiddleware {
 	return &UserMiddleware{
-		userOperations: userOperations,
-		logger:         logger,
+		database: database,
+		logger:   logger,
 	}
 }
 
 func (cfg *UserMiddleware) User(c *fiber.Ctx) error {
+	userOperations := dbo.NewUserOperations(cfg.database)
 	userId := c.Locals("userId")
-	user, err := cfg.userOperations.GetOneBy("id", userId)
+	user, err := userOperations.GetOneBy("id", userId)
 
 	fmt.Println("user, err")
 	fmt.Println(user, err)
