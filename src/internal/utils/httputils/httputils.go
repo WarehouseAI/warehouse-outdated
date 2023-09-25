@@ -1,15 +1,19 @@
 package httputils
 
 import (
-	"encoding/json"
+	"bytes"
+	"image"
+	"image/jpeg"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	dbm "warehouse/src/internal/db/models"
 	"warehouse/src/internal/dto"
 )
 
-func MakeHTTPRequest[T any](fullUrl string, httpMethod string, headers map[string]string, queryParameters url.Values, body io.Reader, responseType T) (*T, error) {
+func MakeHTTPRequest(fullUrl string, httpMethod string, headers map[string]string, queryParameters url.Values, body io.Reader) (io.ReadCloser, error) {
 	client := http.Client{}
 
 	url, err := url.Parse(fullUrl)
@@ -46,22 +50,35 @@ func MakeHTTPRequest[T any](fullUrl string, httpMethod string, headers map[strin
 		return nil, dto.EmptyResponse
 	}
 
-	responseData, err := io.ReadAll(res.Body)
+	return res.Body, nil
+}
 
-	if err != nil {
-		return nil, err
+func DecodeHTTPResponse(response io.ReadCloser, outputType dbm.IOType) (*bytes.Buffer, error) {
+	if outputType == dbm.Image {
+		var buffer bytes.Buffer
+		img, _, err := image.Decode(response)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if err := jpeg.Encode(&buffer, img, nil); err != nil {
+			return nil, err
+		}
+
+		return &buffer, nil
+	} else {
+		var buffer bytes.Buffer
+		json, err := ioutil.ReadAll(response)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := buffer.Write(json); err != nil {
+			return nil, err
+		}
+
+		return &buffer, nil
 	}
-
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, dto.BadRequestError
-	}
-
-	var responseObject T
-	if err := json.Unmarshal(responseData, &responseObject); err != nil {
-		return nil, err
-	}
-
-	return &responseObject, nil
 }

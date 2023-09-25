@@ -1,0 +1,56 @@
+version: '3'
+
+networks:
+  svc-network:
+    driver: bridge
+
+services:
+  auth:
+    restart: always
+    container_name: auth-service
+    networks:
+      - svc-network
+    build:
+      context: .
+      dockerfile: dockerfiles/auth.Dockerfile
+    command: ./auth
+    depends_on:
+      - session
+      - user
+    env_file: .env
+    expose:
+      - '8001'
+    ports:
+      - 8010:8010
+
+  user:
+    restart: always
+    container_name: user-service
+    networks:
+      - svc-network
+    build:
+      context: .
+      dockerfile: dockerfiles/user.Dockerfile
+    command: ./wait-4-postgres.sh data_db ./user
+    depends_on:
+      - db
+    env_file: .env
+    ports:
+      - 8000:8000
+      - 8001:8001
+
+  ai:
+    restart: always
+    container_name: ai-service
+    networks:
+      - svc-network
+    build:
+      context: .
+      dockerfile: dockerfiles/ai.Dockerfile
+    command: ./wait-4-postgres.sh data_db ./ai
+    depends_on:
+      - db
+      - session
+    env_file: .env
+    ports:
+      - 8020:8020

@@ -54,6 +54,7 @@ func main() {
 
 	pgAiClient.Exec("CREATE TYPE authscheme AS ENUM ('Bearer', 'Basic','ApiKey');")
 	pgAiClient.Exec("CREATE TYPE payloadtype AS ENUM ('JSON', 'FormData');")
+	pgAiClient.Exec("CREATE TYPE iotype AS ENUM ('Image', 'Text');")
 	pgAiClient.Exec("CREATE TYPE requesttype AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');")
 	pgAiClient.AutoMigrate(&dbm.AI{}, &dbm.Command{})
 	fmt.Println("✅Databases successfully connected.")

@@ -17,7 +17,9 @@ type (
 		AiID        uuid.UUID              `json:"ai_id"`
 		Payload     map[string]interface{} `json:"payload"`
 		PayloadType dbm.PayloadType        `json:"payload_type"`
-		RequestType dbm.RequestType        `json:"request_type"`
+		InputType   dbm.IOType             `json:"input_type"`
+		OutputType  dbm.IOType             `json:"output_type"`
+		RequestType dbm.RequestScheme      `json:"request_type"`
 		URL         string                 `json:"url"`
 	}
 )

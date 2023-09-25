@@ -7,7 +7,8 @@ import (
 )
 
 type AuthScheme string
-type RequestType string
+type RequestScheme string
+type IOType string
 type PayloadType string
 
 const (
@@ -17,14 +18,19 @@ const (
 )
 
 const (
-	Post    RequestType = "POST"
-	Get     RequestType = "GET"
-	Put     RequestType = "PUT"
-	Update  RequestType = "UPDATE"
-	Delete  RequestType = "DELETE"
-	Patch   RequestType = "PATCH"
-	Head    RequestType = "HEAD"
-	Options RequestType = "OPTIONS"
+	Post    RequestScheme = "POST"
+	Get     RequestScheme = "GET"
+	Put     RequestScheme = "PUT"
+	Update  RequestScheme = "UPDATE"
+	Delete  RequestScheme = "DELETE"
+	Patch   RequestScheme = "PATCH"
+	Head    RequestScheme = "HEAD"
+	Options RequestScheme = "OPTIONS"
+)
+
+const (
+	Image IOType = "Image"
+	Text  IOType = "Text"
 )
 
 const (
@@ -49,14 +55,16 @@ type (
 	}
 
 	Command struct {
-		ID          uuid.UUID              `json:"id" gorm:"type:uuid;primarykey"`
-		AI          uuid.UUID              `json:"ai" gorm:"type:uuid"`
-		Name        string                 `json:"name" gorm:"type:string"`
-		Payload     map[string]interface{} `json:"payload" gorm:"type:json;not null"`
-		PayloadType PayloadType            `json:"payload_type" gorm:"type:PayloadType;not null"`
-		RequestType RequestType            `json:"request_type" gorm:"type:RequestType;not null"`
-		URL         string                 `json:"url" gorm:"type:string;unique;not null"`
-		CreatedAt   time.Time              `json:"created_at" gorm:"type:time"`
-		UpdateAt    time.Time              `json:"updated_at" gorm:"type:time"`
+		ID            uuid.UUID              `json:"id" gorm:"type:uuid;primarykey"`
+		AI            uuid.UUID              `json:"ai" gorm:"type:uuid"`
+		Name          string                 `json:"name" gorm:"type:string"`
+		Payload       map[string]interface{} `json:"payload" gorm:"type:json;not null"`
+		PayloadType   PayloadType            `json:"payload_type" gorm:"type:PayloadType;not null"`
+		RequestScheme RequestScheme          `json:"request_type" gorm:"type:RequestType;not null"`
+		InputType     IOType                 `json:"input_type" gorm:"type:IOType;not null"`
+		OutputType    IOType                 `json:"output_type" gorm:"type:IOType;not null"`
+		URL           string                 `json:"url" gorm:"type:string;unique;not null"`
+		CreatedAt     time.Time              `json:"created_at" gorm:"type:time"`
+		UpdateAt      time.Time              `json:"updated_at" gorm:"type:time"`
 	}
 )

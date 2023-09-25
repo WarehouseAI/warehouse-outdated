@@ -62,6 +62,57 @@ func (api *APIInstance) AddCommandHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusCreated)
 }
 
+func (api *APIInstance) ExecuteCommandHandler(c *fiber.Ctx) error {
+	aiID := c.Query("ai_id")
+	commandName := c.Query("command_name")
+
+	existCommand, err := api.svc.GetCommand(context.Background(), aiID, commandName)
+
+	if existCommand == nil {
+		statusCode := fiber.StatusNotFound
+		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+	}
+
+	if err != nil {
+		statusCode := fiber.StatusInternalServerError
+		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+	}
+
+	if existCommand.PayloadType == dbm.FormData {
+		formData, err := c.MultipartForm()
+
+		if err != nil {
+			statusCode := fiber.StatusBadRequest
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+		}
+
+		response, err := api.svc.ExecuteFormDataCommand(context.Background(), formData, existCommand)
+
+		if err != nil {
+			statusCode := fiber.StatusInternalServerError
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+		}
+
+		return c.Status(fiber.StatusOK).Send(response.Bytes())
+	} else {
+		var json map[string]interface{}
+
+		if err := c.BodyParser(json); err != nil {
+			statusCode := fiber.StatusBadRequest
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+		}
+
+		response, err := api.svc.ExecuteJSONCommand(context.Background(), json, existCommand)
+
+		if err != nil {
+			statusCode := fiber.StatusInternalServerError
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+		}
+
+		return c.Status(fiber.StatusOK).Send(response.Bytes())
+	}
+}
+
 // INIT
 func (api *APIInstance) Init() *fiber.App {
 	app := fiber.New()
@@ -69,6 +120,7 @@ func (api *APIInstance) Init() *fiber.App {
 
 	route.Post("/create", api.sMw.Session, api.uMw.User, api.CreateHandler)
 	route.Post("/command/create", api.sMw.Session, api.AddCommandHandler)
+	route.Post("/command/execute", api.sMw.Session, api.ExecuteCommandHandler)
 
 	return app
 }
