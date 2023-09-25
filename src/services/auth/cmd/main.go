@@ -45,6 +45,7 @@ func main() {
 		DB:       0,
 	})
 	fmt.Println("✅Session database successfully connected.")
+	defer rClient.Close()
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the Auth Microservice...")
