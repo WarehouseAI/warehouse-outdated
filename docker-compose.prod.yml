@@ -15,7 +15,6 @@ services:
       dockerfile: dockerfiles/auth.Dockerfile
     command: ./auth
     depends_on:
-      - session
       - user
     env_file: .env
     expose:
@@ -32,8 +31,6 @@ services:
       context: .
       dockerfile: dockerfiles/user.Dockerfile
     command: ./wait-4-postgres.sh data_db ./user
-    depends_on:
-      - db
     env_file: .env
     ports:
       - 8000:8000
@@ -48,9 +45,6 @@ services:
       context: .
       dockerfile: dockerfiles/ai.Dockerfile
     command: ./wait-4-postgres.sh data_db ./ai
-    depends_on:
-      - db
-      - session
     env_file: .env
     ports:
       - 8020:8020
