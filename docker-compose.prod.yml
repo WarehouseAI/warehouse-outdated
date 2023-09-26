@@ -5,6 +5,24 @@ networks:
     driver: bridge
 
 services:
+  proxy:
+    image: nginx:1.24-alpine
+    container_name: proxy_server
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - auth
+      - user
+      - ai
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - svc-network
+
   auth:
     restart: always
     container_name: auth-service

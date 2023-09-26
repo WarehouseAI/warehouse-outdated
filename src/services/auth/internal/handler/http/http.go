@@ -33,12 +33,12 @@ func (api *APIInstance) RegisterHandler(c *fiber.Ctx) error {
 
 	userId, err := api.svc.Register(context.Background(), &userInfo)
 
-	if err != nil && errors.Is(err, dto.InternalError) {
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+	if err != nil && errors.Is(err, dto.ExistError) {
+		return c.Status(fiber.StatusConflict).JSON(dto.ErrorResponse{Message: err.Error()})
 	}
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(userId)

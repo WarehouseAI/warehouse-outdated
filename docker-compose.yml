@@ -5,6 +5,23 @@ networks:
     driver: bridge
 
 services:
+  proxy:
+    image: nginx:1.24-alpine
+    container_name: proxy_server
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 80:80
+    depends_on:
+      - auth
+      - user
+      - ai
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - svc-network
+
   db:
     image: postgres:14.1-alpine
     container_name: data_db
