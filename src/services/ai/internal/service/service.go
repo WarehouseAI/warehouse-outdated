@@ -25,7 +25,8 @@ import (
 )
 
 type AIService interface {
-	Create(ctx context.Context, aiInfo *m.CreateAIRequest, user *dbm.User) (*m.CreateAIResponse, error)
+	CreateWithGeneratedKey(ctx context.Context, aiInfo *m.CreateAIRequest, user *dbm.User) (*m.CreateAIResponse, error)
+	CreateWithOwnKey(ctx context.Context, aiInfo *m.CreateAIRequest, user *dbm.User) (*m.CreateAIResponse, error)
 	Get(ctx context.Context, aiID uuid.UUID) (*dbm.AI, error)
 	AddCommand(ctx context.Context, commandInfo *m.AddCommandRequest) error
 	GetCommand(ctx context.Context, aiId string, commandName string) (*dbm.Command, error)
@@ -45,7 +46,7 @@ func NewAIService(database *gorm.DB, logger *logrus.Logger) AIService {
 	}
 }
 
-func (cfg *AIServiceConfig) Create(ctx context.Context, aiInfo *m.CreateAIRequest, user *dbm.User) (*m.CreateAIResponse, error) {
+func (cfg *AIServiceConfig) CreateWithGeneratedKey(ctx context.Context, aiInfo *m.CreateAIRequest, user *dbm.User) (*m.CreateAIResponse, error) {
 	aiOperations := dbo.NewAIOperations[dbm.AI](cfg.database)
 	apiKeyPayload, err := u.GenerateRandomString(32)
 	hasher := md5.New()
@@ -74,6 +75,27 @@ func (cfg *AIServiceConfig) Create(ctx context.Context, aiInfo *m.CreateAIReques
 	}
 
 	return &m.CreateAIResponse{Name: aiInfo.Name, ApiKey: apiKey, AuthScheme: aiInfo.AuthScheme}, nil
+}
+
+func (cfg *AIServiceConfig) CreateWithOwnKey(ctx context.Context, aiInfo *m.CreateAIRequest, user *dbm.User) (*m.CreateAIResponse, error) {
+	aiOperations := dbo.NewAIOperations[dbm.AI](cfg.database)
+
+	newAI := dbm.AI{
+		ID:         uuid.Must(uuid.NewV4()),
+		Name:       aiInfo.Name,
+		Owner:      user.ID,
+		AuthScheme: aiInfo.AuthScheme,
+		ApiKey:     aiInfo.AuthKey,
+		CreatedAt:  time.Now(),
+		UpdateAt:   time.Now(),
+	}
+
+	if err := aiOperations.Add(newAI); err != nil {
+		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")
+		return nil, dto.InternalError
+	}
+
+	return &m.CreateAIResponse{Name: aiInfo.Name, ApiKey: aiInfo.AuthKey, AuthScheme: aiInfo.AuthScheme}, nil
 }
 
 func (cfg *AIServiceConfig) Get(ctx context.Context, aiID uuid.UUID) (*dbm.AI, error) {

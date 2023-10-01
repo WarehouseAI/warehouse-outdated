@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"gorm.io/datatypes"
 )
 
 type AuthScheme string
@@ -55,16 +56,16 @@ type (
 	}
 
 	Command struct {
-		ID            uuid.UUID              `json:"id" gorm:"type:uuid;primarykey"`
-		AI            uuid.UUID              `json:"ai" gorm:"type:uuid"`
-		Name          string                 `json:"name" gorm:"type:string"`
-		Payload       map[string]interface{} `json:"payload" gorm:"type:json;not null"`
-		PayloadType   PayloadType            `json:"payload_type" gorm:"type:PayloadType;not null"`
-		RequestScheme RequestScheme          `json:"request_type" gorm:"type:RequestType;not null"`
-		InputType     IOType                 `json:"input_type" gorm:"type:IOType;not null"`
-		OutputType    IOType                 `json:"output_type" gorm:"type:IOType;not null"`
-		URL           string                 `json:"url" gorm:"type:string;unique;not null"`
-		CreatedAt     time.Time              `json:"created_at" gorm:"type:time"`
-		UpdateAt      time.Time              `json:"updated_at" gorm:"type:time"`
+		ID            uuid.UUID         `json:"id" gorm:"type:uuid;primarykey"`
+		AI            uuid.UUID         `json:"ai" gorm:"type:uuid"`
+		Name          string            `json:"name" gorm:"type:string"`
+		Payload       datatypes.JSONMap `json:"payload" gorm:"type:json;not null"`
+		PayloadType   PayloadType       `json:"payload_type" gorm:"type:PayloadType;not null"`
+		RequestScheme RequestScheme     `json:"request_type" gorm:"type:RequestType;not null"`
+		InputType     IOType            `json:"input_type" gorm:"type:IOType;not null"`
+		OutputType    IOType            `json:"output_type" gorm:"type:IOType;not null"`
+		URL           string            `json:"url" gorm:"type:string;unique;not null"`
+		CreatedAt     time.Time         `json:"created_at" gorm:"type:time"`
+		UpdateAt      time.Time         `json:"updated_at" gorm:"type:time"`
 	}
 )
