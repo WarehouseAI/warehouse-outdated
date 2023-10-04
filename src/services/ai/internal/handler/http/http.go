@@ -30,42 +30,39 @@ func (api *APIInstance) CreateHandler(c *fiber.Ctx) error {
 	user := c.Locals("user").(*dbm.User)
 	var aiInfo m.CreateAIRequest
 
-	if err := c.BodyParser(&aiInfo); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
-	}
-
-	apiInfo, err := api.svc.CreateWithGeneratedKey(context.Background(), &aiInfo, user)
-
-	if err != nil && errors.Is(err, dto.InternalError) {
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
-	}
-
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(apiInfo)
-}
-
-func (api *APIInstance) CreateWithKey(c *fiber.Ctx) error {
-	user := c.Locals("user").(*dbm.User)
-	var aiInfo m.CreateAIRequest
+	var ai m.CreateAIResponse
 
 	if err := c.BodyParser(&aiInfo); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
-	apiInfo, err := api.svc.CreateWithOwnKey(context.Background(), &aiInfo, user)
+	if aiInfo.AuthKey == "" {
+		apiInfo, err := api.svc.CreateWithGeneratedKey(context.Background(), &aiInfo, user)
 
-	if err != nil && errors.Is(err, dto.InternalError) {
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+		if err != nil && errors.Is(err, dto.InternalError) {
+			return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+		}
+
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
+		}
+
+		ai = *apiInfo
+	} else {
+		apiInfo, err := api.svc.CreateWithOwnKey(context.Background(), &aiInfo, user)
+
+		if err != nil && errors.Is(err, dto.InternalError) {
+			return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+		}
+
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
+		}
+
+		ai = *apiInfo
 	}
 
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(apiInfo)
+	return c.Status(fiber.StatusCreated).JSON(ai)
 }
 
 func (api *APIInstance) AddCommandHandler(c *fiber.Ctx) error {
@@ -152,7 +149,7 @@ func (api *APIInstance) Init() *fiber.App {
 	route := app.Group("/ai")
 
 	route.Post("/create", api.sMw.Session, api.uMw.User, api.CreateHandler) // Combine to one
-	route.Post("/createWith", api.sMw.Session, api.uMw.User, api.CreateWithKey)
+	// route.Post("/create/with", api.sMw.Session, api.uMw.User, api.CreateWithKey)
 	route.Post("/command/create", api.sMw.Session, api.AddCommandHandler)
 	route.Post("/command/execute", api.sMw.Session, api.ExecuteCommandHandler)
 
