@@ -1,6 +1,7 @@
 package http
 
 import (
+	u "warehouse/src/internal/utils"
 	svc "warehouse/src/services/user/internal/service/user"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,6 +24,7 @@ func (api *UserPublicAPI) CreateHandler(c *fiber.Ctx) error {
 // INIT
 func (api *UserPublicAPI) Init() *fiber.App {
 	app := fiber.New()
+	app.Use(u.SetupCORS())
 	route := app.Group("/user")
 
 	route.Post("/create", api.CreateHandler)

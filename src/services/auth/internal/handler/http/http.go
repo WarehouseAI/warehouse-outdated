@@ -86,6 +86,7 @@ func (api *APIInstance) LogoutHandler(c *fiber.Ctx) error {
 // INIT
 func (api *APIInstance) Init() *fiber.App {
 	app := fiber.New()
+	app.Use(u.SetupCORS())
 	route := app.Group("/auth")
 
 	route.Post("/register", api.RegisterHandler)
