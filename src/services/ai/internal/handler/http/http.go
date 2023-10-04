@@ -149,7 +149,6 @@ func (api *APIInstance) Init() *fiber.App {
 	route := app.Group("/ai")
 
 	route.Post("/create", api.sMw.Session, api.uMw.User, api.CreateHandler) // Combine to one
-	// route.Post("/create/with", api.sMw.Session, api.uMw.User, api.CreateWithKey)
 	route.Post("/command/create", api.sMw.Session, api.AddCommandHandler)
 	route.Post("/command/execute", api.sMw.Session, api.ExecuteCommandHandler)
 
