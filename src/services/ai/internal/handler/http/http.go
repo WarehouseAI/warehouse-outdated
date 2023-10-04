@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"fmt"
 	dbm "warehouse/src/internal/db/models"
 	"warehouse/src/internal/dto"
 	mv "warehouse/src/internal/middleware"
@@ -69,6 +70,7 @@ func (api *APIInstance) AddCommandHandler(c *fiber.Ctx) error {
 	var commandInfo m.AddCommandRequest
 
 	if err := c.BodyParser(&commandInfo); err != nil {
+		fmt.Println(err)
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
