@@ -7,6 +7,7 @@ import (
 	dbm "warehouse/src/internal/db/models"
 	"warehouse/src/internal/dto"
 	mv "warehouse/src/internal/middleware"
+	u "warehouse/src/internal/utils"
 	svc "warehouse/src/services/ai/internal/service"
 	m "warehouse/src/services/ai/pkg/models"
 
@@ -148,6 +149,7 @@ func (api *APIInstance) ExecuteCommandHandler(c *fiber.Ctx) error {
 // INIT
 func (api *APIInstance) Init() *fiber.App {
 	app := fiber.New()
+	app.Use(u.SetupCORS())
 	route := app.Group("/ai")
 
 	route.Post("/create", api.sMw.Session, api.uMw.User, api.CreateHandler) // Combine to one
