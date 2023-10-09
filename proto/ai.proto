@@ -1,0 +1,27 @@
+syntax = 'proto3';
+option go_package = "/gen";
+
+message AI {
+  string id = 1;
+  string owner = 2;
+  repeated Command commands = 3;
+  string name = 4;
+  string api_key = 5;
+  string auth_scheme = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message Command {
+  string id = 1;
+  string ai = 2;
+  string name = 3;
+  string payload = 4;
+  string payload_type = 5;
+  string request_scheme = 6;
+  string input_type = 7;
+  string output_type = 8;
+  string url = 9;
+  string created_at = 10;
+  string updated_at = 11;
+}

@@ -21,7 +21,7 @@ import (
 
 type AuthService interface {
 	Login(context.Context, *m.LoginRequest) (*dbm.Session, error)
-	Register(context.Context, *gen.CreateUserRequest) (*m.RegisterResponse, error)
+	Register(context.Context, *gen.CreateUserMsg) (*m.RegisterResponse, error)
 	Logout(context.Context, string) error
 }
 
@@ -50,7 +50,7 @@ func (cfg *AuthServiceConfig) Logout(ctx context.Context, sessionId string) erro
 
 func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *m.LoginRequest) (*dbm.Session, error) {
 	sessionOperations := dbo.NewSessionOperations(cfg.database)
-	user, err := gw.GetUser(ctx, &gen.GetUserRequest{Email: userInfo.Email})
+	user, err := gw.GetUserByEmail(ctx, &gen.GetUserByEmailMsg{Email: userInfo.Email})
 
 	if err != nil && errors.Is(err, status.Errorf(codes.NotFound, dto.NotFoundError.Error())) {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
@@ -62,13 +62,13 @@ func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *m.LoginReques
 		return nil, dto.InternalError
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.User.Password), []byte(userInfo.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userInfo.Password)); err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
 		return nil, dto.BadRequestError
 	}
 
 	// Сохраняем сессию
-	session, err := sessionOperations.CreateSession(ctx, user.User.Id)
+	session, err := sessionOperations.CreateSession(ctx, user.Id)
 
 	if err != nil {
 		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
@@ -78,7 +78,7 @@ func (cfg *AuthServiceConfig) Login(ctx context.Context, userInfo *m.LoginReques
 	return session, nil
 }
 
-func (cfg *AuthServiceConfig) Register(ctx context.Context, userInfo *gen.CreateUserRequest) (*m.RegisterResponse, error) {
+func (cfg *AuthServiceConfig) Register(ctx context.Context, userInfo *gen.CreateUserMsg) (*m.RegisterResponse, error) {
 	if len(userInfo.Password) > 72 {
 		return nil, errors.New("Password is too long")
 	}

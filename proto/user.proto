@@ -1,5 +1,6 @@
 syntax = 'proto3';
 option go_package = "/gen";
+import "ai.proto";
 
 message User {
   string id = 1;
@@ -7,27 +8,32 @@ message User {
   string password = 3;
   string picture = 4;
   string email = 5;
-  bool viaGoogle = 6;
-  string createdAt = 7;
-  string updatedAt = 8;
+  bool via_google = 6;
+  string created_at = 7;
+  string updated_at = 8;
+  repeated AI owned_ai = 9;
 }
 
 // REQ's and RES's
 
-message GetUserRequest {
+message GetUserByEmailMsg {
   string email = 1;
+}
+
+message GetUserByIdMsg {
+  string id = 1;
 }
 
 message GetUserResponse {
   User user = 1;
 }
 
-message CreateUserRequest {
+message CreateUserMsg {
   string username = 1;
   string password = 2;
   string picture = 3;
   string email = 4;
-  bool viaGoogle = 5;
+  bool via_google = 5;
 }
 
 message CreateUserResponse {
@@ -35,7 +41,8 @@ message CreateUserResponse {
 }
 
 service UserService {
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUserByEmail(GetUserByEmailMsg) returns (User);
+  rpc GetUserById(GetUserByIdMsg) returns (User);
+  rpc CreateUser(CreateUserMsg) returns (CreateUserResponse);
 }
 

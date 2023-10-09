@@ -9,15 +9,16 @@ import (
 	dbm "warehouse/src/internal/db/models"
 	dbo "warehouse/src/internal/db/operations"
 	"warehouse/src/internal/dto"
-	m "warehouse/src/services/user/pkg/models"
+	"warehouse/src/internal/utils/mapper"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type UserService interface {
-	Create(context.Context, *gen.CreateUserRequest) (*dbm.User, error)
-	Get(context.Context, *gen.GetUserRequest) (*dbm.User, error)
+	Create(context.Context, *gen.CreateUserMsg) (*dbm.User, error)
+	GetByEmail(context.Context, *gen.GetUserByEmailMsg) (*dbm.User, error)
+	GetById(context.Context, *gen.GetUserByIdMsg) (*dbm.User, error)
 }
 
 type UserServiceConfig struct {
@@ -32,9 +33,9 @@ func NewUserService(database *gorm.DB, logger *logrus.Logger) UserService {
 	}
 }
 
-func (cfg *UserServiceConfig) Create(ctx context.Context, userInfo *gen.CreateUserRequest) (*dbm.User, error) {
+func (cfg *UserServiceConfig) Create(ctx context.Context, userInfo *gen.CreateUserMsg) (*dbm.User, error) {
 	userOperations := dbo.NewUserOperations(cfg.database)
-	userEntity := m.UserPayloadToEntity(userInfo)
+	userEntity := mapper.UserPayloadToEntity(userInfo)
 
 	existUser, _ := userOperations.GetOneBy("email", userEntity.Email)
 
@@ -52,9 +53,24 @@ func (cfg *UserServiceConfig) Create(ctx context.Context, userInfo *gen.CreateUs
 	return userEntity, nil
 }
 
-func (cfg *UserServiceConfig) Get(ctx context.Context, userInfo *gen.GetUserRequest) (*dbm.User, error) {
+func (cfg *UserServiceConfig) GetByEmail(ctx context.Context, userInfo *gen.GetUserByEmailMsg) (*dbm.User, error) {
 	userOperations := dbo.NewUserOperations(cfg.database)
 	existUser, err := userOperations.GetOneBy("email", userInfo.Email)
+
+	if err != nil {
+		return nil, dto.InternalError
+	}
+
+	if existUser == nil {
+		return nil, dto.NotFoundError
+	}
+
+	return existUser, nil
+}
+
+func (cfg *UserServiceConfig) GetById(ctx context.Context, userInfo *gen.GetUserByIdMsg) (*dbm.User, error) {
+	userOperations := dbo.NewUserOperations(cfg.database)
+	existUser, err := userOperations.GetOneBy("id", userInfo.Id)
 
 	if err != nil {
 		return nil, dto.InternalError

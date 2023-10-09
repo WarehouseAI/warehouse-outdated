@@ -5,8 +5,8 @@ import (
 	"errors"
 	"warehouse/gen"
 	"warehouse/src/internal/dto"
+	"warehouse/src/internal/utils/mapper"
 	svc "warehouse/src/services/user/internal/service/user"
-	m "warehouse/src/services/user/pkg/models"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,7 +23,7 @@ func NewUserPrivateAPI(svc svc.UserService) *UserPrivateAPI {
 	}
 }
 
-func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRequest) (*gen.CreateUserResponse, error) {
+func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
 	if req == nil || req.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, dto.BadRequestError.Error())
 	}
@@ -36,15 +36,15 @@ func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &gen.CreateUserResponse{Id: m.UserToProto(user).Id}, nil
+	return &gen.CreateUserResponse{Id: mapper.UserToProto(user).Id}, nil
 }
 
-func (api *UserPrivateAPI) GetUser(ctx context.Context, req *gen.GetUserRequest) (*gen.GetUserResponse, error) {
+func (api *UserPrivateAPI) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {
 	if req == nil || req.Email == "" {
 		return nil, status.Error(codes.InvalidArgument, dto.BadRequestError.Error())
 	}
 
-	user, err := api.svc.Get(ctx, req)
+	user, err := api.svc.GetByEmail(ctx, req)
 
 	if err != nil && errors.Is(err, dto.NotFoundError) {
 		return nil, status.Errorf(codes.NotFound, err.Error())
@@ -52,5 +52,21 @@ func (api *UserPrivateAPI) GetUser(ctx context.Context, req *gen.GetUserRequest)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &gen.GetUserResponse{User: m.UserToProto(user)}, nil
+	return mapper.UserToProto(user), nil
+}
+
+func (api *UserPrivateAPI) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
+	if req == nil || req.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, dto.BadRequestError.Error())
+	}
+
+	user, err := api.svc.GetById(ctx, req)
+
+	if err != nil && errors.Is(err, dto.NotFoundError) {
+		return nil, status.Errorf(codes.NotFound, err.Error())
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return mapper.UserToProto(user), nil
 }

@@ -26,7 +26,7 @@ func NewAuthAPI(svc svc.AuthService, sessionMiddleware *mv.SessionMiddleware) *A
 }
 
 func (api *APIInstance) RegisterHandler(c *fiber.Ctx) error {
-	var userInfo gen.CreateUserRequest
+	var userInfo gen.CreateUserMsg
 
 	if err := c.BodyParser(&userInfo); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
@@ -75,12 +75,17 @@ func (api *APIInstance) LoginHandler(c *fiber.Ctx) error {
 }
 
 func (api *APIInstance) LogoutHandler(c *fiber.Ctx) error {
-	sessionid := c.Cookies("sessionId")
+	sessionId := c.Cookies("sessionId")
 
-	if err := api.svc.Logout(context.Background(), sessionid); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: dto.InternalError.Error()})
+	if err := api.svc.Logout(context.Background(), sessionId); err != nil {
+		statusCode := fiber.StatusInternalServerError
+		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
 	}
 
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func (api *APIInstance) WhoAmIHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -93,6 +98,7 @@ func (api *APIInstance) Init() *fiber.App {
 	route.Post("/register", api.RegisterHandler)
 	route.Post("/login", api.LoginHandler)
 	route.Delete("/logout", api.sMw.Session, api.LogoutHandler)
+	route.Get("/whoami", api.sMw.Session, api.WhoAmIHandler)
 
 	return app
 }

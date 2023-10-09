@@ -7,7 +7,7 @@ import (
 	m "warehouse/src/services/auth/pkg/models"
 )
 
-func CreateUser(ctx context.Context, userInfo *gen.CreateUserRequest) (*m.RegisterResponse, error) {
+func CreateUser(ctx context.Context, userInfo *gen.CreateUserMsg) (*m.RegisterResponse, error) {
 	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
 
 	if err != nil {
@@ -23,10 +23,10 @@ func CreateUser(ctx context.Context, userInfo *gen.CreateUserRequest) (*m.Regist
 		return nil, err
 	}
 
-	return m.UserIdFromProto(resp), nil
+	return &m.RegisterResponse{ID: resp.Id}, nil
 }
 
-func GetUser(ctx context.Context, userInfo *gen.GetUserRequest) (*gen.GetUserResponse, error) {
+func GetUserByEmail(ctx context.Context, userInfo *gen.GetUserByEmailMsg) (*gen.User, error) {
 	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
 
 	if err != nil {
@@ -36,7 +36,26 @@ func GetUser(ctx context.Context, userInfo *gen.GetUserRequest) (*gen.GetUserRes
 	defer conn.Close()
 
 	client := gen.NewUserServiceClient(conn)
-	resp, err := client.GetUser(ctx, userInfo)
+	resp, err := client.GetUserByEmail(ctx, userInfo)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func GetUserById(ctx context.Context, userInfo *gen.GetUserByIdMsg) (*gen.User, error) {
+	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Close()
+
+	client := gen.NewUserServiceClient(conn)
+	resp, err := client.GetUserById(ctx, userInfo)
 
 	if err != nil {
 		return nil, err
