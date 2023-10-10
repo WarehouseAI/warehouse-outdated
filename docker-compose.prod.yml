@@ -5,23 +5,36 @@ networks:
     driver: bridge
 
 services:
-  # proxy:
-  #   image: nginx:1.24-alpine
-  #   container_name: proxy_server
-  #   restart: unless-stopped
-  #   tty: true
-  #   ports:
-  #     - 80:80
-  #     - 443:443
-  #   depends_on:
-  #     - auth
-  #     - user
-  #     - ai
-  #   volumes:
-  #     - ./:/var/www
-  #     - ./nginx/conf.d/:/etc/nginx/conf.d/
-  #   networks:
-  #     - svc-network
+  db:
+    image: postgres:14.1-alpine
+    container_name: data_db
+    networks:
+      - svc-network
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: '${DATA_DB_USER}'
+      POSTGRES_PASSWORD: '${DATA_DB_PASSWORD}'
+      POSTGRES_MULTIPLE_DATABASES: '${DATA_DB_USERS}, ${DATA_DB_AI}'
+    ports:
+      - '${DATA_DB_PORT}:${DATA_DB_PORT}'
+    volumes:
+      - ./multiple-psql-databases.sh:/docker-entrypoint-initdb.d/1-multiple-psql-databases.sh
+
+  session:
+    image: redis:6.2-alpine
+    container_name: session_db
+    restart: always
+    networks:
+      - svc-network
+    env_file:
+      - .env
+    environment:
+      REDIS_PASSWORD: '${SESSION_DB_PASSWORD}'
+    ports:
+      - '${SESSION_DB_PORT}:${SESSION_DB_PORT}'
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${SESSION_DB_PASSWORD}
 
   auth:
     restart: always
@@ -33,6 +46,7 @@ services:
       dockerfile: dockerfiles/auth.Dockerfile
     command: ./auth
     depends_on:
+      - session
       - user
     env_file: .env
     expose:
@@ -49,6 +63,8 @@ services:
       context: .
       dockerfile: dockerfiles/user.Dockerfile
     command: ./wait-4-postgres.sh data_db ./user
+    depends_on:
+      - db
     env_file: .env
     ports:
       - 8000:8000
@@ -63,6 +79,9 @@ services:
       context: .
       dockerfile: dockerfiles/ai.Dockerfile
     command: ./wait-4-postgres.sh data_db ./ai
+    depends_on:
+      - db
+      - session
     env_file: .env
     ports:
       - 8020:8020
