@@ -7,8 +7,18 @@ import (
 	m "warehouse/src/services/auth/pkg/models"
 )
 
-func CreateUser(ctx context.Context, userInfo *gen.CreateUserMsg) (*m.RegisterResponse, error) {
-	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
+type UserGrpcConnection struct {
+	grpcUrl string
+}
+
+func NewUserGrpcConnection(grpcUrl string) *UserGrpcConnection {
+	return &UserGrpcConnection{
+		grpcUrl: grpcUrl,
+	}
+}
+
+func (c UserGrpcConnection) Create(ctx context.Context, userInfo *gen.CreateUserMsg) (*m.RegisterResponse, error) {
+	conn, err := utils.ServiceConnection(ctx, c.grpcUrl)
 
 	if err != nil {
 		return nil, err
@@ -26,8 +36,8 @@ func CreateUser(ctx context.Context, userInfo *gen.CreateUserMsg) (*m.RegisterRe
 	return &m.RegisterResponse{ID: resp.Id}, nil
 }
 
-func GetUserByEmail(ctx context.Context, userInfo *gen.GetUserByEmailMsg) (*gen.User, error) {
-	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
+func (c UserGrpcConnection) GetByEmail(ctx context.Context, userInfo *gen.GetUserByEmailMsg) (*gen.User, error) {
+	conn, err := utils.ServiceConnection(ctx, c.grpcUrl)
 
 	if err != nil {
 		return nil, err
@@ -45,8 +55,8 @@ func GetUserByEmail(ctx context.Context, userInfo *gen.GetUserByEmailMsg) (*gen.
 	return resp, nil
 }
 
-func GetUserById(ctx context.Context, userInfo *gen.GetUserByIdMsg) (*gen.User, error) {
-	conn, err := utils.ServiceConnection(ctx, "user-service:8001")
+func (c UserGrpcConnection) GetById(ctx context.Context, userInfo *gen.GetUserByIdMsg) (*gen.User, error) {
+	conn, err := utils.ServiceConnection(ctx, c.grpcUrl)
 
 	if err != nil {
 		return nil, err

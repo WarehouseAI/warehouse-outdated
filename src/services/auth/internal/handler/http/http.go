@@ -1,9 +1,9 @@
 package http
 
 import (
-	"context"
 	"errors"
 	"warehouse/gen"
+	r "warehouse/src/internal/database/redisdb"
 	"warehouse/src/internal/dto"
 	mv "warehouse/src/internal/middleware"
 	u "warehouse/src/internal/utils"
@@ -11,28 +11,34 @@ import (
 	m "warehouse/src/services/auth/pkg/models"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 )
 
-type APIInstance struct {
-	svc svc.AuthService
-	sMw *mv.SessionMiddleware
+type ApiProvider struct {
+	sessionDatabase   *r.RedisDatabase
+	sessionMiddleware *mv.SessionMiddlewareProvider
+	authService       *svc.AuthServiceProvider
 }
 
-func NewAuthAPI(svc svc.AuthService, sessionMiddleware *mv.SessionMiddleware) *APIInstance {
-	return &APIInstance{
-		svc: svc,
-		sMw: sessionMiddleware,
+func NewAuthAPI(sessionDatabase *r.RedisDatabase, logger *logrus.Logger) *ApiProvider {
+	authService := svc.NewAuthService(sessionDatabase, logger)
+	sessionMiddleware := mv.NewSessionMiddleware(sessionDatabase, logger)
+
+	return &ApiProvider{
+		sessionDatabase:   sessionDatabase,
+		sessionMiddleware: sessionMiddleware,
+		authService:       authService,
 	}
 }
 
-func (api *APIInstance) RegisterHandler(c *fiber.Ctx) error {
+func (api *ApiProvider) RegisterHandler(c *fiber.Ctx) error {
 	var userInfo gen.CreateUserMsg
 
 	if err := c.BodyParser(&userInfo); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
-	userId, err := api.svc.Register(context.Background(), &userInfo)
+	userId, err := api.authService.Register(&userInfo)
 
 	if err != nil && errors.Is(err, dto.ExistError) {
 		return c.Status(fiber.StatusConflict).JSON(dto.ErrorResponse{Message: err.Error()})
@@ -45,14 +51,14 @@ func (api *APIInstance) RegisterHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(userId)
 }
 
-func (api *APIInstance) LoginHandler(c *fiber.Ctx) error {
+func (api *ApiProvider) LoginHandler(c *fiber.Ctx) error {
 	var loginData m.LoginRequest
 
 	if err := c.BodyParser(&loginData); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
-	session, err := api.svc.Login(context.Background(), &loginData)
+	session, err := api.authService.Login(&loginData)
 
 	if err != nil && errors.Is(err, dto.NotFoundError) {
 		return c.Status(fiber.StatusNotFound).JSON(dto.ErrorResponse{Message: dto.NotFoundError.Error()})
@@ -74,10 +80,10 @@ func (api *APIInstance) LoginHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-func (api *APIInstance) LogoutHandler(c *fiber.Ctx) error {
+func (api *ApiProvider) LogoutHandler(c *fiber.Ctx) error {
 	sessionId := c.Cookies("sessionId")
 
-	if err := api.svc.Logout(context.Background(), sessionId); err != nil {
+	if err := api.authService.Logout(sessionId); err != nil {
 		statusCode := fiber.StatusInternalServerError
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
 	}
@@ -85,20 +91,20 @@ func (api *APIInstance) LogoutHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-func (api *APIInstance) WhoAmIHandler(c *fiber.Ctx) error {
+func (api *ApiProvider) WhoAmIHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
 // INIT
-func (api *APIInstance) Init() *fiber.App {
+func (api *ApiProvider) Init() *fiber.App {
 	app := fiber.New()
 	app.Use(u.SetupCORS())
 	route := app.Group("/auth")
 
 	route.Post("/register", api.RegisterHandler)
 	route.Post("/login", api.LoginHandler)
-	route.Delete("/logout", api.sMw.Session, api.LogoutHandler)
-	route.Get("/whoami", api.sMw.Session, api.WhoAmIHandler)
+	route.Delete("/logout", api.sessionMiddleware.Session, api.LogoutHandler)
+	route.Get("/whoami", api.sessionMiddleware.Session, api.WhoAmIHandler)
 
 	return app
 }

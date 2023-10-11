@@ -16,11 +16,11 @@ import (
 
 type APIInstance struct {
 	svc svc.AIService
-	sMw *mv.SessionMiddleware
+	sMw *mv.SessionMiddlewareProvider
 	uMw *mv.UserMiddleware
 }
 
-func NewAiAPI(service svc.AIService, sessionMiddleware *mv.SessionMiddleware, userMiddleware *mv.UserMiddleware) *APIInstance {
+func NewAiAPI(service svc.AIService, sessionMiddleware *mv.SessionMiddlewareProvider, userMiddleware *mv.UserMiddleware) *APIInstance {
 	return &APIInstance{
 		svc: service,
 		sMw: sessionMiddleware,
