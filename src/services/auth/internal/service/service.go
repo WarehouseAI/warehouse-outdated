@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Пофиксить разные пакеты (m и gen и dbm)
 type AuthService interface {
 	Login(context.Context, *m.LoginRequest) (*dbm.Session, error)
 	Register(context.Context, *gen.CreateUserMsg) (*m.RegisterResponse, error)
