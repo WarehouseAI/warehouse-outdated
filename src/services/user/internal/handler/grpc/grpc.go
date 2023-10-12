@@ -6,7 +6,7 @@ import (
 	"warehouse/gen"
 	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
-	"warehouse/src/internal/utils/mapper"
+	"warehouse/src/internal/utils/grpcutils"
 	"warehouse/src/services/user/internal/service/create"
 	"warehouse/src/services/user/internal/service/get"
 
@@ -41,7 +41,7 @@ func (pvd *UserServiceProvider) CreateUser(ctx context.Context, req *gen.CreateU
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &gen.CreateUserResponse{Id: mapper.UserToProto(user).Id}, nil
+	return &gen.CreateUserResponse{Id: grpcutils.UserToProto(user).Id}, nil
 }
 
 func (pvd *UserServiceProvider) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {
@@ -57,7 +57,7 @@ func (pvd *UserServiceProvider) GetUserByEmail(ctx context.Context, req *gen.Get
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return mapper.UserToProto(user), nil
+	return grpcutils.UserToProto(user), nil
 }
 
 func (pvd *UserServiceProvider) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
@@ -73,5 +73,5 @@ func (pvd *UserServiceProvider) GetUserById(ctx context.Context, req *gen.GetUse
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return mapper.UserToProto(user), nil
+	return grpcutils.UserToProto(user), nil
 }

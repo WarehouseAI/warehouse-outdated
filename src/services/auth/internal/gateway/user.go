@@ -4,7 +4,7 @@ import (
 	"context"
 	"warehouse/gen"
 	utils "warehouse/src/internal/utils/grpcutils"
-	m "warehouse/src/services/auth/pkg/models"
+	"warehouse/src/services/auth/internal/service/register"
 )
 
 type UserGrpcConnection struct {
@@ -17,7 +17,7 @@ func NewUserGrpcConnection(grpcUrl string) *UserGrpcConnection {
 	}
 }
 
-func (c UserGrpcConnection) Create(ctx context.Context, userInfo *gen.CreateUserMsg) (*m.RegisterResponse, error) {
+func (c UserGrpcConnection) Create(ctx context.Context, userInfo *gen.CreateUserMsg) (*register.Response, error) {
 	conn, err := utils.ServiceConnection(ctx, c.grpcUrl)
 
 	if err != nil {
@@ -33,7 +33,7 @@ func (c UserGrpcConnection) Create(ctx context.Context, userInfo *gen.CreateUser
 		return nil, err
 	}
 
-	return &m.RegisterResponse{ID: resp.Id}, nil
+	return &register.Response{ID: resp.Id}, nil
 }
 
 func (c UserGrpcConnection) GetByEmail(ctx context.Context, userInfo *gen.GetUserByEmailMsg) (*gen.User, error) {

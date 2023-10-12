@@ -7,12 +7,8 @@ import (
 	"gorm.io/datatypes"
 )
 
-type AIs interface {
-	AI | Command
-}
-
 type All interface {
-	AIs | User
+	AI | Command | User
 }
 
 type AuthScheme string

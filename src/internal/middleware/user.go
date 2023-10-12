@@ -3,50 +3,39 @@ package middleware
 import (
 	"fmt"
 	"time"
-	dbo "warehouse/src/internal/db/operations"
+	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type UserProvider interface {
-	GetOneBy
+	GetOneBy(key string, value interface{}) (*pg.User, error)
 }
 
-type UserMiddlewareProvider struct {
-	database *gorm.DB
-	logger   *logrus.Logger
-}
+func User(userProvider UserProvider, logger *logrus.Logger) Middleware {
+	return func(c *fiber.Ctx) error {
+		userId := c.Locals("userId")
+		user, err := userProvider.GetOneBy("id", userId)
 
-func NewUserMiddleware(database *gorm.DB, logger *logrus.Logger) *UserMiddlewareProvider {
-	return &UserMiddlewareProvider{
-		database: database,
-		logger:   logger,
-	}
-}
+		fmt.Println("user, err")
+		fmt.Println(user, err)
 
-func (cfg *UserMiddlewareProvider) User(c *fiber.Ctx) error {
-	userOperations := dbo.NewUserOperations(cfg.database)
-	userId := c.Locals("userId")
-	user, err := userOperations.GetOneBy("id", userId)
+		if err != nil {
+			statusCode := fiber.StatusInternalServerError
+			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("User middleware")
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
+		}
 
-	fmt.Println("user, err")
-	fmt.Println(user, err)
+		if user == nil {
+			statusCode := fiber.StatusNotFound
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.NotFoundError.Error()})
+		}
 
-	if err != nil {
-		statusCode := fiber.StatusInternalServerError
-		cfg.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("User middleware")
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
+		c.Locals("user", user)
+
+		return c.Next()
 	}
 
-	if user == nil {
-		statusCode := fiber.StatusNotFound
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.NotFoundError.Error()})
-	}
-
-	c.Locals("user", user)
-
-	return c.Next()
 }

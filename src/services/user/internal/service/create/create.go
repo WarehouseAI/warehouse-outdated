@@ -6,7 +6,7 @@ import (
 	"warehouse/gen"
 	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
-	"warehouse/src/internal/utils/mapper"
+	"warehouse/src/internal/utils/grpcutils"
 
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +17,7 @@ type UserProvider interface {
 }
 
 func Create(userInfo *gen.CreateUserMsg, userProvider UserProvider, logger *logrus.Logger, ctx context.Context) (*pg.User, error) {
-	userEntity := mapper.UserPayloadToEntity(userInfo)
+	userEntity := grpcutils.UserPayloadToEntity(userInfo)
 
 	existUser, _ := userProvider.GetOneBy("email", userEntity.Email)
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 	"warehouse/src/internal/database/redisdb"
+	mv "warehouse/src/internal/middleware"
 	"warehouse/src/services/auth/internal/handler/http"
 
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,6 @@ import (
 
 func main() {
 	// -----------SETUP LOGGER-----------
-	fmt.Println("Set up the logger...")
 	log := logrus.New()
 
 	file, err := os.OpenFile("auth.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -26,13 +26,12 @@ func main() {
 	fmt.Println("✅Logger successfully set up.")
 
 	// -----------CONNECT TO DATABASE-----------
-	fmt.Println("Connect to the Session database...")
 	session := redisdb.NewRedisDatabase(os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"), os.Getenv("SESSION_DB_PASSWORD"))
 	fmt.Println("✅Session database successfully connected.")
 
 	// -----------START SERVER-----------
-	fmt.Println("Start the Auth Microservice...")
-	api := http.NewAuthAPI(session, log)
+	sessionMiddleware := mv.Session(session, log)
+	api := http.NewAuthAPI(session, sessionMiddleware, log)
 
 	app := api.Init()
 
@@ -42,5 +41,5 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("✅Auth Microservice successfully started.")
+	fmt.Println("✅Microservice started.")
 }

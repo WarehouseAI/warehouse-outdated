@@ -3,7 +3,7 @@ package http
 import (
 	"context"
 	pg "warehouse/src/internal/database/postgresdb"
-	u "warehouse/src/internal/utils"
+	"warehouse/src/internal/utils/httputils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ func (pvd *UserServiceProvider) CreateHandler(c *fiber.Ctx) error {
 // INIT
 func (pvd *UserServiceProvider) Init() *fiber.App {
 	app := fiber.New()
-	app.Use(u.SetupCORS())
+	app.Use(httputils.SetupCORS())
 	route := app.Group("/user")
 
 	route.Post("/create", pvd.CreateHandler)

@@ -7,12 +7,11 @@ import (
 	r "warehouse/src/internal/database/redisdb"
 	"warehouse/src/internal/dto"
 	mv "warehouse/src/internal/middleware"
-	u "warehouse/src/internal/utils"
+	"warehouse/src/internal/utils/httputils"
 	gw "warehouse/src/services/auth/internal/gateway"
 	"warehouse/src/services/auth/internal/service/login"
 	"warehouse/src/services/auth/internal/service/logout"
 	"warehouse/src/services/auth/internal/service/register"
-	m "warehouse/src/services/auth/pkg/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -20,16 +19,15 @@ import (
 
 type AuthServiceProvider struct {
 	sessionDatabase   *r.RedisDatabase
-	sessionMiddleware *mv.SessionMiddlewareProvider
+	sessionMiddleware mv.Middleware
 	userGateway       *gw.UserGrpcConnection
 	logger            *logrus.Logger
 	ctx               context.Context
 }
 
-func NewAuthAPI(sessionDatabase *r.RedisDatabase, logger *logrus.Logger) *AuthServiceProvider {
+func NewAuthAPI(sessionDatabase *r.RedisDatabase, sessionMiddleware mv.Middleware, logger *logrus.Logger) *AuthServiceProvider {
 	ctx := context.Background()
 	userGateway := gw.NewUserGrpcConnection("user-service:8001")
-	sessionMiddleware := mv.NewSessionMiddleware(sessionDatabase, logger)
 
 	return &AuthServiceProvider{
 		userGateway:       userGateway,
@@ -61,13 +59,13 @@ func (pvd *AuthServiceProvider) RegisterHandler(c *fiber.Ctx) error {
 }
 
 func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
-	var loginData m.LoginRequest
+	var creds login.Request
 
-	if err := c.BodyParser(&loginData); err != nil {
+	if err := c.BodyParser(&creds); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
-	session, err := login.Login(&loginData, pvd.userGateway, pvd.sessionDatabase, pvd.logger, pvd.ctx)
+	session, err := login.Login(&creds, pvd.userGateway, pvd.sessionDatabase, pvd.logger, pvd.ctx)
 
 	if err != nil && errors.Is(err, dto.NotFoundError) {
 		return c.Status(fiber.StatusNotFound).JSON(dto.ErrorResponse{Message: dto.NotFoundError.Error()})
@@ -105,15 +103,15 @@ func (api *AuthServiceProvider) WhoAmIHandler(c *fiber.Ctx) error {
 }
 
 // INIT
-func (api *AuthServiceProvider) Init() *fiber.App {
+func (pvd *AuthServiceProvider) Init() *fiber.App {
 	app := fiber.New()
-	app.Use(u.SetupCORS())
+	app.Use(httputils.SetupCORS())
 	route := app.Group("/auth")
 
-	route.Post("/register", api.RegisterHandler)
-	route.Post("/login", api.LoginHandler)
-	route.Delete("/logout", api.sessionMiddleware.Session, api.LogoutHandler)
-	route.Get("/whoami", api.sessionMiddleware.Session, api.WhoAmIHandler)
+	route.Post("/register", pvd.RegisterHandler)
+	route.Post("/login", pvd.LoginHandler)
+	route.Delete("/logout", pvd.sessionMiddleware, pvd.LogoutHandler)
+	route.Get("/whoami", pvd.sessionMiddleware, pvd.WhoAmIHandler)
 
 	return app
 }

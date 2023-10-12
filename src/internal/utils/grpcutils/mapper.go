@@ -1,4 +1,4 @@
-package mapper
+package grpcutils
 
 import (
 	"encoding/json"

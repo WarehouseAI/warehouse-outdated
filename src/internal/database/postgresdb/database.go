@@ -12,13 +12,13 @@ type PostgresDatabase[T All] struct {
 	db *gorm.DB
 }
 
-func NewPostgresDatabase[T All](host string, user string, password string, dbName string, port string) *PostgresDatabase[T] {
+func NewPostgresDatabase[T All](host string, user string, password string, dbName string, port string) (*PostgresDatabase[T], error) {
 	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, user, password, dbName, port)
 
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
 	if err != nil {
 		fmt.Println("❌Failed to connect to the AI database.")
-		panic(err)
+		return nil, err
 	}
 
 	var structure T
@@ -27,7 +27,7 @@ func NewPostgresDatabase[T All](host string, user string, password string, dbNam
 
 	return &PostgresDatabase[T]{
 		db: db,
-	}
+	}, nil
 }
 
 func (cfg *PostgresDatabase[T]) Add(item *T) error {

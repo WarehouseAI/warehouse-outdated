@@ -6,7 +6,6 @@ import (
 	"time"
 	"warehouse/gen"
 	"warehouse/src/internal/dto"
-	m "warehouse/src/services/auth/pkg/models"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -14,11 +13,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type UserCreator interface {
-	Create(ctx context.Context, userInfo *gen.CreateUserMsg) (*m.RegisterResponse, error)
+type Response struct {
+	ID string `json:"id"`
 }
 
-func Register(userInfo *gen.CreateUserMsg, userCreator UserCreator, logger *logrus.Logger, ctx context.Context) (*m.RegisterResponse, error) {
+type UserCreator interface {
+	Create(ctx context.Context, userInfo *gen.CreateUserMsg) (*Response, error)
+}
+
+func Register(userInfo *gen.CreateUserMsg, userCreator UserCreator, logger *logrus.Logger, ctx context.Context) (*Response, error) {
 	if len(userInfo.Password) > 72 {
 		return nil, errors.New("Password is too long")
 	}

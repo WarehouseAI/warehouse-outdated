@@ -10,59 +10,52 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Middleware func(c *fiber.Ctx) error
+
 type SessionProvider interface {
 	Get(ctx context.Context, sessionId string) (*r.Session, error)
 	Update(ctx context.Context, sessionId string) (*r.Session, error)
 }
 
-type SessionMiddlewareProvider struct {
-	sessionProvider SessionProvider
-	logger          *logrus.Logger
-}
+func Session(sessionProvider SessionProvider, logger *logrus.Logger) Middleware {
+	return func(c *fiber.Ctx) error {
+		sessionId := c.Cookies("sessionId")
 
-func NewSessionMiddleware(sessionProvider SessionProvider, logger *logrus.Logger) *SessionMiddlewareProvider {
-	return &SessionMiddlewareProvider{
-		sessionProvider: sessionProvider,
-		logger:          logger,
-	}
-}
+		if sessionId == "" {
+			statusCode := fiber.StatusUnauthorized
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session is invalid"})
+		}
 
-func (pvd *SessionMiddlewareProvider) Session(c *fiber.Ctx) error {
-	sessionId := c.Cookies("sessionId")
+		session, err := sessionProvider.Get(context.Background(), sessionId)
 
-	if sessionId == "" {
-		statusCode := fiber.StatusUnauthorized
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session is invalid"})
-	}
+		if err != nil {
+			statusCode := fiber.StatusInternalServerError
+			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Session middleware")
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
+		}
 
-	session, err := pvd.sessionProvider.Get(context.Background(), sessionId)
+		if session == nil {
+			c.ClearCookie("sessionId")
 
-	if err != nil {
-		statusCode := fiber.StatusInternalServerError
-		pvd.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Session middleware")
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
-	}
+			statusCode := fiber.StatusForbidden
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session has expired"})
+		}
 
-	if session == nil {
-		c.ClearCookie("sessionId")
+		newSession, err := sessionProvider.Update(context.Background(), sessionId)
 
-		statusCode := fiber.StatusForbidden
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session has expired"})
-	}
+		if err != nil {
+			statusCode := fiber.StatusInternalServerError
+			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Session middleware")
+			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
+		}
 
-	newSession, err := pvd.sessionProvider.Update(context.Background(), sessionId)
+		c.Locals("userId", newSession.Payload.UserId)
+		c.Cookie(&fiber.Cookie{
+			Name:  "sessionId",
+			Value: newSession.ID,
+		})
 
-	if err != nil {
-		statusCode := fiber.StatusInternalServerError
-		pvd.logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Session middleware")
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
+		return c.Next()
 	}
 
-	c.Locals("userId", newSession.Payload.UserId)
-	c.Cookie(&fiber.Cookie{
-		Name:  "sessionId",
-		Value: newSession.ID,
-	})
-
-	return c.Next()
 }
