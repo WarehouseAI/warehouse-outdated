@@ -7,16 +7,12 @@ import (
 	"time"
 	"warehouse/gen"
 
-	dbm "warehouse/src/internal/db/models"
+	pg "warehouse/src/internal/database/postgresdb"
 	pvtAPI "warehouse/src/services/user/internal/handler/grpc"
 	pubAPI "warehouse/src/services/user/internal/handler/http"
-	svc "warehouse/src/services/user/internal/service/user"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -36,24 +32,14 @@ func main() {
 
 	// -----------CONNECT TO DATABASE-------------
 	fmt.Println("Connect to the User database...")
-	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
-	pgUserClient, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
-	if err != nil {
-		fmt.Println(DSN)
-		fmt.Println("❌Failed to set up the database.")
-		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("Database")
-		panic(err)
-	}
-	pgUserClient.AutoMigrate(&dbm.User{})
-
+	userDatabase := pg.NewPostgresDatabase[pg.User](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
 	fmt.Println("✅User database successfully connected.")
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the User Microservice...")
 
-	svc := svc.NewUserService(pgUserClient, log)
-	pvtApi := pvtAPI.NewUserPrivateAPI(svc)
-	pubApi := pubAPI.NewUserPublicAPI(svc)
+	pvtApi := pvtAPI.NewUserPrivateAPI(userDatabase, log)
+	pubApi := pubAPI.NewUserPublicAPI(userDatabase, log)
 
 	publicApp := pubApi.Init()
 	privateApp := grpc.NewServer()

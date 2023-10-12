@@ -30,8 +30,10 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	// -----------CONNECT TO DATABASE-----------
-	pgAiDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
+	postgres.
+
+		// -----------CONNECT TO DATABASE-----------
+		pgAiDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
 	pgUserDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
 
 	fmt.Println("Connect to the AI database...")
@@ -52,10 +54,6 @@ func main() {
 		panic(err)
 	}
 
-	pgAiClient.Exec("CREATE TYPE authscheme AS ENUM ('Bearer', 'Basic','ApiKey');")
-	pgAiClient.Exec("CREATE TYPE payloadtype AS ENUM ('JSON', 'FormData');")
-	pgAiClient.Exec("CREATE TYPE iotype AS ENUM ('Image', 'Text');")
-	pgAiClient.Exec("CREATE TYPE requesttype AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');")
 	pgAiClient.AutoMigrate(&dbm.AI{}, &dbm.Command{})
 	fmt.Println("✅Databases successfully connected.")
 

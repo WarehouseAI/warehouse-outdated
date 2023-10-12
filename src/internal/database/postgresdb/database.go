@@ -8,15 +8,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type All interface {
-	AI | Command | User
-}
-
 type PostgresDatabase[T All] struct {
 	db *gorm.DB
 }
 
-func NewAIOperations[T All](host string, user string, password string, dbName string, port string) *PostgresDatabase[T] {
+func NewPostgresDatabase[T All](host string, user string, password string, dbName string, port string) *PostgresDatabase[T] {
 	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, user, password, dbName, port)
 
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
@@ -25,12 +21,16 @@ func NewAIOperations[T All](host string, user string, password string, dbName st
 		panic(err)
 	}
 
+	var structure T
+
+	db.AutoMigrate(&structure)
+
 	return &PostgresDatabase[T]{
 		db: db,
 	}
 }
 
-func (cfg *PostgresDatabase[T]) Add(item T) error {
+func (cfg *PostgresDatabase[T]) Add(item *T) error {
 	result := cfg.db.Create(item)
 
 	if result.Error != nil {

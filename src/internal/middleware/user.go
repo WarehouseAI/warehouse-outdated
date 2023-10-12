@@ -11,19 +11,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserMiddleware struct {
+type UserProvider interface {
+	GetOneBy
+}
+
+type UserMiddlewareProvider struct {
 	database *gorm.DB
 	logger   *logrus.Logger
 }
 
-func NewUserMiddleware(database *gorm.DB, logger *logrus.Logger) *UserMiddleware {
-	return &UserMiddleware{
+func NewUserMiddleware(database *gorm.DB, logger *logrus.Logger) *UserMiddlewareProvider {
+	return &UserMiddlewareProvider{
 		database: database,
 		logger:   logger,
 	}
 }
 
-func (cfg *UserMiddleware) User(c *fiber.Ctx) error {
+func (cfg *UserMiddlewareProvider) User(c *fiber.Ctx) error {
 	userOperations := dbo.NewUserOperations(cfg.database)
 	userId := c.Locals("userId")
 	user, err := userOperations.GetOneBy("id", userId)

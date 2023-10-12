@@ -10,11 +10,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type SessionDatabase struct {
+type RedisDatabase struct {
 	rClient *redis.Client
 }
 
-func NewRedisDatabase(host string, port string, password string) *SessionDatabase {
+func NewRedisDatabase(host string, port string, password string) *RedisDatabase {
 	DSN := fmt.Sprintf("%s:%s", host, port)
 
 	rClient := redis.NewClient(&redis.Options{
@@ -24,12 +24,12 @@ func NewRedisDatabase(host string, port string, password string) *SessionDatabas
 	})
 	defer rClient.Close()
 
-	return &SessionDatabase{
+	return &RedisDatabase{
 		rClient: rClient,
 	}
 }
 
-func (cfg *SessionDatabase) Create(ctx context.Context, userId string) (*Session, error) {
+func (cfg *RedisDatabase) Create(ctx context.Context, userId string) (*Session, error) {
 	//TODO: Поменять потом на 3 дня
 	TTL := 180 * time.Second
 	sessionId := uuid.Must(uuid.NewV4()).String()
@@ -52,7 +52,7 @@ func (cfg *SessionDatabase) Create(ctx context.Context, userId string) (*Session
 	return &Session{ID: sessionId, Payload: sessionPayload, TTL: TTL}, nil
 }
 
-func (cfg *SessionDatabase) Get(ctx context.Context, sessionId string) (*Session, error) {
+func (cfg *RedisDatabase) Get(ctx context.Context, sessionId string) (*Session, error) {
 	var sessionPayload SessionPayload
 
 	exist, err := cfg.rClient.Exists(ctx, sessionId).Result()
@@ -82,7 +82,7 @@ func (cfg *SessionDatabase) Get(ctx context.Context, sessionId string) (*Session
 	return &Session{ID: sessionId, Payload: sessionPayload, TTL: TTLInfo}, nil
 }
 
-func (cfg *SessionDatabase) Delete(ctx context.Context, sessionId string) error {
+func (cfg *RedisDatabase) Delete(ctx context.Context, sessionId string) error {
 	if err := cfg.rClient.Del(ctx, sessionId).Err(); err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (cfg *SessionDatabase) Delete(ctx context.Context, sessionId string) error 
 	return nil
 }
 
-func (cfg *SessionDatabase) Update(ctx context.Context, sessionId string) (*Session, error) {
+func (cfg *RedisDatabase) Update(ctx context.Context, sessionId string) (*Session, error) {
 	session, err := cfg.Get(ctx, sessionId)
 
 	if err != nil {
