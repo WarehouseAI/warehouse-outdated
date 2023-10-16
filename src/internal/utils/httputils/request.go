@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	dbm "warehouse/src/internal/db/models"
+	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
 )
 
@@ -53,8 +53,8 @@ func MakeHTTPRequest(fullUrl string, httpMethod string, headers map[string]strin
 	return res.Body, nil
 }
 
-func DecodeHTTPResponse(response io.ReadCloser, outputType dbm.IOType) (*bytes.Buffer, error) {
-	if outputType == dbm.Image {
+func DecodeHTTPResponse(response io.ReadCloser, outputType pg.IOType) (*bytes.Buffer, error) {
+	if outputType == pg.Image {
 		var buffer bytes.Buffer
 		img, _, err := image.Decode(response)
 

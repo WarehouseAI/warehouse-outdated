@@ -1,4 +1,4 @@
-package models
+package postgresdb
 
 import (
 	"time"
@@ -6,6 +6,10 @@ import (
 	"github.com/gofrs/uuid"
 	"gorm.io/datatypes"
 )
+
+type All interface {
+	AI | Command | User
+}
 
 type AuthScheme string
 type RequestScheme string
@@ -40,10 +44,6 @@ const (
 )
 
 type (
-	All interface {
-		AI | Command
-	}
-
 	AI struct {
 		ID         uuid.UUID  `json:"id" gorm:"type:uuid;primarykey"`
 		Owner      uuid.UUID  `json:"owner" gorm:"type:uuid"`
@@ -67,5 +67,17 @@ type (
 		URL           string            `json:"url" gorm:"type:string;unique;not null"`
 		CreatedAt     time.Time         `json:"created_at" gorm:"type:time"`
 		UpdateAt      time.Time         `json:"updated_at" gorm:"type:time"`
+	}
+
+	User struct {
+		ID        uuid.UUID `json:"id" gorm:"type:uuid;primarykey"`
+		Username  string    `json:"name" gorm:"type:string;unique"`
+		Picture   string    `json:"picture" gorm:"type:string"`
+		Password  string    `json:"-" gorm:"type:string;not null"`
+		Email     string    `json:"email" gorm:"type:string;not null;unique"`
+		ViaGoogle bool      `json:"via_google" gorm:"default:false;not null"`
+		OwnedAi   []AI      `json:"owned_ai" gorm:"foreignKey:Owner"`
+		CreatedAt time.Time `json:"created_at" gorm:"type:time"`
+		UpdateAt  time.Time `json:"updated_at" gorm:"type:time"`
 	}
 )

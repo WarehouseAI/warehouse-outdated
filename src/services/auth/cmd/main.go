@@ -4,17 +4,15 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"warehouse/src/internal/database/redisdb"
 	mv "warehouse/src/internal/middleware"
 	"warehouse/src/services/auth/internal/handler/http"
-	svc "warehouse/src/services/auth/internal/service"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	// -----------SETUP LOGGER-----------
-	fmt.Println("Set up the logger...")
 	log := logrus.New()
 
 	file, err := os.OpenFile("auth.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -27,31 +25,13 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	// // -----------SETUP .ENV-----------
-	// fmt.Println("Set up the enviroment variables...")
-	// if err := godotenv.Load(); err != nil {
-	// 	fmt.Println("❌Failed to set up the enviroment variables.")
-	// 	log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("Env")
-	// 	panic(err)
-	// }
-	// fmt.Println("✅Environment successfully set up.")
-
 	// -----------CONNECT TO DATABASE-----------
-	fmt.Println("Connect to the Session database...")
-	DSN := fmt.Sprintf("%s:%s", os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"))
-	rClient := redis.NewClient(&redis.Options{
-		Addr:     DSN,
-		Password: os.Getenv("SESSION_DB_PASSWORD"),
-		DB:       0,
-	})
+	session := redisdb.NewRedisDatabase(os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"), os.Getenv("SESSION_DB_PASSWORD"))
 	fmt.Println("✅Session database successfully connected.")
-	defer rClient.Close()
 
 	// -----------START SERVER-----------
-	fmt.Println("Start the Auth Microservice...")
-	svc := svc.NewAuthService(rClient, log)
-	sMw := mv.NewSessionMiddleware(rClient, log)
-	api := http.NewAuthAPI(svc, sMw)
+	sessionMiddleware := mv.Session(session, log)
+	api := http.NewAuthAPI(session, sessionMiddleware, log)
 
 	app := api.Init()
 
@@ -61,5 +41,5 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("✅Auth Microservice successfully started.")
+	fmt.Println("✅Microservice started.")
 }

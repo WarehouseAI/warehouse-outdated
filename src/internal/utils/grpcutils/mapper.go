@@ -1,16 +1,16 @@
-package mapper
+package grpcutils
 
 import (
 	"encoding/json"
 	"time"
 	"warehouse/gen"
-	dbm "warehouse/src/internal/db/models"
+	pg "warehouse/src/internal/database/postgresdb"
 
 	"github.com/gofrs/uuid"
 )
 
-func UserPayloadToEntity(m *gen.CreateUserMsg) *dbm.User {
-	return &dbm.User{
+func UserPayloadToEntity(m *gen.CreateUserMsg) *pg.User {
+	return &pg.User{
 		ID:        uuid.Must(uuid.NewV4()),
 		Username:  m.Username,
 		Password:  m.Password,
@@ -22,7 +22,7 @@ func UserPayloadToEntity(m *gen.CreateUserMsg) *dbm.User {
 	}
 }
 
-func UserToProto(m *dbm.User) *gen.User {
+func UserToProto(m *pg.User) *gen.User {
 	var ownedAi []*gen.AI
 
 	for _, s := range m.OwnedAi {
@@ -42,16 +42,16 @@ func UserToProto(m *dbm.User) *gen.User {
 	}
 }
 
-func ProtoToUser(m *gen.User) *dbm.User {
+func ProtoToUser(m *gen.User) *pg.User {
 	createdAt, _ := time.Parse(time.RFC3339, m.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339, m.UpdatedAt)
-	var ownedAi []dbm.AI
+	var ownedAi []pg.AI
 
 	for _, s := range m.OwnedAi {
 		ownedAi = append(ownedAi, ProtoToAi(s))
 	}
 
-	return &dbm.User{
+	return &pg.User{
 		ID:        uuid.FromStringOrNil(m.Id),
 		Username:  m.Username,
 		Password:  m.Password,
@@ -64,7 +64,7 @@ func ProtoToUser(m *gen.User) *dbm.User {
 	}
 }
 
-func AiToProto(m dbm.AI) *gen.AI {
+func AiToProto(m pg.AI) *gen.AI {
 	var commands []*gen.Command
 
 	for _, s := range m.Commands {
@@ -83,28 +83,28 @@ func AiToProto(m dbm.AI) *gen.AI {
 	}
 }
 
-func ProtoToAi(m *gen.AI) dbm.AI {
+func ProtoToAi(m *gen.AI) pg.AI {
 	createdAt, _ := time.Parse(time.RFC3339, m.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339, m.UpdatedAt)
-	var commands []dbm.Command
+	var commands []pg.Command
 
 	for _, s := range m.Commands {
 		commands = append(commands, ProtoToCommand(s))
 	}
 
-	return dbm.AI{
+	return pg.AI{
 		ID:         uuid.FromStringOrNil(m.Id),
 		Owner:      uuid.FromStringOrNil(m.Owner),
 		Name:       m.Name,
 		Commands:   commands,
 		ApiKey:     m.ApiKey,
-		AuthScheme: dbm.AuthScheme(m.AuthScheme),
+		AuthScheme: pg.AuthScheme(m.AuthScheme),
 		CreatedAt:  createdAt,
 		UpdateAt:   updatedAt,
 	}
 }
 
-func CommandToProto(m dbm.Command) *gen.Command {
+func CommandToProto(m pg.Command) *gen.Command {
 	jsonObject, _ := m.Payload.MarshalJSON()
 
 	return &gen.Command{
@@ -122,22 +122,22 @@ func CommandToProto(m dbm.Command) *gen.Command {
 	}
 }
 
-func ProtoToCommand(m *gen.Command) dbm.Command {
+func ProtoToCommand(m *gen.Command) pg.Command {
 	createdAt, _ := time.Parse(time.RFC3339, m.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339, m.UpdatedAt)
 	var jsonObject map[string]interface{}
 
 	json.Unmarshal([]byte(m.Payload), &jsonObject)
 
-	return dbm.Command{
+	return pg.Command{
 		ID:            uuid.FromStringOrNil(m.Id),
 		AI:            uuid.FromStringOrNil(m.Ai),
 		Name:          m.Name,
 		Payload:       jsonObject,
-		PayloadType:   dbm.PayloadType(m.PayloadType),
-		RequestScheme: dbm.RequestScheme(m.RequestScheme),
-		InputType:     dbm.IOType(m.InputType),
-		OutputType:    dbm.IOType(m.OutputType),
+		PayloadType:   pg.PayloadType(m.PayloadType),
+		RequestScheme: pg.RequestScheme(m.RequestScheme),
+		InputType:     pg.IOType(m.InputType),
+		OutputType:    pg.IOType(m.OutputType),
 		URL:           m.Url,
 		CreatedAt:     createdAt,
 		UpdateAt:      updatedAt,

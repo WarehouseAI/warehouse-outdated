@@ -4,90 +4,93 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	dbm "warehouse/src/internal/db/models"
+	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
 	mv "warehouse/src/internal/middleware"
-	u "warehouse/src/internal/utils"
-	svc "warehouse/src/services/ai/internal/service"
-	m "warehouse/src/services/ai/pkg/models"
+	"warehouse/src/internal/utils/httputils"
+	aiCreate "warehouse/src/services/ai/internal/service/ai/create"
+	commandCreate "warehouse/src/services/ai/internal/service/command/create"
+	"warehouse/src/services/ai/internal/service/command/execute"
+	"warehouse/src/services/ai/internal/service/command/get"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofrs/uuid"
+	"github.com/sirupsen/logrus"
 )
 
-type APIInstance struct {
-	svc svc.AIService
-	sMw *mv.SessionMiddleware
-	uMw *mv.UserMiddleware
+type AIServiceProvider struct {
+	aiDatabase        *pg.PostgresDatabase[pg.AI]
+	commandDatabase   *pg.PostgresDatabase[pg.Command]
+	userMiddleware    mv.Middleware
+	sessionMiddleware mv.Middleware
+	ctx               context.Context
+	logger            *logrus.Logger
 }
 
-func NewAiAPI(service svc.AIService, sessionMiddleware *mv.SessionMiddleware, userMiddleware *mv.UserMiddleware) *APIInstance {
-	return &APIInstance{
-		svc: service,
-		sMw: sessionMiddleware,
-		uMw: userMiddleware,
+func NewAiAPI(sessionMiddleware mv.Middleware, userMiddleware mv.Middleware, aiDatabase *pg.PostgresDatabase[pg.AI], commandDatabase *pg.PostgresDatabase[pg.Command], logger *logrus.Logger) *AIServiceProvider {
+	ctx := context.Background()
+
+	return &AIServiceProvider{
+		aiDatabase:        aiDatabase,
+		commandDatabase:   commandDatabase,
+		userMiddleware:    userMiddleware,
+		sessionMiddleware: sessionMiddleware,
+		ctx:               ctx,
+		logger:            logger,
 	}
 }
 
-func (api *APIInstance) CreateHandler(c *fiber.Ctx) error {
-	user := c.Locals("user").(*dbm.User)
-	var aiInfo m.CreateAIRequest
-
-	var ai m.CreateAIResponse
+func (pvd *AIServiceProvider) CreateWithoutKeyHandler(c *fiber.Ctx) error {
+	user := c.Locals("user").(*pg.User)
+	var aiInfo aiCreate.RequestWithoutKey
 
 	if err := c.BodyParser(&aiInfo); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
-	if aiInfo.AuthKey == "" {
-		apiInfo, err := api.svc.CreateWithGeneratedKey(context.Background(), &aiInfo, user)
+	ai, err := aiCreate.CreateWithGeneratedKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
 
-		if err != nil && errors.Is(err, dto.InternalError) {
-			return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
-		}
+	if err != nil && errors.Is(err, dto.InternalError) {
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+	}
 
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
-		}
-
-		ai = *apiInfo
-	} else {
-		apiInfo, err := api.svc.CreateWithOwnKey(context.Background(), &aiInfo, user)
-
-		if err != nil && errors.Is(err, dto.InternalError) {
-			return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
-		}
-
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
-		}
-
-		ai = *apiInfo
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(ai)
 }
 
-func (api *APIInstance) AddCommandHandler(c *fiber.Ctx) error {
-	var commandInfo m.AddCommandRequest
+func (pvd *AIServiceProvider) CreateWithKeyHandler(c *fiber.Ctx) error {
+	user := c.Locals("user").(*pg.User)
+	var aiInfo aiCreate.RequestWithKey
 
-	if err := c.BodyParser(&commandInfo); err != nil {
+	if err := c.BodyParser(&aiInfo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+	}
+
+	ai, err := aiCreate.CreateWithOwnKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
+
+	if err != nil && errors.Is(err, dto.InternalError) {
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+	}
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(ai)
+}
+
+func (pvd *AIServiceProvider) AddCommandHandler(c *fiber.Ctx) error {
+	var commandCreds commandCreate.Request
+
+	if err := c.BodyParser(&commandCreds); err != nil {
 		fmt.Println(err)
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
-	existCommand, err := api.svc.GetCommand(context.Background(), commandInfo.AiID.String(), commandInfo.Name)
-
-	if existCommand != nil {
-		statusCode := fiber.StatusConflict
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.ExistError.Error()})
-	}
-
-	if err != nil {
-		statusCode := fiber.StatusInternalServerError
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
-	}
-
-	if err := api.svc.AddCommand(context.Background(), &commandInfo); err != nil {
+	if err := commandCreate.CreateCommand(&commandCreds, pvd.commandDatabase, pvd.logger); err != nil {
 		statusCode := fiber.StatusInternalServerError
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
 	}
@@ -95,11 +98,11 @@ func (api *APIInstance) AddCommandHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusCreated)
 }
 
-func (api *APIInstance) ExecuteCommandHandler(c *fiber.Ctx) error {
-	aiID := c.Query("ai_id")
+func (pvd *AIServiceProvider) ExecuteCommandHandler(c *fiber.Ctx) error {
+	AiID := c.Query("ai_id")
 	commandName := c.Query("command_name")
 
-	existCommand, err := api.svc.GetCommand(context.Background(), aiID, commandName)
+	existCommand, err := get.GetCommand(get.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.commandDatabase, pvd.logger)
 
 	if existCommand == nil {
 		statusCode := fiber.StatusNotFound
@@ -111,7 +114,7 @@ func (api *APIInstance) ExecuteCommandHandler(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
 	}
 
-	if existCommand.PayloadType == dbm.FormData {
+	if existCommand.PayloadType == pg.FormData {
 		formData, err := c.MultipartForm()
 
 		if err != nil {
@@ -119,7 +122,7 @@ func (api *APIInstance) ExecuteCommandHandler(c *fiber.Ctx) error {
 			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
 		}
 
-		response, err := api.svc.ExecuteFormDataCommand(context.Background(), formData, existCommand)
+		response, err := execute.ExecuteFormDataCommand(formData, existCommand, pvd.aiDatabase, pvd.logger)
 
 		if err != nil {
 			statusCode := fiber.StatusInternalServerError
@@ -128,14 +131,14 @@ func (api *APIInstance) ExecuteCommandHandler(c *fiber.Ctx) error {
 
 		return c.Status(fiber.StatusOK).Send(response.Bytes())
 	} else {
-		var json map[string]interface{} // оставить мап т.к. дальше отправляю в нейронку его
+		var json map[string]interface{} // не трогать мапу
 
 		if err := c.BodyParser(&json); err != nil {
 			statusCode := fiber.StatusBadRequest
 			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
 		}
 
-		response, err := api.svc.ExecuteJSONCommand(context.Background(), json, existCommand)
+		response, err := execute.ExecuteJSONCommand(json, existCommand, pvd.aiDatabase, pvd.logger)
 
 		if err != nil {
 			statusCode := fiber.StatusInternalServerError
@@ -147,14 +150,15 @@ func (api *APIInstance) ExecuteCommandHandler(c *fiber.Ctx) error {
 }
 
 // INIT
-func (api *APIInstance) Init() *fiber.App {
+func (pvd *AIServiceProvider) Init() *fiber.App {
 	app := fiber.New()
-	app.Use(u.SetupCORS())
+	app.Use(httputils.SetupCORS())
 	route := app.Group("/ai")
 
-	route.Post("/create", api.sMw.Session, api.uMw.User, api.CreateHandler) // Combine to one
-	route.Post("/command/create", api.sMw.Session, api.AddCommandHandler)
-	route.Post("/command/execute", api.sMw.Session, api.ExecuteCommandHandler)
+	route.Post("/create/generate", pvd.sessionMiddleware, pvd.userMiddleware, pvd.CreateWithoutKeyHandler)
+	route.Post("/create/exist", pvd.sessionMiddleware, pvd.userMiddleware, pvd.CreateWithKeyHandler)
+	route.Post("/command/create", pvd.sessionMiddleware, pvd.AddCommandHandler)
+	route.Post("/command/execute", pvd.sessionMiddleware, pvd.ExecuteCommandHandler)
 
 	return app
 }

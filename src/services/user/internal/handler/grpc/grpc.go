@@ -4,31 +4,36 @@ import (
 	"context"
 	"errors"
 	"warehouse/gen"
+	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
-	"warehouse/src/internal/utils/mapper"
-	svc "warehouse/src/services/user/internal/service/user"
+	"warehouse/src/internal/utils/grpcutils"
+	"warehouse/src/services/user/internal/service/create"
+	"warehouse/src/services/user/internal/service/get"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type UserPrivateAPI struct {
+type UserServiceProvider struct {
 	gen.UnimplementedUserServiceServer
-	svc svc.UserService
+	userDatabase *pg.PostgresDatabase[pg.User]
+	logger       *logrus.Logger
 }
 
-func NewUserPrivateAPI(svc svc.UserService) *UserPrivateAPI {
-	return &UserPrivateAPI{
-		svc: svc,
+func NewUserPrivateAPI(userDatabase *pg.PostgresDatabase[pg.User], logger *logrus.Logger) *UserServiceProvider {
+	return &UserServiceProvider{
+		userDatabase: userDatabase,
+		logger:       logger,
 	}
 }
 
-func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
+func (pvd *UserServiceProvider) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
 	if req == nil || req.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, dto.BadRequestError.Error())
 	}
 
-	user, err := api.svc.Create(ctx, req)
+	user, err := create.Create(req, pvd.userDatabase, pvd.logger, ctx)
 
 	if err != nil && errors.Is(err, dto.ExistError) {
 		return nil, status.Errorf(codes.AlreadyExists, err.Error())
@@ -36,15 +41,15 @@ func (api *UserPrivateAPI) CreateUser(ctx context.Context, req *gen.CreateUserMs
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &gen.CreateUserResponse{Id: mapper.UserToProto(user).Id}, nil
+	return &gen.CreateUserResponse{Id: grpcutils.UserToProto(user).Id}, nil
 }
 
-func (api *UserPrivateAPI) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {
+func (pvd *UserServiceProvider) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {
 	if req == nil || req.Email == "" {
 		return nil, status.Error(codes.InvalidArgument, dto.BadRequestError.Error())
 	}
 
-	user, err := api.svc.GetByEmail(ctx, req)
+	user, err := get.GetByEmail(req, pvd.userDatabase, pvd.logger, ctx)
 
 	if err != nil && errors.Is(err, dto.NotFoundError) {
 		return nil, status.Errorf(codes.NotFound, err.Error())
@@ -52,15 +57,15 @@ func (api *UserPrivateAPI) GetUserByEmail(ctx context.Context, req *gen.GetUserB
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return mapper.UserToProto(user), nil
+	return grpcutils.UserToProto(user), nil
 }
 
-func (api *UserPrivateAPI) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
+func (pvd *UserServiceProvider) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
 	if req == nil || req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, dto.BadRequestError.Error())
 	}
 
-	user, err := api.svc.GetById(ctx, req)
+	user, err := get.GetById(req, pvd.userDatabase, pvd.logger, ctx)
 
 	if err != nil && errors.Is(err, dto.NotFoundError) {
 		return nil, status.Errorf(codes.NotFound, err.Error())
@@ -68,5 +73,5 @@ func (api *UserPrivateAPI) GetUserById(ctx context.Context, req *gen.GetUserById
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return mapper.UserToProto(user), nil
+	return grpcutils.UserToProto(user), nil
 }

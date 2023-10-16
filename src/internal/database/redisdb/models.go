@@ -1,4 +1,4 @@
-package models
+package redisdb
 
 import "time"
 

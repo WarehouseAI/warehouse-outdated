@@ -4,20 +4,16 @@ import (
 	"fmt"
 	"os"
 	"time"
-	dbm "warehouse/src/internal/db/models"
+	pg "warehouse/src/internal/database/postgresdb"
+	r "warehouse/src/internal/database/redisdb"
 	mw "warehouse/src/internal/middleware"
 	"warehouse/src/services/ai/internal/handler/http"
-	"warehouse/src/services/ai/internal/service"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {
 	// -----------SETUP LOGGER-----------
-	fmt.Println("Set up the logger...")
 	log := logrus.New()
 
 	file, err := os.OpenFile("ai.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -30,51 +26,33 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	// -----------CONNECT TO DATABASE-----------
-	pgAiDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
-	pgUserDSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
+	// -----------CONNECT DATABASES-----------
 
-	fmt.Println("Connect to the AI database...")
-	pgAiClient, err := gorm.Open(postgres.Open(pgAiDSN), &gorm.Config{})
+	userDatabase, err := pg.NewPostgresDatabase[pg.User](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
 	if err != nil {
-		fmt.Println(pgAiDSN)
-		fmt.Println("❌Failed to connect to the AI database.")
-		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("AI Database")
 		panic(err)
 	}
+	fmt.Println("✅User database successfully connected.")
 
-	fmt.Println("Connect to the User database...")
-	pgUserClient, err := gorm.Open(postgres.Open(pgUserDSN), &gorm.Config{})
+	aiDatabase, err := pg.NewPostgresDatabase[pg.AI](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
 	if err != nil {
-		fmt.Println(pgUserDSN)
-		fmt.Println("❌Failed to connect to the User database.")
-		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Database")
 		panic(err)
 	}
+	fmt.Println("✅AI database successfully connected.")
 
-	pgAiClient.Exec("CREATE TYPE authscheme AS ENUM ('Bearer', 'Basic','ApiKey');")
-	pgAiClient.Exec("CREATE TYPE payloadtype AS ENUM ('JSON', 'FormData');")
-	pgAiClient.Exec("CREATE TYPE iotype AS ENUM ('Image', 'Text');")
-	pgAiClient.Exec("CREATE TYPE requesttype AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');")
-	pgAiClient.AutoMigrate(&dbm.AI{}, &dbm.Command{})
-	fmt.Println("✅Databases successfully connected.")
+	commandDatabase, err := pg.NewPostgresDatabase[pg.Command](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("✅Command database successfully connected.")
 
-	fmt.Println("Connect to the Session database...")
-	rDSN := fmt.Sprintf("%s:%s", os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"))
-	rClient := redis.NewClient(&redis.Options{
-		Addr:     rDSN,
-		Password: os.Getenv("SESSION_DB_PASSWORD"),
-		DB:       0,
-	})
+	sessionDatabase := r.NewRedisDatabase(os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"), os.Getenv("SESSION_DB_PASSWORD"))
 	fmt.Println("✅Session database successfully connected.")
 
 	// -----------START SERVER-----------
-	fmt.Println("Start the AI Microservice...")
-
-	svc := service.NewAIService(pgAiClient, log)
-	sMw := mw.NewSessionMiddleware(rClient, log)
-	uMw := mw.NewUserMiddleware(pgUserClient, log)
-	api := http.NewAiAPI(svc, sMw, uMw)
+	sessionMiddleware := mw.Session(sessionDatabase, log)
+	userMiddleware := mw.User(userDatabase, log)
+	api := http.NewAiAPI(sessionMiddleware, userMiddleware, aiDatabase, commandDatabase, log)
 
 	app := api.Init()
 
