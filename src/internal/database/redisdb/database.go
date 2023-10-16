@@ -22,11 +22,11 @@ func NewRedisDatabase(host string, port string, password string) *RedisDatabase 
 		Password: password,
 		DB:       0,
 	})
-	defer rClient.Close()
 
 	return &RedisDatabase{
 		rClient: rClient,
 	}
+
 }
 
 func (cfg *RedisDatabase) Create(ctx context.Context, userId string) (*Session, error) {
