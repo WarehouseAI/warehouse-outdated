@@ -30,10 +30,12 @@ message GetUserResponse {
 
 message CreateUserMsg {
   string username = 1;
-  string password = 2;
-  string picture = 3;
-  string email = 4;
-  bool via_google = 5;
+  string firstname = 2;
+  string lastname = 3;
+  string password = 4;
+  string picture = 5;
+  string email = 6;
+  bool via_google = 7;
 }
 
 message CreateUserResponse {

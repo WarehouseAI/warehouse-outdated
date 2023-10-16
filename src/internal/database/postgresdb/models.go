@@ -71,6 +71,8 @@ type (
 
 	User struct {
 		ID        uuid.UUID `json:"id" gorm:"type:uuid;primarykey"`
+		Firstname string    `json:"first_name" gorm:"type:string"`
+		Lastname  string    `json:"last_name" gorm:"type:string"`
 		Username  string    `json:"name" gorm:"type:string;unique"`
 		Picture   string    `json:"picture" gorm:"type:string"`
 		Password  string    `json:"-" gorm:"type:string;not null"`
