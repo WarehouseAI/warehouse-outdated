@@ -3,9 +3,11 @@ package postgresdb
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type PostgresDatabase[T All] struct {
@@ -52,6 +54,34 @@ func (cfg *PostgresDatabase[T]) GetOneBy(key string, value interface{}) (*T, err
 
 		return nil, nil
 	}
+
+	return &item, nil
+}
+
+func (cfg *PostgresDatabase[T]) Update(id string, updatedFields interface{}) (*T, error) {
+	var item T
+
+	updatedFieldsReflect := reflect.ValueOf(updatedFields)
+	itemReflect := reflect.ValueOf(item)
+
+	finalFieldsMap := make(map[string]interface{})
+
+	for i := 0; i < updatedFieldsReflect.NumField(); i++ {
+		field := updatedFieldsReflect.Type().Field(i).Name
+		value := updatedFieldsReflect.Field(i).Interface()
+
+		genericField, exist := itemReflect.Type().FieldByName(field)
+
+		if exist {
+			if value != "" {
+				finalFieldsMap[genericField.Name] = value
+			}
+		} else if value != "" {
+			return nil, gorm.ErrInvalidData
+		}
+	}
+
+	cfg.db.Model(&item).Clauses(clause.Returning{}).Where("id", id).Updates(finalFieldsMap)
 
 	return &item, nil
 }

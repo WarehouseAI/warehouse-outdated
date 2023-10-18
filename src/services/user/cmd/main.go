@@ -8,6 +8,8 @@ import (
 	"warehouse/gen"
 
 	pg "warehouse/src/internal/database/postgresdb"
+	r "warehouse/src/internal/database/redisdb"
+	mw "warehouse/src/internal/middleware"
 	pvtAPI "warehouse/src/services/user/internal/handler/grpc"
 	pubAPI "warehouse/src/services/user/internal/handler/http"
 
@@ -36,11 +38,17 @@ func main() {
 	}
 	fmt.Println("✅User database successfully connected.")
 
+	sessionDatabase := r.NewRedisDatabase(os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"), os.Getenv("SESSION_DB_PASSWORD"))
+	fmt.Println("✅Session database successfully connected.")
+
 	// -----------START SERVER-----------
 	fmt.Println("Start the User Microservice...")
 
+	sessionMiddleware := mw.Session(sessionDatabase, log)
+	userMiddleware := mw.User(userDatabase, log)
+
 	pvtApi := pvtAPI.NewUserPrivateAPI(userDatabase, log)
-	pubApi := pubAPI.NewUserPublicAPI(userDatabase, log)
+	pubApi := pubAPI.NewUserPublicAPI(userDatabase, userMiddleware, sessionMiddleware, log)
 
 	publicApp := pubApi.Init()
 	privateApp := grpc.NewServer()

@@ -13,6 +13,8 @@ func UserPayloadToEntity(m *gen.CreateUserMsg) *pg.User {
 	return &pg.User{
 		ID:        uuid.Must(uuid.NewV4()),
 		Username:  m.Username,
+		Firstname: m.Firstname,
+		Lastname:  m.Lastname,
 		Password:  m.Password,
 		Picture:   m.Picture,
 		Email:     m.Email,
@@ -33,6 +35,8 @@ func UserToProto(m *pg.User) *gen.User {
 		Id:        m.ID.String(),
 		Username:  m.Username,
 		Password:  m.Password,
+		Firstname: m.Firstname,
+		Lastname:  m.Lastname,
 		Picture:   m.Picture,
 		Email:     m.Email,
 		OwnedAi:   ownedAi,
@@ -54,6 +58,8 @@ func ProtoToUser(m *gen.User) *pg.User {
 	return &pg.User{
 		ID:        uuid.FromStringOrNil(m.Id),
 		Username:  m.Username,
+		Firstname: m.Firstname,
+		Lastname:  m.Lastname,
 		Password:  m.Password,
 		Picture:   m.Picture,
 		Email:     m.Email,

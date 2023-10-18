@@ -5,13 +5,15 @@ import "ai.proto";
 message User {
   string id = 1;
   string username = 2;
-  string password = 3;
-  string picture = 4;
-  string email = 5;
-  bool via_google = 6;
-  string created_at = 7;
-  string updated_at = 8;
-  repeated AI owned_ai = 9;
+  string firstname = 3;
+  string lastname = 4;
+  string password = 5;
+  string picture = 6;
+  string email = 7;
+  bool via_google = 8;
+  string created_at = 9;
+  string updated_at = 10;
+  repeated AI owned_ai = 11;
 }
 
 // REQ's and RES's

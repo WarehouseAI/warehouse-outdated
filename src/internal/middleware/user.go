@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"time"
 	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
@@ -18,9 +17,6 @@ func User(userProvider UserProvider, logger *logrus.Logger) Middleware {
 	return func(c *fiber.Ctx) error {
 		userId := c.Locals("userId")
 		user, err := userProvider.GetOneBy("id", userId)
-
-		fmt.Println("user, err")
-		fmt.Println(user, err)
 
 		if err != nil {
 			statusCode := fiber.StatusInternalServerError
