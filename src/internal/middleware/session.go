@@ -55,7 +55,6 @@ func Session(sessionProvider SessionProvider, logger *logrus.Logger) Middleware 
 			Value:    session.ID,
 			SameSite: fiber.CookieSameSiteNoneMode,
 			Secure:   true,
-			Expires:  time.Now().Add(session.TTL),
 			Domain:   "/",
 		})
 

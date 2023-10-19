@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"errors"
-	"time"
 	"warehouse/gen"
 	r "warehouse/src/internal/database/redisdb"
 	"warehouse/src/internal/dto"
@@ -84,7 +83,6 @@ func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
 		Name:     "sessionId",
 		Value:    session.ID,
 		SameSite: fiber.CookieSameSiteNoneMode,
-		Expires:  time.Now().Add(session.TTL),
 		Secure:   true,
 		Domain:   "/",
 	})
