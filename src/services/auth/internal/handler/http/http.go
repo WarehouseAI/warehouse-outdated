@@ -83,6 +83,7 @@ func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
 		Name:     "sessionId",
 		Value:    session.ID,
 		SameSite: fiber.CookieSameSiteNoneMode,
+		Secure:   false,
 	})
 
 	return c.SendStatus(fiber.StatusOK)
