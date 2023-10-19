@@ -8,7 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Request struct {
+type UpdateEmailRequest struct {
+	Email string `json:"email"`
+}
+
+type UpdateUserRequest struct {
 	Username  string `json:"username"`
 	Firstname string `json:"first_name"`
 	Lastname  string `json:"last_name"`
@@ -18,7 +22,7 @@ type UserUpdater interface {
 	Update(id string, updatedFields interface{}) (*pg.User, error)
 }
 
-func UpdateUser(request Request, userId string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, error) {
+func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, error) {
 	updatedUser, err := userUpdater.Update(userId, request)
 
 	if err != nil {
@@ -28,3 +32,7 @@ func UpdateUser(request Request, userId string, userUpdater UserUpdater, logger 
 
 	return updatedUser, nil
 }
+
+// func UpdateEmail(request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (error) {
+
+// }

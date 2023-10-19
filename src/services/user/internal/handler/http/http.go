@@ -35,7 +35,7 @@ func NewUserPublicAPI(userDatabase *pg.PostgresDatabase[pg.User], userMiddleware
 
 func (pvd *UserServiceProvider) UpdateHandler(c *fiber.Ctx) error {
 	user := c.Locals("user").(*pg.User)
-	var updatedFields userUpdate.Request
+	var updatedFields userUpdate.UpdateUserRequest
 
 	if err := c.BodyParser(&updatedFields); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
