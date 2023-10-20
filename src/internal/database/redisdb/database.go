@@ -56,6 +56,7 @@ func (cfg *RedisDatabase) Get(ctx context.Context, sessionId string) (*Session, 
 	var sessionPayload SessionPayload
 
 	exist, err := cfg.rClient.Exists(ctx, sessionId).Result()
+	fmt.Println(exist, err)
 
 	if err != nil {
 		return nil, err
@@ -67,6 +68,7 @@ func (cfg *RedisDatabase) Get(ctx context.Context, sessionId string) (*Session, 
 
 	record := cfg.rClient.Get(ctx, sessionId)
 	recordTTL := cfg.rClient.TTL(ctx, sessionId)
+	fmt.Println(record, recordTTL)
 
 	if record.Err() != nil {
 		return nil, record.Err()
@@ -74,6 +76,7 @@ func (cfg *RedisDatabase) Get(ctx context.Context, sessionId string) (*Session, 
 
 	recordInfo, _ := record.Result()
 	TTLInfo, _ := recordTTL.Result()
+	fmt.Println(recordInfo, TTLInfo)
 
 	if err := json.Unmarshal([]byte(recordInfo), &sessionPayload); err != nil {
 		return nil, err
