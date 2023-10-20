@@ -55,16 +55,6 @@ func (cfg *RedisDatabase) Create(ctx context.Context, userId string) (*Session, 
 func (cfg *RedisDatabase) Get(ctx context.Context, sessionId string) (*Session, error) {
 	var sessionPayload SessionPayload
 
-	exist, err := cfg.rClient.Exists(ctx, sessionId).Result()
-
-	if err != nil {
-		return nil, err
-	}
-
-	if exist != 1 {
-		return nil, nil
-	}
-
 	record := cfg.rClient.Get(ctx, sessionId)
 	recordTTL := cfg.rClient.TTL(ctx, sessionId)
 
