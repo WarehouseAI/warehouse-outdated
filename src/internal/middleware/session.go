@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"time"
 	r "warehouse/src/internal/database/redisdb"
 	"warehouse/src/internal/dto"
@@ -27,6 +28,7 @@ func Session(sessionProvider SessionProvider, logger *logrus.Logger) Middleware 
 		}
 
 		session, err := sessionProvider.Get(context.Background(), sessionId)
+		fmt.Println("session err", session, err)
 
 		if err != nil {
 			statusCode := fiber.StatusInternalServerError
