@@ -27,6 +27,7 @@ func Session(sessionProvider SessionProvider, logger *logrus.Logger) Middleware 
 			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: "Your session is invalid"})
 		}
 
+		fmt.Println("sessionId", sessionId)
 		session, err := sessionProvider.Get(context.Background(), sessionId)
 		fmt.Println("session err", session, err)
 
