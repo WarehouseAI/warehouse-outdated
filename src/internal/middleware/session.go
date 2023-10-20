@@ -55,7 +55,7 @@ func Session(sessionProvider SessionProvider, logger *logrus.Logger) Middleware 
 		c.Locals("userId", newSession.Payload.UserId)
 		c.Cookie(&fiber.Cookie{
 			Name:     "sessionId",
-			Value:    session.ID,
+			Value:    newSession.ID,
 			SameSite: fiber.CookieSameSiteNoneMode,
 			Secure:   true,
 		})
