@@ -31,7 +31,7 @@ func NewRedisDatabase(host string, port string, password string) *RedisDatabase 
 
 func (cfg *RedisDatabase) Create(ctx context.Context, userId string) (*Session, error) {
 	//TODO: Поменять потом на 3 дня
-	TTL := 180 * time.Second
+	TTL := 24 * time.Hour
 	sessionId := uuid.Must(uuid.NewV4()).String()
 
 	sessionPayload := SessionPayload{
