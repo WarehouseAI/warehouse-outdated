@@ -8,6 +8,7 @@ import (
 	mw "warehouse/src/internal/middleware"
 	"warehouse/src/internal/utils/httputils"
 	userUpdate "warehouse/src/services/user/internal/service/update"
+	"warehouse/src/services/user/internal/service/verify"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -50,6 +51,36 @@ func (pvd *UserServiceProvider) UpdateHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(updatedUser)
 }
 
+func (pvd *UserServiceProvider) UpdateEmailHandler(c *fiber.Ctx) error {
+	user := c.Locals("user").(*pg.User)
+	var newEmail userUpdate.UpdateEmailRequest
+
+	if err := c.BodyParser(&newEmail); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+	}
+
+	if err := userUpdate.UpdateEmail(newEmail, user.ID.String(), pvd.userDatabase, pvd.logger); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func (pvd *UserServiceProvider) VerifyUserHandler(c *fiber.Ctx) error {
+	user := c.Locals("user").(*pg.User)
+	verificationCode := c.Params("code")
+
+	if verificationCode == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+	}
+
+	if err := verify.VerifyUserEmail(verify.Request{Verified: true, VerificationCode: verificationCode}, user, pvd.userDatabase, pvd.logger); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
 // INIT
 func (pvd *UserServiceProvider) Init() *fiber.App {
 	app := fiber.New()
@@ -57,6 +88,8 @@ func (pvd *UserServiceProvider) Init() *fiber.App {
 	route := app.Group("/user")
 
 	route.Post("/update", pvd.sessionMiddleware, pvd.userMiddleware, pvd.UpdateHandler)
+	route.Post("/update/email", pvd.sessionMiddleware, pvd.userMiddleware, pvd.UpdateEmailHandler)
+	route.Get("/verify/:code", pvd.sessionMiddleware, pvd.userMiddleware, pvd.VerifyUserHandler)
 
 	return app
 }

@@ -1,15 +1,21 @@
 package update
 
 import (
+	"fmt"
+	"os"
 	"time"
 	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
+	u "warehouse/src/internal/utils"
+	"warehouse/src/internal/utils/mailutils"
 
 	"github.com/sirupsen/logrus"
 )
 
 type UpdateEmailRequest struct {
-	Email string `json:"email"`
+	Email            string `json:"email"`
+	VerificationCode string `json:"-"`
+	Verified         bool   `json:"-"`
 }
 
 type UpdateUserRequest struct {
@@ -33,6 +39,28 @@ func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdate
 	return updatedUser, nil
 }
 
-// func UpdateEmail(request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (error) {
+func UpdateEmail(request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) error {
+	key, err := u.GenerateKey(64)
 
-// }
+	if err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update email")
+		return dto.InternalError
+	}
+
+	request.Verified = false
+	request.VerificationCode = key
+
+	message := mailutils.NewMessage(mailutils.EmailVerify, request.Email, fmt.Sprintf("%s/api/user/verify/%s", os.Getenv("DOMAIN_HOST"), key))
+
+	if err := mailutils.SendEmail(message); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update email")
+		return dto.InternalError
+	}
+
+	if _, err := userUpdater.Update(userId, request); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update email")
+		return dto.InternalError
+	}
+
+	return nil
+}

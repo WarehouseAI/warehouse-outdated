@@ -11,9 +11,11 @@ message User {
   string picture = 6;
   string email = 7;
   bool via_google = 8;
-  string created_at = 9;
-  string updated_at = 10;
-  repeated AI owned_ai = 11;
+  bool verified = 9;
+  string verification_code = 10;
+  string created_at = 11;
+  string updated_at = 12;
+  repeated AI owned_ai = 13;
 }
 
 // REQ's and RES's

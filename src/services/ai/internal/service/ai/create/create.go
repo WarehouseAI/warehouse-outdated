@@ -3,13 +3,12 @@ package create
 import (
 	"context"
 	"crypto/md5"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"time"
 	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
+	u "warehouse/src/internal/utils"
 
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
@@ -37,7 +36,7 @@ type AICreator interface {
 }
 
 func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, error) {
-	apiKeyPayload, err := generateRandomString(32)
+	key, err := u.GenerateKey(32)
 	hasher := md5.New()
 
 	if err != nil {
@@ -45,8 +44,8 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator 
 		return nil, dto.InternalError
 	}
 
-	apiKey := fmt.Sprintf("wh.%s", apiKeyPayload)
-	hasher.Write([]byte(apiKey))
+	apiKey := fmt.Sprintf("wh.%s", key)
+	hasher.Write([]byte(key))
 
 	newAI := &pg.AI{
 		ID:         uuid.Must(uuid.NewV4()),
@@ -83,17 +82,4 @@ func CreateWithOwnKey(aiInfo *RequestWithKey, user *pg.User, aiCreator AICreator
 	}
 
 	return &Response{Name: aiInfo.Name, ApiKey: aiInfo.AuthKey, AuthScheme: aiInfo.AuthScheme}, nil
-}
-
-func generateRandomString(length int) (string, error) {
-	randomBytes := make([]byte, length)
-
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", err
-	}
-
-	randomString := base64.URLEncoding.EncodeToString(randomBytes)
-	randomString = randomString[:length]
-
-	return randomString, nil
 }
