@@ -3,10 +3,13 @@ package http
 import (
 	"context"
 	"errors"
+	"sync"
 	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/dto"
 	mw "warehouse/src/internal/middleware"
+	u "warehouse/src/internal/utils"
 	"warehouse/src/internal/utils/httputils"
+	"warehouse/src/services/user/internal/service/update"
 	userUpdate "warehouse/src/services/user/internal/service/update"
 	"warehouse/src/services/user/internal/service/verify"
 
@@ -52,15 +55,51 @@ func (pvd *UserServiceProvider) UpdateHandler(c *fiber.Ctx) error {
 }
 
 func (pvd *UserServiceProvider) UpdateEmailHandler(c *fiber.Ctx) error {
+	var request userUpdate.UpdateEmailRequest
 	user := c.Locals("user").(*pg.User)
-	var newEmail userUpdate.UpdateEmailRequest
+	key, err := u.GenerateKey(64)
 
-	if err := c.BodyParser(&newEmail); err != nil {
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: dto.InternalError.Error()})
+	}
+
+	if err := c.BodyParser(&request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
-	if err := userUpdate.UpdateEmail(newEmail, user.ID.String(), pvd.userDatabase, pvd.logger); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+	request.Verified = false
+	request.VerificationCode = key
+
+	respch := make(chan error, 2)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+
+	go update.SendUpdateNotification(wg, respch, pvd.logger, request)
+	go update.UpdateEmail(wg, respch, request, user.ID.String(), pvd.userDatabase, pvd.logger)
+
+	wg.Wait()
+	close(respch)
+
+	for resp := range respch {
+		if resp != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
+		}
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func (pvd *UserServiceProvider) UpdatePasswordHandler(c *fiber.Ctx) error {
+	var request userUpdate.UpdatePasswordRequest
+	user := c.Locals("user").(*pg.User)
+
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+	}
+
+	if err := userUpdate.UpdatePassword(request, user, pvd.userDatabase, pvd.logger); err != nil {
+		// TODO: отправлять ответ в зависимости от ошибки
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -89,6 +128,7 @@ func (pvd *UserServiceProvider) Init() *fiber.App {
 
 	route.Post("/update", pvd.sessionMiddleware, pvd.userMiddleware, pvd.UpdateHandler)
 	route.Post("/update/email", pvd.sessionMiddleware, pvd.userMiddleware, pvd.UpdateEmailHandler)
+	route.Post("/update/password", pvd.sessionMiddleware, pvd.userMiddleware, pvd.UpdatePasswordHandler)
 	route.Get("/verify/:code", pvd.sessionMiddleware, pvd.userMiddleware, pvd.VerifyUserHandler)
 
 	return app

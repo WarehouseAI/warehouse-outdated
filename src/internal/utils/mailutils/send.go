@@ -3,26 +3,11 @@ package mailutils
 import (
 	"crypto/tls"
 	"os"
-	"sync"
 
 	"gopkg.in/gomail.v2"
 )
 
 func SendEmail(email Email) error {
-	return send(email)
-}
-
-func SendEmailAsync(wg *sync.WaitGroup, respch chan error, email Email) {
-	if err := send(email); err != nil {
-		respch <- err
-	} else {
-		respch <- nil
-	}
-
-	wg.Done()
-}
-
-func send(email Email) error {
 	m := gomail.NewMessage()
 
 	m.SetHeader("From", email.From)

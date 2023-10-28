@@ -71,13 +71,13 @@ type (
 
 	User struct {
 		ID               uuid.UUID `json:"id" gorm:"type:uuid;primarykey"`
-		Firstname        string    `json:"first_name" gorm:"type:string;not null"`
-		Lastname         string    `json:"last_name" gorm:"type:string;not null"`
-		Username         string    `json:"name" gorm:"type:string;unique"`
+		Firstname        string    `json:"firstname" gorm:"type:string;not null"`
+		Lastname         string    `json:"lastname" gorm:"type:string;not null"`
+		Username         string    `json:"username" gorm:"type:string;unique"`
 		Picture          string    `json:"picture" gorm:"type:string"`
 		Password         string    `json:"-" gorm:"type:string;not null"`
 		Email            string    `json:"email" gorm:"type:string;not null;unique"`
-		ViaGoogle        bool      `json:"-" gorm:"default:false;not null"`
+		ViaGoogle        bool      `json:"via_google;omitempty" gorm:"default:false;not null"`
 		Verified         bool      `json:"-" gorm:"default:false;not null"`
 		VerificationCode string    `json:"-" gorm:"type:string"`
 		OwnedAi          []AI      `json:"owned_ai" gorm:"foreignKey:Owner"`

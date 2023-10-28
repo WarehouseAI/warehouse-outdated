@@ -6,10 +6,10 @@ message AI {
   string owner = 2;
   repeated Command commands = 3;
   string name = 4;
-  string api_key = 5;
-  string auth_scheme = 6;
-  string created_at = 7;
-  string updated_at = 8;
+  string api_key = 5 [json_name = "api_key"];
+  string auth_scheme = 6 [json_name = "auth_scheme"];
+  string created_at = 7 [json_name = "created_at"];
+  string updated_at = 8 [json_name = "updated_at"];
 }
 
 message Command {
@@ -17,11 +17,11 @@ message Command {
   string ai = 2;
   string name = 3;
   string payload = 4;
-  string payload_type = 5;
-  string request_scheme = 6;
-  string input_type = 7;
-  string output_type = 8;
+  string payload_type = 5 [json_name = "payload_type"];
+  string request_scheme = 6 [json_name = "request_scheme"];
+  string input_type = 7 [json_name = "input_type"];
+  string output_type = 8 [json_name = "output_type"];
   string url = 9;
-  string created_at = 10;
-  string updated_at = 11;
+  string created_at = 10 [json_name = "created_at"];
+  string updated_at = 11 [json_name = "updated_at"];
 }

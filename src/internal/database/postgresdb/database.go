@@ -52,7 +52,7 @@ func (cfg *PostgresDatabase[T]) GetOneBy(key string, value interface{}) (*T, err
 			return nil, result.Error
 		}
 
-		return nil, nil
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	return &item, nil
@@ -72,12 +72,11 @@ func (cfg *PostgresDatabase[T]) Update(id string, updatedFields interface{}) (*T
 
 		genericField, exist := itemReflect.Type().FieldByName(field)
 
+		// TODO: работает только со строками, добавить поддержку других типов
 		if exist {
 			if value != "" {
 				finalFieldsMap[genericField.Name] = value
 			}
-		} else if value != "" {
-			return nil, gorm.ErrInvalidData
 		}
 	}
 

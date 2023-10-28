@@ -17,14 +17,14 @@ type UserProvider interface {
 func GetByEmail(userInfo *gen.GetUserByEmailMsg, userProvider UserProvider, logger *logrus.Logger, ctx context.Context) (*pg.User, error) {
 	existUser, err := userProvider.GetOneBy("email", userInfo.Email)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Get user by Email")
-		return nil, dto.InternalError
-	}
-
 	if existUser == nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Get user by Email")
 		return nil, dto.NotFoundError
+	}
+
+	if err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Get user by Email")
+		return nil, dto.InternalError
 	}
 
 	return existUser, nil
@@ -33,14 +33,14 @@ func GetByEmail(userInfo *gen.GetUserByEmailMsg, userProvider UserProvider, logg
 func GetById(userInfo *gen.GetUserByIdMsg, userProvider UserProvider, logger *logrus.Logger, ctx context.Context) (*pg.User, error) {
 	existUser, err := userProvider.GetOneBy("id", userInfo.Id)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Get user by Id")
-		return nil, dto.InternalError
-	}
-
 	if existUser == nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Get user by Id")
 		return nil, dto.NotFoundError
+	}
+
+	if err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Get user by Id")
+		return nil, dto.InternalError
 	}
 
 	return existUser, nil

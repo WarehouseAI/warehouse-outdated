@@ -10,12 +10,12 @@ message User {
   string password = 5;
   string picture = 6;
   string email = 7;
-  bool via_google = 8;
+  bool viaGoogle = 8 [json_name = "via_google"];
   bool verified = 9;
-  string verification_code = 10;
-  string created_at = 11;
-  string updated_at = 12;
-  repeated AI owned_ai = 13;
+  string verification_code = 10 [json_name = "verification_code"];
+  string created_at = 11 [json_name = "created_at"];
+  string updated_at = 12 [json_name = "updated_at"];
+  repeated AI owned_ai = 13 [json_name = "owned_ai"];
 }
 
 // REQ's and RES's
@@ -39,7 +39,7 @@ message CreateUserMsg {
   string password = 4;
   string picture = 5;
   string email = 6;
-  bool via_google = 7;
+  bool viaGoogle = 7 [json_name = "via_google"];
 }
 
 message CreateUserResponse {
