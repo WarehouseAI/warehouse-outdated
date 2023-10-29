@@ -2,8 +2,9 @@ package create
 
 import (
 	"time"
+	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
+	"warehouse/src/internal/utils/httputils"
 
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
@@ -21,24 +22,11 @@ type Request struct {
 }
 
 type CommandProvider interface {
-	GetOneBy(key string, value interface{}) (*pg.Command, error)
-	Add(item *pg.Command) error
+	GetOneBy(key string, value interface{}) (*pg.Command, *db.DBError)
+	Add(item *pg.Command) *db.DBError
 }
 
-func CreateCommand(commandCreds *Request, commandProvider CommandProvider, logger *logrus.Logger) error {
-	// TODO: Перенести Get проверку в Add
-	existCommand, err := commandProvider.GetOneBy("name", commandCreds.Name)
-
-	if existCommand != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Add command")
-		return dto.ExistError
-	}
-
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Add command")
-		return dto.InternalError
-	}
-
+func CreateCommand(commandCreds *Request, commandProvider CommandProvider, logger *logrus.Logger) *httputils.ErrorResponse {
 	newCommand := &pg.Command{
 		ID:            uuid.Must(uuid.NewV4()),
 		Name:          commandCreds.Name,
@@ -53,9 +41,9 @@ func CreateCommand(commandCreds *Request, commandProvider CommandProvider, logge
 		UpdateAt:      time.Now(),
 	}
 
-	if err := commandProvider.Add(newCommand); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Add new command to AI")
-		return err
+	if dbErr := commandProvider.Add(newCommand); dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Add new command to AI")
+		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	return nil
