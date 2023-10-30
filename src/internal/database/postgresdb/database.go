@@ -49,10 +49,26 @@ func (cfg *PostgresDatabase[T]) Add(item *T) *db.DBError {
 	return nil
 }
 
-func (cfg *PostgresDatabase[T]) GetOneBy(key string, value interface{}) (*T, *db.DBError) {
+func (cfg *PostgresDatabase[T]) GetOneBy(conditions map[string]interface{}) (*T, *db.DBError) {
 	var item T
 
-	result := cfg.db.Where(map[string]interface{}{key: value}).First(&item)
+	result := cfg.db.Where(conditions).First(&item)
+
+	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, db.NewDBError(db.System, "Something went wrong.", result.Error.Error())
+		}
+
+		return nil, db.NewDBError(db.NotFound, "Entity not found.", result.Error.Error())
+	}
+
+	return &item, nil
+}
+
+func (cfg *PostgresDatabase[T]) GetOneByPreload(conditions map[string]interface{}, preload string) (*T, *db.DBError) {
+	var item T
+
+	result := cfg.db.Where(conditions).Preload(preload).First(&item)
 
 	if result.Error != nil {
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {

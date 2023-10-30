@@ -93,7 +93,7 @@ func (pvd *AIServiceProvider) ExecuteCommandHandler(c *fiber.Ctx) error {
 	AiID := c.Query("ai_id")
 	commandName := c.Query("command_name")
 
-	existCommand, svcErr := get.GetCommand(get.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.commandDatabase, pvd.logger)
+	existCommand, svcErr := get.GetCommand(get.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.aiDatabase, pvd.logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)

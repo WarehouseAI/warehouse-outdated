@@ -12,11 +12,11 @@ import (
 )
 
 type UserProvider interface {
-	GetOneBy(key string, payload interface{}) (*pg.User, *database.DBError)
+	GetOneBy(map[string]interface{}) (*pg.User, *database.DBError)
 }
 
 func GetByEmail(userInfo *gen.GetUserByEmailMsg, userProvider UserProvider, logger *logrus.Logger, ctx context.Context) (*pg.User, *httputils.ErrorResponse) {
-	existUser, dbErr := userProvider.GetOneBy("email", userInfo.Email)
+	existUser, dbErr := userProvider.GetOneBy(map[string]interface{}{"email": userInfo.Email})
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Get user by Email")
@@ -27,7 +27,7 @@ func GetByEmail(userInfo *gen.GetUserByEmailMsg, userProvider UserProvider, logg
 }
 
 func GetById(userInfo *gen.GetUserByIdMsg, userProvider UserProvider, logger *logrus.Logger, ctx context.Context) (*pg.User, *httputils.ErrorResponse) {
-	existUser, dbErr := userProvider.GetOneBy("id", userInfo.Id)
+	existUser, dbErr := userProvider.GetOneBy(map[string]interface{}{"id": userInfo.Id})
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Get user by Id")

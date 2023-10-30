@@ -21,12 +21,11 @@ type Request struct {
 	URL         string                 `json:"url"`
 }
 
-type CommandProvider interface {
-	GetOneBy(key string, value interface{}) (*pg.Command, *db.DBError)
+type CommandCreator interface {
 	Add(item *pg.Command) *db.DBError
 }
 
-func CreateCommand(commandCreds *Request, commandProvider CommandProvider, logger *logrus.Logger) *httputils.ErrorResponse {
+func CreateCommand(commandCreds *Request, commandCreator CommandCreator, logger *logrus.Logger) *httputils.ErrorResponse {
 	newCommand := &pg.Command{
 		ID:            uuid.Must(uuid.NewV4()),
 		Name:          commandCreds.Name,
@@ -41,7 +40,7 @@ func CreateCommand(commandCreds *Request, commandProvider CommandProvider, logge
 		UpdateAt:      time.Now(),
 	}
 
-	if dbErr := commandProvider.Add(newCommand); dbErr != nil {
+	if dbErr := commandCreator.Add(newCommand); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Add new command to AI")
 		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}

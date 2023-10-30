@@ -13,7 +13,6 @@ import (
 )
 
 type UserProvider interface {
-	GetOneBy(key string, payload interface{}) (*pg.User, *db.DBError)
 	Add(item *pg.User) *db.DBError
 }
 

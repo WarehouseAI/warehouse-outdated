@@ -11,13 +11,13 @@ import (
 )
 
 type UserProvider interface {
-	GetOneBy(key string, value interface{}) (*pg.User, *db.DBError)
+	GetOneBy(map[string]interface{}) (*pg.User, *db.DBError)
 }
 
 func User(userProvider UserProvider, logger *logrus.Logger) Middleware {
 	return func(c *fiber.Ctx) error {
 		userId := c.Locals("userId")
-		user, dbErr := userProvider.GetOneBy("id", userId)
+		user, dbErr := userProvider.GetOneBy(map[string]interface{}{"id": userId})
 
 		if dbErr != nil {
 			statusCode := httputils.InternalError

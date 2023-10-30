@@ -15,18 +15,23 @@ type Request struct {
 	Name string    `json:"name"`
 }
 
-type CommandProvider interface {
-	GetOneBy(key string, value interface{}) (*pg.Command, *db.DBError)
+type AiProvider interface {
+	GetOneByPreload(map[string]interface{}, string) (*pg.AI, *db.DBError)
 }
 
-func GetCommand(getRequest Request, commandProvider CommandProvider, logger *logrus.Logger) (*pg.Command, *httputils.ErrorResponse) {
-	// TODO: Получать команду по двум ключам, а не по одному
-	existCommand, dbErr := commandProvider.GetOneBy("name", getRequest.Name)
+func GetCommand(getRequest Request, aiProvider AiProvider, logger *logrus.Logger) (*pg.Command, *httputils.ErrorResponse) {
+	existAI, dbErr := aiProvider.GetOneByPreload(map[string]interface{}{"id": getRequest.AiID}, "Commands")
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Get command")
 		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
-	return existCommand, nil
+	for i := 0; i <= len(existAI.Commands); i++ {
+		if existAI.Commands[i].Name == getRequest.Name {
+			return &existAI.Commands[i], nil
+		}
+	}
+
+	return nil, httputils.NewErrorResponse(httputils.NotFound, "Command not found.")
 }
