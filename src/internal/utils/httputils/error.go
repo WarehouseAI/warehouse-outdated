@@ -1,40 +1,44 @@
 package httputils
 
 import (
-	"fmt"
 	db "warehouse/src/internal/database"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-type ErrorResponseType string
-
 const (
-	ServerError ErrorResponseType = "Server Error: %s"
-	Abort       ErrorResponseType = "Abort. %s"
+	InternalError int = fiber.StatusInternalServerError
+	AlreadyExist  int = fiber.StatusConflict
+	NotFound      int = fiber.StatusNotFound
+	BadRequest    int = fiber.StatusBadRequest
+	Forbidden     int = fiber.StatusForbidden
+	Unauthorized  int = fiber.StatusUnauthorized
 )
 
 type (
 	ErrorResponse struct {
-		ErrorType    ErrorResponseType `json:"error_type"`
-		ErrorMessage string            `json:"error_message"`
+		ErrorCode    int    `json:"error_code"`
+		ErrorMessage string `json:"err_msg"`
 	}
 )
 
-var errorMapper = map[db.DBErrorType]ErrorResponseType{
-	db.Exist:    Abort,
-	db.NotFound: Abort,
-	db.System:   ServerError,
+var dbErrorMapper = map[db.DBErrorType]int{
+	db.Exist:    AlreadyExist,
+	db.NotFound: NotFound,
+	db.Update:   BadRequest,
+	db.System:   InternalError,
 }
 
 func NewErrorResponseFromDBError(errorType db.DBErrorType, message string) *ErrorResponse {
 	return &ErrorResponse{
-		ErrorType:    errorMapper[errorType],
-		ErrorMessage: fmt.Sprintf(string(errorType), message),
+		ErrorCode:    dbErrorMapper[errorType],
+		ErrorMessage: message,
 	}
 }
 
-func NewErrorResponse(errorType ErrorResponseType, message string) *ErrorResponse {
+func NewErrorResponse(errorType int, message string) *ErrorResponse {
 	return &ErrorResponse{
-		ErrorType:    errorType,
-		ErrorMessage: fmt.Sprintf(string(errorType), message),
+		ErrorCode:    errorType,
+		ErrorMessage: message,
 	}
 }

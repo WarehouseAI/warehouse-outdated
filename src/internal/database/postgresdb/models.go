@@ -79,7 +79,7 @@ type (
 		Email            string    `json:"email" gorm:"type:string;not null;unique"`
 		ViaGoogle        bool      `json:"via_google;omitempty" gorm:"default:false;not null"`
 		Verified         bool      `json:"-" gorm:"default:false;not null"`
-		VerificationCode string    `json:"-" gorm:"type:string"`
+		VerificationCode *string   `json:"-" gorm:"type:string"`
 		OwnedAi          []AI      `json:"owned_ai" gorm:"foreignKey:Owner"`
 		CreatedAt        time.Time `json:"created_at" gorm:"type:time"`
 		UpdateAt         time.Time `json:"updated_at" gorm:"type:time"`

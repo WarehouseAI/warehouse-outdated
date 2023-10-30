@@ -2,16 +2,14 @@ package login
 
 import (
 	"context"
-	"errors"
 	"time"
 	"warehouse/gen"
+	db "warehouse/src/internal/database"
 	r "warehouse/src/internal/database/redisdb"
-	"warehouse/src/internal/dto"
+	"warehouse/src/internal/utils/httputils"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type Request struct {
@@ -20,37 +18,32 @@ type Request struct {
 }
 
 type SessionCreator interface {
-	Create(context.Context, string) (*r.Session, error)
+	Create(context.Context, string) (*r.Session, *db.DBError)
 }
 
 type UserProvider interface {
-	GetByEmail(context.Context, *gen.GetUserByEmailMsg) (*gen.User, error)
+	GetByEmail(context.Context, *gen.GetUserByEmailMsg) (*gen.User, *httputils.ErrorResponse)
 }
 
-func Login(userInfo *Request, userProvider UserProvider, sessionCreator SessionCreator, logger *logrus.Logger, ctx context.Context) (*r.Session, error) {
-	user, err := userProvider.GetByEmail(ctx, &gen.GetUserByEmailMsg{Email: userInfo.Email})
+func Login(userInfo *Request, userProvider UserProvider, sessionCreator SessionCreator, logger *logrus.Logger, ctx context.Context) (*r.Session, *httputils.ErrorResponse) {
+	user, gwErr := userProvider.GetByEmail(ctx, &gen.GetUserByEmailMsg{Email: userInfo.Email})
 
-	if err != nil && errors.Is(err, status.Errorf(codes.NotFound, dto.NotFoundError.Error())) {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, dto.NotFoundError
-	}
-
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, dto.InternalError
+	if gwErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Login user")
+		return nil, gwErr
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userInfo.Password)); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, dto.BadRequestError
+		return nil, httputils.NewErrorResponse(httputils.BadRequest, "Invalid credentials")
 	}
 
 	// Сохраняем сессию
-	session, err := sessionCreator.Create(ctx, user.Id)
+	session, sessErr := sessionCreator.Create(ctx, user.Id)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, dto.InternalError
+	if sessErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": sessErr}).Info("Login user")
+		return nil, httputils.NewErrorResponseFromDBError(sessErr.ErrorType, sessErr.Message)
 	}
 
 	return session, nil

@@ -42,7 +42,7 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator 
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")
-		return nil, httputils.NewErrorResponse(httputils.ServerError, err.Error())
+		return nil, httputils.NewErrorResponse(httputils.InternalError, err.Error())
 	}
 
 	apiKey := fmt.Sprintf("wh.%s", key)

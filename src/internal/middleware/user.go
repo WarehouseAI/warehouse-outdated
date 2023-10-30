@@ -20,12 +20,14 @@ func User(userProvider UserProvider, logger *logrus.Logger) Middleware {
 		user, dbErr := userProvider.GetOneBy("id", userId)
 
 		if dbErr != nil {
+			statusCode := httputils.InternalError
 			logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("User middleware")
-			return c.Status(fiber.StatusInternalServerError).JSON(httputils.NewErrorResponse(httputils.ServerError, dbErr.Message))
+			return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, dbErr.Message))
 		}
 
 		if user == nil {
-			return c.Status(fiber.StatusNotFound).JSON(httputils.NewErrorResponse(httputils.Abort, "User not found."))
+			statusCode := httputils.NotFound
+			return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "User not found."))
 		}
 
 		c.Locals("user", user)

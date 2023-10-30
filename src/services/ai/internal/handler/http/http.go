@@ -43,17 +43,14 @@ func (pvd *AIServiceProvider) CreateWithoutKeyHandler(c *fiber.Ctx) error {
 	var aiInfo aiCreate.RequestWithoutKey
 
 	if err := c.BodyParser(&aiInfo); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(httputils.NewErrorResponse(httputils.Abort, "Invalid request body."))
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
 	ai, err := aiCreate.CreateWithGeneratedKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
 
 	if err != nil {
-		if err.ErrorType == httputils.Abort {
-			return c.Status(fiber.StatusBadRequest).JSON(err)
-		}
-
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return c.Status(err.ErrorCode).JSON(err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(ai)
@@ -64,17 +61,14 @@ func (pvd *AIServiceProvider) CreateWithKeyHandler(c *fiber.Ctx) error {
 	var aiInfo aiCreate.RequestWithKey
 
 	if err := c.BodyParser(&aiInfo); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(httputils.NewErrorResponse(httputils.Abort, "Invalid request body."))
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
 	ai, err := aiCreate.CreateWithOwnKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
 
 	if err != nil {
-		if err.ErrorType == httputils.Abort {
-			return c.Status(fiber.StatusBadRequest).JSON(err)
-		}
-
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return c.Status(err.ErrorCode).JSON(err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(ai)
@@ -84,11 +78,12 @@ func (pvd *AIServiceProvider) AddCommandHandler(c *fiber.Ctx) error {
 	var commandCreds commandCreate.Request
 
 	if err := c.BodyParser(&commandCreds); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(httputils.NewErrorResponse(httputils.Abort, "Invalid request body."))
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
 	if svcErr := commandCreate.CreateCommand(&commandCreds, pvd.commandDatabase, pvd.logger); svcErr != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(svcErr)
+		return c.Status(svcErr.ErrorCode).JSON(svcErr)
 	}
 
 	return c.SendStatus(fiber.StatusCreated)
@@ -101,22 +96,20 @@ func (pvd *AIServiceProvider) ExecuteCommandHandler(c *fiber.Ctx) error {
 	existCommand, svcErr := get.GetCommand(get.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.commandDatabase, pvd.logger)
 
 	if svcErr != nil {
-		statusCode := fiber.StatusInternalServerError
-		return c.Status(statusCode).JSON(svcErr)
+		return c.Status(svcErr.ErrorCode).JSON(svcErr)
 	}
 
 	if existCommand.PayloadType == pg.FormData {
 		formData, err := c.MultipartForm()
 
 		if err != nil {
-			statusCode := fiber.StatusBadRequest
-			return c.Status(statusCode).JSON(httputils.NewErrorResponse(httputils.ServerError, err.Error()))
+			return c.Status(httputils.InternalError).JSON(httputils.NewErrorResponse(httputils.InternalError, err.Error()))
 		}
 
 		response, svcErr := execute.ExecuteFormDataCommand(formData, existCommand, pvd.aiDatabase, pvd.logger)
 
 		if svcErr != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(svcErr)
+			return c.Status(svcErr.ErrorCode).JSON(svcErr)
 		}
 
 		return c.Status(fiber.StatusOK).Send(response.Bytes())
@@ -124,13 +117,14 @@ func (pvd *AIServiceProvider) ExecuteCommandHandler(c *fiber.Ctx) error {
 		var json map[string]interface{} // не трогать мапу
 
 		if err := c.BodyParser(&json); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(httputils.NewErrorResponse(httputils.Abort, "Invalid request body."))
+			statusCode := httputils.BadRequest
+			return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 		}
 
 		response, svcErr := execute.ExecuteJSONCommand(json, existCommand, pvd.aiDatabase, pvd.logger)
 
 		if svcErr != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(svcErr)
+			return c.Status(svcErr.ErrorCode).JSON(svcErr)
 		}
 
 		return c.Status(fiber.StatusOK).Send(response.Bytes())

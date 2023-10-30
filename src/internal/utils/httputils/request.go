@@ -17,7 +17,7 @@ func MakeHTTPRequest(fullUrl string, httpMethod string, headers map[string]strin
 
 	url, err := url.Parse(fullUrl)
 	if err != nil {
-		return nil, NewErrorResponse(ServerError, err.Error())
+		return nil, NewErrorResponse(InternalError, err.Error())
 	}
 
 	if httpMethod == "GET" {
@@ -32,7 +32,7 @@ func MakeHTTPRequest(fullUrl string, httpMethod string, headers map[string]strin
 
 	req, err := http.NewRequest(httpMethod, url.String(), body)
 	if err != nil {
-		return nil, NewErrorResponse(ServerError, err.Error())
+		return nil, NewErrorResponse(InternalError, err.Error())
 	}
 
 	for k, v := range headers {
@@ -42,11 +42,11 @@ func MakeHTTPRequest(fullUrl string, httpMethod string, headers map[string]strin
 	res, err := client.Do(req)
 
 	if err != nil {
-		return nil, NewErrorResponse(ServerError, err.Error())
+		return nil, NewErrorResponse(InternalError, err.Error())
 	}
 
 	if res == nil {
-		return nil, NewErrorResponse(ServerError, err.Error())
+		return nil, NewErrorResponse(InternalError, err.Error())
 	}
 
 	return res.Body, nil
@@ -58,11 +58,11 @@ func DecodeHTTPResponse(response io.ReadCloser, outputType pg.IOType) (*bytes.Bu
 		img, _, err := image.Decode(response)
 
 		if err != nil {
-			return nil, NewErrorResponse(ServerError, err.Error())
+			return nil, NewErrorResponse(InternalError, err.Error())
 		}
 
 		if err := jpeg.Encode(&buffer, img, nil); err != nil {
-			return nil, NewErrorResponse(ServerError, err.Error())
+			return nil, NewErrorResponse(InternalError, err.Error())
 		}
 
 		return &buffer, nil
@@ -71,11 +71,11 @@ func DecodeHTTPResponse(response io.ReadCloser, outputType pg.IOType) (*bytes.Bu
 		json, err := ioutil.ReadAll(response)
 
 		if err != nil {
-			return nil, NewErrorResponse(ServerError, err.Error())
+			return nil, NewErrorResponse(InternalError, err.Error())
 		}
 
 		if _, err := buffer.Write(json); err != nil {
-			return nil, NewErrorResponse(ServerError, err.Error())
+			return nil, NewErrorResponse(InternalError, err.Error())
 		}
 
 		return &buffer, nil

@@ -7,7 +7,8 @@ import (
 func Parser(structure interface{}) func(*fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		if err := c.BodyParser(structure); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(NewErrorResponse(Abort, "Invalid request body"))
+			statusCode := BadRequest
+			return c.Status(statusCode).JSON(NewErrorResponse(statusCode, "Invalid request body"))
 		}
 
 		return nil

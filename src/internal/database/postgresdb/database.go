@@ -6,6 +6,7 @@ import (
 	"reflect"
 	db "warehouse/src/internal/database"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -34,14 +35,15 @@ func NewPostgresDatabase[T All](host string, user string, password string, dbNam
 }
 
 func (cfg *PostgresDatabase[T]) Add(item *T) *db.DBError {
-	result := cfg.db.Create(item)
+	err := cfg.db.Create(item).Error
 
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-			return db.NewDBError(db.Exist, "Entity with this key/keys already exists.", result.Error.Error())
+	if err != nil {
+		if isDuplicateKeyError(err) {
+			return db.NewDBError(db.Exist, "Entity with this key/keys already exists.", err.Error())
+		} else {
+			return db.NewDBError(db.System, "Something went wrong.", err.Error())
 		}
 
-		return db.NewDBError(db.System, "Something went wrong.", result.Error.Error())
 	}
 
 	return nil
@@ -57,7 +59,7 @@ func (cfg *PostgresDatabase[T]) GetOneBy(key string, value interface{}) (*T, *db
 			return nil, db.NewDBError(db.System, "Something went wrong.", result.Error.Error())
 		}
 
-		return nil, db.NewDBError(db.NotFound, "Entity not found.", gorm.ErrRecordNotFound.Error())
+		return nil, db.NewDBError(db.NotFound, "Entity not found.", result.Error.Error())
 	}
 
 	return &item, nil
@@ -92,4 +94,14 @@ func (cfg *PostgresDatabase[T]) Update(id string, updatedFields interface{}) (*T
 	cfg.db.Model(&item).Clauses(clause.Returning{}).Where("id", id).Updates(finalFieldsMap)
 
 	return &item, nil
+}
+
+func isDuplicateKeyError(err error) bool {
+	pgErr, ok := err.(*pgconn.PgError)
+	if ok {
+		// unique_violation = 23505
+		return pgErr.Code == "23505"
+
+	}
+	return false
 }

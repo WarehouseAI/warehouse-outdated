@@ -30,7 +30,7 @@ func ExecuteFormDataCommand(formData *multipart.Form, command *pg.Command, aiPro
 
 			if err != nil {
 				logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute FormData-Command")
-				return nil, httputils.NewErrorResponse(httputils.ServerError, err.Error())
+				return nil, httputils.NewErrorResponse(httputils.InternalError, err.Error())
 			}
 
 			field, _ := writer.CreateFormFile(key, fileHeader.Filename)
@@ -78,7 +78,7 @@ func ExecuteJSONCommand(jsonData map[string]interface{}, command *pg.Command, ai
 
 	if parseErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": parseErr.Error()}).Info("Execute JSON-Command")
-		return nil, httputils.NewErrorResponse(httputils.ServerError, parseErr.Error())
+		return nil, httputils.NewErrorResponse(httputils.InternalError, parseErr.Error())
 	}
 
 	// TODO: Убрать двойное обращение к БД и получать апи ключ ИИшки за один раз (Первый раз обращается в http враппере, второй тут)

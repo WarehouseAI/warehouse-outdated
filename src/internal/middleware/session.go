@@ -14,7 +14,6 @@ import (
 type Middleware func(c *fiber.Ctx) error
 
 type SessionProvider interface {
-	Get(ctx context.Context, sessionId string) (*r.Session, *db.DBError)
 	Update(ctx context.Context, sessionId string) (*r.Session, *db.DBError)
 }
 
@@ -23,26 +22,21 @@ func Session(sessionProvider SessionProvider, logger *logrus.Logger) Middleware 
 		sessionId := c.Cookies("sessionId")
 
 		if sessionId == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(httputils.NewErrorResponse(httputils.Abort, "Empty session key."))
-		}
-
-		session, dbErr := sessionProvider.Get(context.Background(), sessionId)
-
-		if dbErr != nil {
-			logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Session middleware")
-			return c.Status(fiber.StatusInternalServerError).JSON(httputils.NewErrorResponse(httputils.ServerError, dbErr.Message))
-		}
-
-		if session == nil {
-			c.ClearCookie("sessionId")
-			return c.Status(fiber.StatusForbidden).JSON(httputils.NewErrorResponse(httputils.Abort, "Session has expired"))
+			return c.Status(httputils.Unauthorized).JSON(httputils.NewErrorResponse(httputils.Unauthorized, "Empty session key."))
 		}
 
 		newSession, dbErr := sessionProvider.Update(context.Background(), sessionId)
 
 		if dbErr != nil {
 			logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Session middleware")
-			return c.Status(fiber.StatusInternalServerError).JSON(httputils.NewErrorResponse(httputils.ServerError, dbErr.Message))
+
+			if dbErr.ErrorType == db.NotFound {
+				errorResponse := httputils.NewErrorResponseFromDBError(dbErr.ErrorType, "Session has expired.")
+				return c.Status(errorResponse.ErrorCode).JSON(errorResponse)
+			}
+
+			errorResponse := httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
+			return c.Status(errorResponse.ErrorCode).JSON(errorResponse)
 		}
 
 		c.Locals("userId", newSession.Payload.UserId)
