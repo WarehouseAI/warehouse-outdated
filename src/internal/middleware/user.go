@@ -2,31 +2,32 @@ package middleware
 
 import (
 	"time"
+	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
+	"warehouse/src/internal/utils/httputils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 )
 
 type UserProvider interface {
-	GetOneBy(key string, value interface{}) (*pg.User, error)
+	GetOneBy(key string, value interface{}) (*pg.User, *db.DBError)
 }
 
 func User(userProvider UserProvider, logger *logrus.Logger) Middleware {
 	return func(c *fiber.Ctx) error {
 		userId := c.Locals("userId")
-		user, err := userProvider.GetOneBy("id", userId)
+		user, dbErr := userProvider.GetOneBy("id", userId)
 
-		if err != nil {
-			statusCode := fiber.StatusInternalServerError
-			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("User middleware")
-			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.InternalError.Error()})
+		if dbErr != nil {
+			statusCode := httputils.InternalError
+			logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("User middleware")
+			return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, dbErr.Message))
 		}
 
 		if user == nil {
-			statusCode := fiber.StatusNotFound
-			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: dto.NotFoundError.Error()})
+			statusCode := httputils.NotFound
+			return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "User not found."))
 		}
 
 		c.Locals("user", user)

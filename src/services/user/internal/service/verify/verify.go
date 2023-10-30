@@ -1,41 +1,39 @@
 package verify
 
 import (
-	"errors"
 	"time"
+	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
+	"warehouse/src/internal/utils/httputils"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Request struct {
-	Verified         bool   `json:"verified"`
-	VerificationCode string `json:"verification_code"`
+	Verified         bool    `json:"verified"`
+	VerificationCode *string `json:"verification_code"`
 }
 
 type UserUpdater interface {
-	Update(id string, updatedFields interface{}) (*pg.User, error)
+	Update(id string, updatedFields interface{}) (*pg.User, *db.DBError)
 }
 
-func VerifyUserEmail(request Request, user *pg.User, userUpdater UserUpdater, logger *logrus.Logger) error {
+func VerifyUserEmail(request Request, user *pg.User, userUpdater UserUpdater, logger *logrus.Logger) *httputils.ErrorResponse {
 	if user.Verified {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": "Already verified"}).Info("Verify user")
-		return errors.New("User already verified")
+		return httputils.NewErrorResponse(httputils.BadRequest, "User already verified")
 	}
 
 	if request.VerificationCode != user.VerificationCode {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dto.BadRequestError.Error()}).Info("Verify user")
-		return dto.BadRequestError
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": "Invalid verification code"}).Info("Verify user")
+		return httputils.NewErrorResponse(httputils.BadRequest, "Invalid verification code")
 	}
 
-	request.VerificationCode = ""
+	request.VerificationCode = nil
 
-	_, err := userUpdater.Update(user.ID.String(), request)
-
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Verify user")
-		return dto.InternalError
+	if _, dbErr := userUpdater.Update(user.ID.String(), request); dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Verify user")
+		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	return nil

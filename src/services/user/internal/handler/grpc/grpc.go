@@ -2,11 +2,10 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"warehouse/gen"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
 	"warehouse/src/internal/utils/grpcutils"
+	"warehouse/src/internal/utils/httputils"
 	"warehouse/src/services/user/internal/service/create"
 	"warehouse/src/services/user/internal/service/get"
 
@@ -30,15 +29,17 @@ func NewUserPrivateAPI(userDatabase *pg.PostgresDatabase[pg.User], logger *logru
 
 func (pvd *UserServiceProvider) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
 	if req == nil || req.Email == "" {
-		return nil, status.Errorf(codes.InvalidArgument, dto.BadRequestError.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "Empty request data")
 	}
 
 	user, err := create.Create(req, pvd.userDatabase, pvd.logger, ctx)
 
-	if err != nil && errors.Is(err, dto.ExistError) {
-		return nil, status.Errorf(codes.AlreadyExists, err.Error())
-	} else if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+	if err != nil {
+		if err.ErrorCode == httputils.AlreadyExist {
+			return nil, status.Errorf(codes.AlreadyExists, err.ErrorMessage)
+		}
+
+		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
 	}
 
 	return &gen.CreateUserResponse{Id: grpcutils.UserToProto(user).Id}, nil
@@ -46,15 +47,17 @@ func (pvd *UserServiceProvider) CreateUser(ctx context.Context, req *gen.CreateU
 
 func (pvd *UserServiceProvider) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {
 	if req == nil || req.Email == "" {
-		return nil, status.Error(codes.InvalidArgument, dto.BadRequestError.Error())
+		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
 	user, err := get.GetByEmail(req, pvd.userDatabase, pvd.logger, ctx)
 
-	if err != nil && errors.Is(err, dto.NotFoundError) {
-		return nil, status.Errorf(codes.NotFound, err.Error())
-	} else if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+	if err != nil {
+		if err.ErrorCode == httputils.NotFound {
+			return nil, status.Errorf(codes.NotFound, err.ErrorMessage)
+		}
+
+		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
 	}
 
 	return grpcutils.UserToProto(user), nil
@@ -62,15 +65,17 @@ func (pvd *UserServiceProvider) GetUserByEmail(ctx context.Context, req *gen.Get
 
 func (pvd *UserServiceProvider) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
 	if req == nil || req.Id == "" {
-		return nil, status.Error(codes.InvalidArgument, dto.BadRequestError.Error())
+		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
 	user, err := get.GetById(req, pvd.userDatabase, pvd.logger, ctx)
 
-	if err != nil && errors.Is(err, dto.NotFoundError) {
-		return nil, status.Errorf(codes.NotFound, err.Error())
-	} else if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+	if err != nil {
+		if err.ErrorCode == httputils.NotFound {
+			return nil, status.Errorf(codes.NotFound, err.ErrorMessage)
+		}
+
+		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
 	}
 
 	return grpcutils.UserToProto(user), nil

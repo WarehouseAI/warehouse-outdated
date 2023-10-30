@@ -2,10 +2,8 @@ package http
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
+
 	mv "warehouse/src/internal/middleware"
 	"warehouse/src/internal/utils/httputils"
 	aiCreate "warehouse/src/services/ai/internal/service/ai/create"
@@ -45,17 +43,14 @@ func (pvd *AIServiceProvider) CreateWithoutKeyHandler(c *fiber.Ctx) error {
 	var aiInfo aiCreate.RequestWithoutKey
 
 	if err := c.BodyParser(&aiInfo); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
 	ai, err := aiCreate.CreateWithGeneratedKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
 
-	if err != nil && errors.Is(err, dto.InternalError) {
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
-	}
-
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
+		return c.Status(err.ErrorCode).JSON(err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(ai)
@@ -66,17 +61,14 @@ func (pvd *AIServiceProvider) CreateWithKeyHandler(c *fiber.Ctx) error {
 	var aiInfo aiCreate.RequestWithKey
 
 	if err := c.BodyParser(&aiInfo); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
 	ai, err := aiCreate.CreateWithOwnKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
 
-	if err != nil && errors.Is(err, dto.InternalError) {
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{Message: err.Error()})
-	}
-
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: err.Error()})
+		return c.Status(err.ErrorCode).JSON(err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(ai)
@@ -86,13 +78,12 @@ func (pvd *AIServiceProvider) AddCommandHandler(c *fiber.Ctx) error {
 	var commandCreds commandCreate.Request
 
 	if err := c.BodyParser(&commandCreds); err != nil {
-		fmt.Println(err)
-		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{Message: dto.BadRequestError.Error()})
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
-	if err := commandCreate.CreateCommand(&commandCreds, pvd.commandDatabase, pvd.logger); err != nil {
-		statusCode := fiber.StatusInternalServerError
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+	if svcErr := commandCreate.CreateCommand(&commandCreds, pvd.commandDatabase, pvd.logger); svcErr != nil {
+		return c.Status(svcErr.ErrorCode).JSON(svcErr)
 	}
 
 	return c.SendStatus(fiber.StatusCreated)
@@ -102,31 +93,23 @@ func (pvd *AIServiceProvider) ExecuteCommandHandler(c *fiber.Ctx) error {
 	AiID := c.Query("ai_id")
 	commandName := c.Query("command_name")
 
-	existCommand, err := get.GetCommand(get.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.commandDatabase, pvd.logger)
+	existCommand, svcErr := get.GetCommand(get.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.commandDatabase, pvd.logger)
 
-	if existCommand == nil {
-		statusCode := fiber.StatusNotFound
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
-	}
-
-	if err != nil {
-		statusCode := fiber.StatusInternalServerError
-		return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+	if svcErr != nil {
+		return c.Status(svcErr.ErrorCode).JSON(svcErr)
 	}
 
 	if existCommand.PayloadType == pg.FormData {
 		formData, err := c.MultipartForm()
 
 		if err != nil {
-			statusCode := fiber.StatusBadRequest
-			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+			return c.Status(httputils.InternalError).JSON(httputils.NewErrorResponse(httputils.InternalError, err.Error()))
 		}
 
-		response, err := execute.ExecuteFormDataCommand(formData, existCommand, pvd.aiDatabase, pvd.logger)
+		response, svcErr := execute.ExecuteFormDataCommand(formData, existCommand, pvd.aiDatabase, pvd.logger)
 
-		if err != nil {
-			statusCode := fiber.StatusInternalServerError
-			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+		if svcErr != nil {
+			return c.Status(svcErr.ErrorCode).JSON(svcErr)
 		}
 
 		return c.Status(fiber.StatusOK).Send(response.Bytes())
@@ -134,15 +117,14 @@ func (pvd *AIServiceProvider) ExecuteCommandHandler(c *fiber.Ctx) error {
 		var json map[string]interface{} // не трогать мапу
 
 		if err := c.BodyParser(&json); err != nil {
-			statusCode := fiber.StatusBadRequest
-			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+			statusCode := httputils.BadRequest
+			return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 		}
 
-		response, err := execute.ExecuteJSONCommand(json, existCommand, pvd.aiDatabase, pvd.logger)
+		response, svcErr := execute.ExecuteJSONCommand(json, existCommand, pvd.aiDatabase, pvd.logger)
 
-		if err != nil {
-			statusCode := fiber.StatusInternalServerError
-			return c.Status(statusCode).JSON(dto.ErrorResponse{Code: statusCode, Message: err.Error()})
+		if svcErr != nil {
+			return c.Status(svcErr.ErrorCode).JSON(svcErr)
 		}
 
 		return c.Status(fiber.StatusOK).Send(response.Bytes())

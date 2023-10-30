@@ -2,8 +2,9 @@ package get
 
 import (
 	"time"
+	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
+	"warehouse/src/internal/utils/httputils"
 
 	"github.com/sirupsen/logrus"
 )
@@ -13,20 +14,15 @@ type Request struct {
 }
 
 type AIProvider interface {
-	GetOneBy(key string, value interface{}) (*pg.AI, error)
+	GetOneBy(key string, value interface{}) (*pg.AI, *db.DBError)
 }
 
-func GetByID(getRequest Request, aiProvider AIProvider, logger *logrus.Logger) (*pg.AI, error) {
-	existAI, err := aiProvider.GetOneBy("id", getRequest.ID)
+func GetByID(getRequest Request, aiProvider AIProvider, logger *logrus.Logger) (*pg.AI, *httputils.ErrorResponse) {
+	existAI, dbErr := aiProvider.GetOneBy("id", getRequest.ID)
 
-	if existAI == nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Get AI")
-		return nil, dto.NotFoundError
-	}
-
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create AI")
-		return nil, dto.InternalError
+	if dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Create AI")
+		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	return existAI, nil

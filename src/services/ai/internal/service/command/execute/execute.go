@@ -8,18 +8,18 @@ import (
 	"mime/multipart"
 	"net/url"
 	"time"
+	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
 	"warehouse/src/internal/utils/httputils"
 
 	"github.com/sirupsen/logrus"
 )
 
 type AIProvider interface {
-	GetOneBy(key string, value interface{}) (*pg.AI, error)
+	GetOneBy(key string, value interface{}) (*pg.AI, *db.DBError)
 }
 
-func ExecuteFormDataCommand(formData *multipart.Form, command *pg.Command, aiProvider AIProvider, logger *logrus.Logger) (*bytes.Buffer, error) {
+func ExecuteFormDataCommand(formData *multipart.Form, command *pg.Command, aiProvider AIProvider, logger *logrus.Logger) (*bytes.Buffer, *httputils.ErrorResponse) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -30,7 +30,7 @@ func ExecuteFormDataCommand(formData *multipart.Form, command *pg.Command, aiPro
 
 			if err != nil {
 				logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute FormData-Command")
-				return nil, dto.InternalError
+				return nil, httputils.NewErrorResponse(httputils.InternalError, err.Error())
 			}
 
 			field, _ := writer.CreateFormFile(key, fileHeader.Filename)
@@ -44,11 +44,11 @@ func ExecuteFormDataCommand(formData *multipart.Form, command *pg.Command, aiPro
 
 	writer.Close()
 
-	ai, err := aiProvider.GetOneBy("id", command.AI)
+	ai, dbErr := aiProvider.GetOneBy("id", command.AI)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute JSON-Command")
-		return nil, err
+	if dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Execute JSON-Command")
+		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	headers := map[string]string{
@@ -56,37 +56,37 @@ func ExecuteFormDataCommand(formData *multipart.Form, command *pg.Command, aiPro
 		"Authorization": fmt.Sprintf("%s %s", string(ai.AuthScheme), ai.ApiKey),
 	}
 
-	response, err := httputils.MakeHTTPRequest(command.URL, string(command.RequestScheme), headers, url.Values{}, body)
+	response, httpErr := httputils.MakeHTTPRequest(command.URL, string(command.RequestScheme), headers, url.Values{}, body)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute FormData-Command")
-		return nil, err
+	if httpErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": httpErr.ErrorMessage}).Info("Execute FormData-Command")
+		return nil, httpErr
 	}
 
-	buffer, err := httputils.DecodeHTTPResponse(response, command.OutputType)
+	buffer, httpErr := httputils.DecodeHTTPResponse(response, command.OutputType)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute FormData-Command")
-		return nil, dto.InternalError
+	if httpErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": httpErr.ErrorMessage}).Info("Execute FormData-Command")
+		return nil, httpErr
 	}
 
 	return buffer, nil
 }
 
-func ExecuteJSONCommand(jsonData map[string]interface{}, command *pg.Command, aiProvider AIProvider, logger *logrus.Logger) (*bytes.Buffer, error) {
-	json, err := json.Marshal(jsonData)
+func ExecuteJSONCommand(jsonData map[string]interface{}, command *pg.Command, aiProvider AIProvider, logger *logrus.Logger) (*bytes.Buffer, *httputils.ErrorResponse) {
+	json, parseErr := json.Marshal(jsonData)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute JSON-Command")
-		return nil, dto.InternalError
+	if parseErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": parseErr.Error()}).Info("Execute JSON-Command")
+		return nil, httputils.NewErrorResponse(httputils.InternalError, parseErr.Error())
 	}
 
 	// TODO: Убрать двойное обращение к БД и получать апи ключ ИИшки за один раз (Первый раз обращается в http враппере, второй тут)
-	ai, err := aiProvider.GetOneBy("id", command.AI)
+	ai, dbErr := aiProvider.GetOneBy("id", command.AI)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute JSON-Command")
-		return nil, err
+	if dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Execute JSON-Command")
+		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	headers := map[string]string{
@@ -95,18 +95,18 @@ func ExecuteJSONCommand(jsonData map[string]interface{}, command *pg.Command, ai
 	}
 
 	body := bytes.NewBuffer(json)
-	response, err := httputils.MakeHTTPRequest(command.URL, string(command.RequestScheme), headers, url.Values{}, body)
+	response, httpErr := httputils.MakeHTTPRequest(command.URL, string(command.RequestScheme), headers, url.Values{}, body)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute JSON-Command")
-		return nil, err
+	if httpErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": httpErr.ErrorMessage}).Info("Execute JSON-Command")
+		return nil, httpErr
 	}
 
-	buffer, err := httputils.DecodeHTTPResponse(response, command.OutputType)
+	buffer, httpErr := httputils.DecodeHTTPResponse(response, command.OutputType)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute FormData-Command")
-		return nil, dto.InternalError
+	if httpErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": httpErr.ErrorMessage}).Info("Execute FormData-Command")
+		return nil, httpErr
 	}
 
 	return buffer, nil

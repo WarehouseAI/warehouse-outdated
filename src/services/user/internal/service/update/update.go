@@ -5,8 +5,9 @@ import (
 	"os"
 	"sync"
 	"time"
+	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
+	"warehouse/src/internal/utils/httputils"
 	"warehouse/src/internal/utils/mailutils"
 
 	"github.com/sirupsen/logrus"
@@ -26,50 +27,47 @@ type UpdatePasswordRequest struct {
 
 type UpdateUserRequest struct {
 	Username  string `json:"username"`
-	Firstname string `json:"first_name"`
-	Lastname  string `json:"last_name"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
 }
 
 type UserUpdater interface {
-	Update(id string, updatedFields interface{}) (*pg.User, error)
+	Update(id string, updatedFields interface{}) (*pg.User, *db.DBError)
 }
 
-func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, error) {
-	updatedUser, err := userUpdater.Update(userId, request)
+func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, *httputils.ErrorResponse) {
+	updatedUser, dbErr := userUpdater.Update(userId, request)
 
-	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update user")
-		return nil, dto.BadRequestError
+	if dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update user")
+		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	return updatedUser, nil
 }
 
-func UpdatePassword(request UpdatePasswordRequest, user *pg.User, userUpdater UserUpdater, logger *logrus.Logger) error {
+func UpdatePassword(request UpdatePasswordRequest, user *pg.User, userUpdater UserUpdater, logger *logrus.Logger) *httputils.ErrorResponse {
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.OldPassword)); err != nil {
-		fmt.Println("Invalid pass")
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update user password")
-		return dto.BadRequestError
+		return httputils.NewErrorResponse(httputils.BadRequest, err.Error())
 	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(request.Password), 12)
 	request.Password = string(hash)
 
-	_, err := userUpdater.Update(user.ID.String(), request)
-
-	if err != nil {
+	if _, dbErr := userUpdater.Update(user.ID.String(), request); dbErr != nil {
 		fmt.Println("Invalid update")
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update user password")
-		return dto.InternalError
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update user password")
+		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	return nil
 }
 
-func UpdateEmail(wg *sync.WaitGroup, respch chan error, request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) {
-	if _, err := userUpdater.Update(userId, request); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update email")
-		respch <- err
+func UpdateEmail(wg *sync.WaitGroup, respch chan *httputils.ErrorResponse, request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) {
+	if _, dbErr := userUpdater.Update(userId, request); dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update email")
+		respch <- httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	} else {
 		respch <- nil
 	}
@@ -77,12 +75,12 @@ func UpdateEmail(wg *sync.WaitGroup, respch chan error, request UpdateEmailReque
 	wg.Done()
 }
 
-func SendUpdateNotification(wg *sync.WaitGroup, respch chan error, logger *logrus.Logger, request UpdateEmailRequest) {
+func SendUpdateNotification(wg *sync.WaitGroup, respch chan *httputils.ErrorResponse, logger *logrus.Logger, request UpdateEmailRequest) {
 	message := mailutils.NewMessage(mailutils.EmailVerify, request.Email, fmt.Sprintf("%s/api/user/verify/%s", os.Getenv("DOMAIN_HOST"), request.VerificationCode))
 
-	if err := mailutils.SendEmail(message); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update email")
-		respch <- err
+	if mailErr := mailutils.SendEmail(message); mailErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": mailErr.Error()}).Info("Update email")
+		respch <- httputils.NewErrorResponse(httputils.InternalError, mailErr.Error())
 	} else {
 		respch <- nil
 	}

@@ -6,9 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
+	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
-	"warehouse/src/internal/dto"
 	u "warehouse/src/internal/utils"
+	"warehouse/src/internal/utils/httputils"
 
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
@@ -32,16 +33,16 @@ type Response struct {
 }
 
 type AICreator interface {
-	Add(item *pg.AI) error
+	Add(item *pg.AI) *db.DBError
 }
 
-func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, error) {
+func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
 	key, err := u.GenerateKey(32)
 	hasher := md5.New()
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")
-		return nil, dto.InternalError
+		return nil, httputils.NewErrorResponse(httputils.InternalError, err.Error())
 	}
 
 	apiKey := fmt.Sprintf("wh.%s", key)
@@ -57,15 +58,15 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator 
 		UpdateAt:   time.Now(),
 	}
 
-	if err := aiCreator.Add(newAI); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")
-		return nil, dto.InternalError
+	if dbErr := aiCreator.Add(newAI); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Create new AI")
+		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	return &Response{Name: aiInfo.Name, ApiKey: apiKey, AuthScheme: aiInfo.AuthScheme}, nil
 }
 
-func CreateWithOwnKey(aiInfo *RequestWithKey, user *pg.User, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, error) {
+func CreateWithOwnKey(aiInfo *RequestWithKey, user *pg.User, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
 	newAI := &pg.AI{
 		ID:         uuid.Must(uuid.NewV4()),
 		Name:       aiInfo.Name,
@@ -76,9 +77,9 @@ func CreateWithOwnKey(aiInfo *RequestWithKey, user *pg.User, aiCreator AICreator
 		UpdateAt:   time.Now(),
 	}
 
-	if err := aiCreator.Add(newAI); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")
-		return nil, dto.InternalError
+	if dbErr := aiCreator.Add(newAI); dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Create new AI")
+		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
 	return &Response{Name: aiInfo.Name, ApiKey: aiInfo.AuthKey, AuthScheme: aiInfo.AuthScheme}, nil
