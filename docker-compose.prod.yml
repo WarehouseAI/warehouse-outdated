@@ -16,11 +16,15 @@ services:
     environment:
       POSTGRES_USER: '${DATA_DB_USER}'
       POSTGRES_PASSWORD: '${DATA_DB_PASSWORD}'
-      POSTGRES_MULTIPLE_DATABASES: '${DATA_DB_USERS}, ${DATA_DB_AI}'
+      POSTGRES_DB: '${DATA_DB_NAME}'
+      POSTGRES_AI_SERVICE_USER: '${AI_SERVICE_DB_USER}'
+      POSTGRES_USER_SERVICE_USER: '${USER_SERVICE_DB_USER}'
+      POSTGRES_AI_SERVICE_PASS: '${AI_SERVICE_DB_PASS}'
+      POSTGRES_USER_SERVICE_PASS: '${USER_SERVICE_DB_PASS}'
     ports:
       - '${DATA_DB_PORT}:${DATA_DB_PORT}'
     volumes:
-      - ./multiple-psql-databases.sh:/docker-entrypoint-initdb.d/1-multiple-psql-databases.sh
+      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
 
   session:
     image: redis:6.2-alpine
@@ -85,6 +89,7 @@ services:
     env_file: .env
     ports:
       - 8020:8020
+      - 8021:8021
 
   # mailserver:
   #   image: ghcr.io/docker-mailserver/docker-mailserver:latest

@@ -15,6 +15,7 @@ type AuthScheme string
 type RequestScheme string
 type IOType string
 type PayloadType string
+type UserRole string
 
 const (
 	Bearer AuthScheme = "Bearer"
@@ -43,21 +44,27 @@ const (
 	Json     PayloadType = "JSON"
 )
 
+const (
+	Developer UserRole = "DEVELOPER"
+	Base      UserRole = "BASE"
+)
+
 type (
 	AI struct {
-		ID         uuid.UUID  `json:"id" gorm:"type:uuid;primarykey"`
-		Owner      uuid.UUID  `json:"owner" gorm:"type:uuid"`
-		Commands   []Command  `json:"commands" gorm:"foreignKey:AI"`
-		Name       string     `json:"name" gorm:"type:string;unique;not null"`
-		ApiKey     string     `json:"-" gorm:"type:string;not null"`
-		AuthScheme AuthScheme `json:"auth_scheme" gorm:"type:AuthScheme;not null"`
-		CreatedAt  time.Time  `json:"created_at" gorm:"type:time"`
-		UpdateAt   time.Time  `json:"updated_at" gorm:"type:time"`
+		ID          uuid.UUID  `json:"id" gorm:"type:uuid;primarykey"`
+		Owner       uuid.UUID  `json:"owner" gorm:"foreignKey:ID"`
+		FavoriteFor []*User    `json:"-" gorm:"many2many:user_favorites"`
+		Commands    []Command  `json:"commands" gorm:"foreignKey:AIID"`
+		Name        string     `json:"name" gorm:"type:string;unique;not null"`
+		ApiKey      string     `json:"-" gorm:"type:string;not null"`
+		AuthScheme  AuthScheme `json:"auth_scheme" gorm:"type:AuthScheme;not null"`
+		CreatedAt   time.Time  `json:"created_at" gorm:"type:time"`
+		UpdatedAt   time.Time  `json:"updated_at" gorm:"type:time"`
 	}
 
 	Command struct {
 		ID            uuid.UUID         `json:"id" gorm:"type:uuid;primarykey"`
-		AI            uuid.UUID         `json:"ai" gorm:"type:uuid"`
+		AIID          uuid.UUID         `json:"ai_id" gorm:"type:uuid"`
 		Name          string            `json:"name" gorm:"type:string"`
 		Payload       datatypes.JSONMap `json:"payload" gorm:"type:json;not null"`
 		PayloadType   PayloadType       `json:"payload_type" gorm:"type:PayloadType;not null"`
@@ -66,7 +73,7 @@ type (
 		OutputType    IOType            `json:"output_type" gorm:"type:IOType;not null"`
 		URL           string            `json:"url" gorm:"type:string;unique;not null"`
 		CreatedAt     time.Time         `json:"created_at" gorm:"type:time"`
-		UpdateAt      time.Time         `json:"updated_at" gorm:"type:time"`
+		UpdatedAt     time.Time         `json:"updated_at" gorm:"type:time"`
 	}
 
 	User struct {
@@ -80,8 +87,10 @@ type (
 		ViaGoogle        bool      `json:"via_google;omitempty" gorm:"default:false;not null"`
 		Verified         bool      `json:"-" gorm:"default:false;not null"`
 		VerificationCode *string   `json:"-" gorm:"type:string"`
+		Role             UserRole  `json:"role" gorm:"type:UserRole;default:Base;not null"`
+		FavoriteAi       []*AI     `json:"favorite_ai" gorm:"many2many:user_favorites"`
 		OwnedAi          []AI      `json:"owned_ai" gorm:"foreignKey:Owner"`
 		CreatedAt        time.Time `json:"created_at" gorm:"type:time"`
-		UpdateAt         time.Time `json:"updated_at" gorm:"type:time"`
+		UpdatedAt        time.Time `json:"updated_at" gorm:"type:time"`
 	}
 )

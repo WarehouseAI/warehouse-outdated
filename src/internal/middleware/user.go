@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"os"
 	"time"
-	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/utils/httputils"
 
@@ -10,14 +10,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type UserProvider interface {
-	GetOneBy(map[string]interface{}) (*pg.User, *db.DBError)
-}
+func User(logger *logrus.Logger) Middleware {
+	userDatabase, err := pg.NewPostgresDatabase[pg.User](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_NAME"), os.Getenv("DATA_DB_PORT"))
+	if err != nil {
+		panic(err)
+	}
 
-func User(userProvider UserProvider, logger *logrus.Logger) Middleware {
 	return func(c *fiber.Ctx) error {
 		userId := c.Locals("userId")
-		user, dbErr := userProvider.GetOneBy(map[string]interface{}{"id": userId})
+		user, dbErr := userDatabase.GetOneByPreload(map[string]interface{}{"id": userId}, "FavoriteAi")
 
 		if dbErr != nil {
 			statusCode := httputils.InternalError

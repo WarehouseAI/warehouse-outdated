@@ -36,7 +36,7 @@ type AICreator interface {
 	Add(item *pg.AI) *db.DBError
 }
 
-func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
+func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, userId string, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
 	key, err := u.GenerateKey(32)
 	hasher := md5.New()
 
@@ -51,11 +51,11 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator 
 	newAI := &pg.AI{
 		ID:         uuid.Must(uuid.NewV4()),
 		Name:       aiInfo.Name,
-		Owner:      user.ID,
+		Owner:      uuid.Must(uuid.FromString(userId)),
 		AuthScheme: aiInfo.AuthScheme,
 		ApiKey:     hex.EncodeToString(hasher.Sum(nil)),
 		CreatedAt:  time.Now(),
-		UpdateAt:   time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	if dbErr := aiCreator.Add(newAI); err != nil {
@@ -66,15 +66,15 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, user *pg.User, aiCreator 
 	return &Response{Name: aiInfo.Name, ApiKey: apiKey, AuthScheme: aiInfo.AuthScheme}, nil
 }
 
-func CreateWithOwnKey(aiInfo *RequestWithKey, user *pg.User, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
+func CreateWithOwnKey(aiInfo *RequestWithKey, userId string, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
 	newAI := &pg.AI{
 		ID:         uuid.Must(uuid.NewV4()),
 		Name:       aiInfo.Name,
-		Owner:      user.ID,
+		Owner:      uuid.Must(uuid.FromString(userId)),
 		AuthScheme: aiInfo.AuthScheme,
 		ApiKey:     aiInfo.AuthKey,
 		CreatedAt:  time.Now(),
-		UpdateAt:   time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	if dbErr := aiCreator.Add(newAI); dbErr != nil {

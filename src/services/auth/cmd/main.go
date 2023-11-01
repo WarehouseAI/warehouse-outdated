@@ -30,7 +30,7 @@ func main() {
 	fmt.Println("✅Session database successfully connected.")
 
 	// -----------START SERVER-----------
-	sessionMiddleware := mv.Session(session, log)
+	sessionMiddleware := mv.Session(log)
 	api := http.NewAuthAPI(session, sessionMiddleware, log)
 
 	app := api.Init()

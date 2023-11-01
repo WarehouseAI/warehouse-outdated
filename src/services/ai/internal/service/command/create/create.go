@@ -29,7 +29,7 @@ func CreateCommand(commandCreds *Request, commandCreator CommandCreator, logger 
 	newCommand := &pg.Command{
 		ID:            uuid.Must(uuid.NewV4()),
 		Name:          commandCreds.Name,
-		AI:            commandCreds.AiID,
+		AIID:          commandCreds.AiID,
 		RequestScheme: commandCreds.RequestType,
 		InputType:     commandCreds.InputType,
 		OutputType:    commandCreds.OutputType,
@@ -37,7 +37,7 @@ func CreateCommand(commandCreds *Request, commandCreator CommandCreator, logger 
 		PayloadType:   commandCreds.PayloadType,
 		URL:           commandCreds.URL,
 		CreatedAt:     time.Now(),
-		UpdateAt:      time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	if dbErr := commandCreator.Add(newCommand); dbErr != nil {

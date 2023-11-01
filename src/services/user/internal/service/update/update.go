@@ -1,18 +1,29 @@
 package update
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
 	"time"
+	"warehouse/gen"
 	db "warehouse/src/internal/database"
 	pg "warehouse/src/internal/database/postgresdb"
+	"warehouse/src/internal/utils/grpcutils"
 	"warehouse/src/internal/utils/httputils"
 	"warehouse/src/internal/utils/mailutils"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type RemoveFavoriteAiRequest struct {
+	ID string `json:"id"`
+}
+
+type UpdateFavoriteAiRequest struct {
+	FavoriteAi []*pg.AI `json:"favorite_ai"`
+}
 
 type UpdateEmailRequest struct {
 	Email            string `json:"email"`
@@ -33,6 +44,11 @@ type UpdateUserRequest struct {
 
 type UserUpdater interface {
 	Update(id string, updatedFields interface{}) (*pg.User, *db.DBError)
+	DeleteWithAssociation(*pg.User, interface{}, string) *db.DBError
+}
+
+type AiProvider interface {
+	GetById(context.Context, *gen.GetAiByIdMsg) (*gen.AI, *httputils.ErrorResponse)
 }
 
 func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, *httputils.ErrorResponse) {
@@ -46,7 +62,7 @@ func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdate
 	return updatedUser, nil
 }
 
-func UpdatePassword(request UpdatePasswordRequest, user *pg.User, userUpdater UserUpdater, logger *logrus.Logger) *httputils.ErrorResponse {
+func UpdateUserPassword(request UpdatePasswordRequest, user *pg.User, userUpdater UserUpdater, logger *logrus.Logger) *httputils.ErrorResponse {
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.OldPassword)); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Update user password")
 		return httputils.NewErrorResponse(httputils.BadRequest, err.Error())
@@ -64,7 +80,40 @@ func UpdatePassword(request UpdatePasswordRequest, user *pg.User, userUpdater Us
 	return nil
 }
 
-func UpdateEmail(wg *sync.WaitGroup, respch chan *httputils.ErrorResponse, request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) {
+func AddUserFavoriteAi(request *gen.GetAiByIdMsg, user *pg.User, userUpdater UserUpdater, aiProvider AiProvider, logger *logrus.Logger) *httputils.ErrorResponse {
+	ai, gwErr := aiProvider.GetById(context.Background(), request)
+
+	if gwErr != nil {
+		return gwErr
+	}
+
+	newAi := grpcutils.ProtoToAi(ai)
+	newFavorites := append(user.FavoriteAi, &newAi)
+	updatedFields := UpdateFavoriteAiRequest{newFavorites}
+	if _, dbErr := userUpdater.Update(user.ID.String(), updatedFields); dbErr != nil {
+		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
+	}
+
+	return nil
+}
+
+func RemoveUserFavoriteAi(request *gen.GetAiByIdMsg, user *pg.User, userUpdater UserUpdater, aiProvider AiProvider, logger *logrus.Logger) *httputils.ErrorResponse {
+	aiProto, gwErr := aiProvider.GetById(context.Background(), request)
+
+	if gwErr != nil {
+		return gwErr
+	}
+
+	ai := grpcutils.ProtoToAi(aiProto)
+
+	if dbErr := userUpdater.DeleteWithAssociation(user, &ai, "FavoriteAi"); dbErr != nil {
+		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
+	}
+
+	return nil
+}
+
+func UpdateUserEmail(wg *sync.WaitGroup, respch chan *httputils.ErrorResponse, request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) {
 	if _, dbErr := userUpdater.Update(userId, request); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update email")
 		respch <- httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)

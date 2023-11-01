@@ -20,7 +20,7 @@ func UserPayloadToEntity(m *gen.CreateUserMsg) *pg.User {
 		Email:     m.Email,
 		ViaGoogle: m.ViaGoogle,
 		CreatedAt: time.Now(),
-		UpdateAt:  time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 
@@ -28,7 +28,7 @@ func UserToProto(m *pg.User) *gen.User {
 	var ownedAi []*gen.AI
 
 	for _, s := range m.OwnedAi {
-		ownedAi = append(ownedAi, AiToProto(s))
+		ownedAi = append(ownedAi, AiToProto(&s))
 	}
 
 	return &gen.User{
@@ -42,7 +42,7 @@ func UserToProto(m *pg.User) *gen.User {
 		OwnedAi:   ownedAi,
 		ViaGoogle: m.ViaGoogle,
 		CreatedAt: m.CreatedAt.String(),
-		UpdatedAt: m.UpdateAt.String(),
+		UpdatedAt: m.UpdatedAt.String(),
 	}
 }
 
@@ -65,16 +65,16 @@ func ProtoToUser(m *gen.User) *pg.User {
 		Email:     m.Email,
 		ViaGoogle: m.ViaGoogle,
 		CreatedAt: createdAt,
-		UpdateAt:  updatedAt,
+		UpdatedAt: updatedAt,
 		OwnedAi:   ownedAi,
 	}
 }
 
-func AiToProto(m pg.AI) *gen.AI {
+func AiToProto(m *pg.AI) *gen.AI {
 	var commands []*gen.Command
 
 	for _, s := range m.Commands {
-		commands = append(commands, CommandToProto(s))
+		commands = append(commands, CommandToProto(&s))
 	}
 
 	return &gen.AI{
@@ -84,7 +84,7 @@ func AiToProto(m pg.AI) *gen.AI {
 		ApiKey:     m.ApiKey,
 		AuthScheme: string(m.AuthScheme),
 		CreatedAt:  m.CreatedAt.String(),
-		UpdatedAt:  m.UpdateAt.String(),
+		UpdatedAt:  m.UpdatedAt.String(),
 		Commands:   commands,
 	}
 }
@@ -106,16 +106,16 @@ func ProtoToAi(m *gen.AI) pg.AI {
 		ApiKey:     m.ApiKey,
 		AuthScheme: pg.AuthScheme(m.AuthScheme),
 		CreatedAt:  createdAt,
-		UpdateAt:   updatedAt,
+		UpdatedAt:  updatedAt,
 	}
 }
 
-func CommandToProto(m pg.Command) *gen.Command {
+func CommandToProto(m *pg.Command) *gen.Command {
 	jsonObject, _ := m.Payload.MarshalJSON()
 
 	return &gen.Command{
 		Id:            m.ID.String(),
-		Ai:            m.AI.String(),
+		Ai:            m.AIID.String(),
 		Name:          m.Name,
 		Payload:       string(jsonObject),
 		PayloadType:   string(m.PayloadType),
@@ -124,7 +124,7 @@ func CommandToProto(m pg.Command) *gen.Command {
 		OutputType:    string(m.OutputType),
 		Url:           m.URL,
 		CreatedAt:     m.CreatedAt.String(),
-		UpdatedAt:     m.UpdateAt.String(),
+		UpdatedAt:     m.UpdatedAt.String(),
 	}
 }
 
@@ -137,7 +137,7 @@ func ProtoToCommand(m *gen.Command) pg.Command {
 
 	return pg.Command{
 		ID:            uuid.FromStringOrNil(m.Id),
-		AI:            uuid.FromStringOrNil(m.Ai),
+		AIID:          uuid.FromStringOrNil(m.Ai),
 		Name:          m.Name,
 		Payload:       jsonObject,
 		PayloadType:   pg.PayloadType(m.PayloadType),
@@ -146,6 +146,6 @@ func ProtoToCommand(m *gen.Command) pg.Command {
 		OutputType:    pg.IOType(m.OutputType),
 		URL:           m.Url,
 		CreatedAt:     createdAt,
-		UpdateAt:      updatedAt,
+		UpdatedAt:     updatedAt,
 	}
 }

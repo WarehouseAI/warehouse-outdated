@@ -2,14 +2,17 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"time"
+	"warehouse/gen"
 	pg "warehouse/src/internal/database/postgresdb"
-	r "warehouse/src/internal/database/redisdb"
 	mw "warehouse/src/internal/middleware"
-	"warehouse/src/services/ai/internal/handler/http"
+	pvtAPI "warehouse/src/services/ai/internal/handler/grpc"
+	pubApi "warehouse/src/services/ai/internal/handler/http"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -27,36 +30,47 @@ func main() {
 	fmt.Println("✅Logger successfully set up.")
 
 	// -----------CONNECT DATABASES-----------
-
-	userDatabase, err := pg.NewPostgresDatabase[pg.User](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
+	aiDatabase, err := pg.NewPostgresDatabase[pg.AI](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_NAME"), os.Getenv("DATA_DB_PORT"))
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("✅User database successfully connected.")
 
-	aiDatabase, err := pg.NewPostgresDatabase[pg.AI](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
-	if err != nil {
+	if err := aiDatabase.GrantPrivileges("ais", os.Getenv("DATA_DB_USER")); err != nil {
 		panic(err)
 	}
 	fmt.Println("✅AI database successfully connected.")
 
-	commandDatabase, err := pg.NewPostgresDatabase[pg.Command](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_AI"), os.Getenv("DATA_DB_PORT"))
+	commandDatabase, err := pg.NewPostgresDatabase[pg.Command](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_NAME"), os.Getenv("DATA_DB_PORT"))
 	if err != nil {
+		panic(err)
+	}
+
+	if err := commandDatabase.GrantPrivileges("commands", os.Getenv("DATA_DB_USER")); err != nil {
 		panic(err)
 	}
 	fmt.Println("✅Command database successfully connected.")
 
-	sessionDatabase := r.NewRedisDatabase(os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"), os.Getenv("SESSION_DB_PASSWORD"))
-	fmt.Println("✅Session database successfully connected.")
-
 	// -----------START SERVER-----------
-	sessionMiddleware := mw.Session(sessionDatabase, log)
-	userMiddleware := mw.User(userDatabase, log)
-	api := http.NewAiAPI(sessionMiddleware, userMiddleware, aiDatabase, commandDatabase, log)
+	sessionMiddleware := mw.Session(log)
+	userMiddleware := mw.User(log)
+	pvtApi := pvtAPI.NewAiPrivateAPI(aiDatabase, log)
+	pubApi := pubApi.NewAiAPI(sessionMiddleware, userMiddleware, aiDatabase, commandDatabase, log)
 
-	app := api.Init()
+	publicApp := pubApi.Init()
+	privateApp := grpc.NewServer()
 
-	if err := app.Listen(":8020"); err != nil {
+	lis, err := net.Listen("tcp", "ai-service:8021")
+
+	go func() {
+		gen.RegisterAiServiceServer(privateApp, pvtApi)
+		if err := privateApp.Serve(lis); err != nil {
+			fmt.Println("❌Failed to start the Private API.")
+			log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("AI Microservice")
+			panic(err)
+		}
+	}()
+
+	if err := publicApp.Listen(":8020"); err != nil {
 		fmt.Println("❌Failed to start the AI Microservice.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("AI Microservice")
 		panic(err)

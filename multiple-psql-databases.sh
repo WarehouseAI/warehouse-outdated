@@ -14,7 +14,7 @@ function create_user_and_database() {
 EOSQL
 }
 
-function create_enums() {
+function create_ai_enums() {
 	local database=$1
 	echo "Creating types in '$database'"
 
@@ -26,12 +26,25 @@ function create_enums() {
 EOSQL
 }
 
+function create_user_enums() {
+	local database=$1
+	echo "Creating types in '$database'"
+
+	psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$database" <<-EOSQL
+	    CREATE TYPE userrole AS ENUM ('Developer', 'Base');
+EOSQL
+}
+
 if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
 	echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
 	for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
 		create_user_and_database $db
 		if [ $db = "ai" ]; then
-			create_enums $db
+			create_ai_enums $db
+		fi
+
+		if [ $db = "users" ]; then
+			create_user_enums $db
 		fi
 	done
 	echo "Multiple databases created"

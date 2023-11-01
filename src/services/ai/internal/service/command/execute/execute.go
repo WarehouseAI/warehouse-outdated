@@ -44,7 +44,7 @@ func ExecuteFormDataCommand(formData *multipart.Form, command *pg.Command, aiPro
 
 	writer.Close()
 
-	ai, dbErr := aiProvider.GetOneBy(map[string]interface{}{"id": command.AI})
+	ai, dbErr := aiProvider.GetOneBy(map[string]interface{}{"id": command.AIID})
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Execute JSON-Command")
@@ -82,7 +82,7 @@ func ExecuteJSONCommand(jsonData map[string]interface{}, command *pg.Command, ai
 	}
 
 	// TODO: Убрать двойное обращение к БД и получать апи ключ ИИшки за один раз (Первый раз обращается в http враппере, второй тут)
-	ai, dbErr := aiProvider.GetOneBy(map[string]interface{}{"id": command.AI})
+	ai, dbErr := aiProvider.GetOneBy(map[string]interface{}{"id": command.AIID})
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Execute JSON-Command")

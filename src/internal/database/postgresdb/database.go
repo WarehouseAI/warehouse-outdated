@@ -21,7 +21,7 @@ func NewPostgresDatabase[T All](host string, user string, password string, dbNam
 
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
 	if err != nil {
-		fmt.Println("❌Failed to connect to the AI database.")
+		fmt.Println("❌Failed to connect to the database.")
 		return nil, err
 	}
 
@@ -32,6 +32,10 @@ func NewPostgresDatabase[T All](host string, user string, password string, dbNam
 	return &PostgresDatabase[T]{
 		db: db,
 	}, nil
+}
+
+func (cfg *PostgresDatabase[T]) GrantPrivileges(table string, username string) error {
+	return cfg.db.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON TABLE %s TO %s;", table, username)).Error
 }
 
 func (cfg *PostgresDatabase[T]) Add(item *T) *db.DBError {
@@ -97,11 +101,11 @@ func (cfg *PostgresDatabase[T]) Update(id string, updatedFields interface{}) (*T
 
 		// TODO: работает только со строками, добавить поддержку других типов
 		if exist {
-			if value != "" {
-				finalFieldsMap[genericField.Name] = value
-			}
+			finalFieldsMap[genericField.Name] = value
 		}
 	}
+
+	fmt.Println(finalFieldsMap)
 
 	if len(finalFieldsMap) == 0 {
 		return nil, db.NewDBError(db.Update, "Nothing to update.", gorm.ErrEmptySlice.Error())
@@ -110,6 +114,14 @@ func (cfg *PostgresDatabase[T]) Update(id string, updatedFields interface{}) (*T
 	cfg.db.Model(&item).Clauses(clause.Returning{}).Where("id", id).Updates(finalFieldsMap)
 
 	return &item, nil
+}
+
+func (cfg *PostgresDatabase[T]) DeleteWithAssociation(parent *T, deleteable interface{}, association string) *db.DBError {
+	if err := cfg.db.Model(parent).Association(association).Delete(deleteable); err != nil {
+		return db.NewDBError(db.System, "Unable to delete from entity", err.Error())
+	}
+
+	return nil
 }
 
 func isDuplicateKeyError(err error) bool {

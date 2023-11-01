@@ -8,7 +8,6 @@ import (
 	"warehouse/gen"
 
 	pg "warehouse/src/internal/database/postgresdb"
-	r "warehouse/src/internal/database/redisdb"
 	mw "warehouse/src/internal/middleware"
 	pvtAPI "warehouse/src/services/user/internal/handler/grpc"
 	pubAPI "warehouse/src/services/user/internal/handler/http"
@@ -32,20 +31,21 @@ func main() {
 	fmt.Println("✅Logger successfully set up.")
 
 	// -----------CONNECT TO DATABASE-------------
-	userDatabase, err := pg.NewPostgresDatabase[pg.User](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_USERS"), os.Getenv("DATA_DB_PORT"))
+	userDatabase, err := pg.NewPostgresDatabase[pg.User](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_NAME"), os.Getenv("DATA_DB_PORT"))
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("✅User database successfully connected.")
 
-	sessionDatabase := r.NewRedisDatabase(os.Getenv("SESSION_DB_HOST"), os.Getenv("SESSION_DB_PORT"), os.Getenv("SESSION_DB_PASSWORD"))
-	fmt.Println("✅Session database successfully connected.")
+	if err := userDatabase.GrantPrivileges("users", os.Getenv("DATA_DB_USER")); err != nil {
+		panic(err)
+	}
+	fmt.Println("✅Database successfully connected.")
 
 	// -----------START SERVER-----------
 	fmt.Println("Start the User Microservice...")
 
-	sessionMiddleware := mw.Session(sessionDatabase, log)
-	userMiddleware := mw.User(userDatabase, log)
+	sessionMiddleware := mw.Session(log)
+	userMiddleware := mw.User(log)
 
 	pvtApi := pvtAPI.NewUserPrivateAPI(userDatabase, log)
 	pubApi := pubAPI.NewUserPublicAPI(userDatabase, userMiddleware, sessionMiddleware, log)

@@ -25,3 +25,11 @@ message Command {
   string created_at = 10 [json_name = "created_at"];
   string updated_at = 11 [json_name = "updated_at"];
 }
+
+message GetAiByIdMsg {
+  string id = 1 [json_name = "id"];
+}
+
+service AiService {
+  rpc GetAiById(GetAiByIdMsg) returns (AI);
+}

@@ -39,7 +39,7 @@ func NewAiAPI(sessionMiddleware mv.Middleware, userMiddleware mv.Middleware, aiD
 }
 
 func (pvd *AIServiceProvider) CreateWithoutKeyHandler(c *fiber.Ctx) error {
-	user := c.Locals("user").(*pg.User)
+	userId := c.Locals("userId").(string)
 	var aiInfo aiCreate.RequestWithoutKey
 
 	if err := c.BodyParser(&aiInfo); err != nil {
@@ -47,7 +47,7 @@ func (pvd *AIServiceProvider) CreateWithoutKeyHandler(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
-	ai, err := aiCreate.CreateWithGeneratedKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
+	ai, err := aiCreate.CreateWithGeneratedKey(&aiInfo, userId, pvd.aiDatabase, pvd.logger, pvd.ctx)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -57,7 +57,7 @@ func (pvd *AIServiceProvider) CreateWithoutKeyHandler(c *fiber.Ctx) error {
 }
 
 func (pvd *AIServiceProvider) CreateWithKeyHandler(c *fiber.Ctx) error {
-	user := c.Locals("user").(*pg.User)
+	userId := c.Locals("userId").(string)
 	var aiInfo aiCreate.RequestWithKey
 
 	if err := c.BodyParser(&aiInfo); err != nil {
@@ -65,7 +65,7 @@ func (pvd *AIServiceProvider) CreateWithKeyHandler(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body."))
 	}
 
-	ai, err := aiCreate.CreateWithOwnKey(&aiInfo, user, pvd.aiDatabase, pvd.logger, pvd.ctx)
+	ai, err := aiCreate.CreateWithOwnKey(&aiInfo, userId, pvd.aiDatabase, pvd.logger, pvd.ctx)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -137,8 +137,8 @@ func (pvd *AIServiceProvider) Init() *fiber.App {
 	app.Use(httputils.SetupCORS())
 	route := app.Group("/ai")
 
-	route.Post("/create/generate", pvd.sessionMiddleware, pvd.userMiddleware, pvd.CreateWithoutKeyHandler)
-	route.Post("/create/exist", pvd.sessionMiddleware, pvd.userMiddleware, pvd.CreateWithKeyHandler)
+	route.Post("/create/generate", pvd.sessionMiddleware, pvd.CreateWithoutKeyHandler)
+	route.Post("/create/exist", pvd.sessionMiddleware, pvd.CreateWithKeyHandler)
 	route.Post("/command/create", pvd.sessionMiddleware, pvd.AddCommandHandler)
 	route.Post("/command/execute", pvd.sessionMiddleware, pvd.ExecuteCommandHandler)
 
