@@ -2,8 +2,6 @@ package create
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"time"
 	db "warehouse/src/internal/database"
@@ -36,9 +34,8 @@ type AICreator interface {
 	Add(item *pg.AI) *db.DBError
 }
 
-func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, userId string, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
+func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, userId string, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*pg.AI, *httputils.ErrorResponse) {
 	key, err := u.GenerateKey(32)
-	hasher := md5.New()
 
 	if err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Create new AI")
@@ -46,14 +43,13 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, userId string, aiCreator 
 	}
 
 	apiKey := fmt.Sprintf("wh.%s", key)
-	hasher.Write([]byte(key))
 
 	newAI := &pg.AI{
 		ID:         uuid.Must(uuid.NewV4()),
 		Name:       aiInfo.Name,
 		Owner:      uuid.Must(uuid.FromString(userId)),
 		AuthScheme: aiInfo.AuthScheme,
-		ApiKey:     hex.EncodeToString(hasher.Sum(nil)),
+		ApiKey:     apiKey,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
@@ -63,10 +59,10 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, userId string, aiCreator 
 		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
-	return &Response{Name: aiInfo.Name, ApiKey: apiKey, AuthScheme: aiInfo.AuthScheme}, nil
+	return newAI, nil
 }
 
-func CreateWithOwnKey(aiInfo *RequestWithKey, userId string, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*Response, *httputils.ErrorResponse) {
+func CreateWithOwnKey(aiInfo *RequestWithKey, userId string, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*pg.AI, *httputils.ErrorResponse) {
 	newAI := &pg.AI{
 		ID:         uuid.Must(uuid.NewV4()),
 		Name:       aiInfo.Name,
@@ -82,5 +78,5 @@ func CreateWithOwnKey(aiInfo *RequestWithKey, userId string, aiCreator AICreator
 		return nil, httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
-	return &Response{Name: aiInfo.Name, ApiKey: aiInfo.AuthKey, AuthScheme: aiInfo.AuthScheme}, nil
+	return newAI, nil
 }
