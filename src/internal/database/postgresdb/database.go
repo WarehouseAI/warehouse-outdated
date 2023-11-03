@@ -85,7 +85,51 @@ func (cfg *PostgresDatabase[T]) GetOneByPreload(conditions map[string]interface{
 	return &item, nil
 }
 
-func (cfg *PostgresDatabase[T]) Update(id string, updatedFields interface{}) (*T, *db.DBError) {
+func (cfg *PostgresDatabase[T]) GetOneByWithUpdate(conditions map[string]interface{}, preload string, updatedFields map[string]interface{}) (*T, *db.DBError) {
+	var item T
+
+	err := cfg.db.Transaction(func(tx *gorm.DB) error {
+		if preload != "" {
+			if err := tx.Where(conditions).Preload(preload).First(&item).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := tx.Where(conditions).First(&item).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Model(&item).Updates(updatedFields).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, db.NewDBError(db.System, "Something went wrong.", err.Error())
+		}
+
+		return nil, db.NewDBError(db.NotFound, "Entity not found.", err.Error())
+	}
+
+	return &item, nil
+}
+
+func (cfg *PostgresDatabase[T]) Update(item *T, updatedFields map[string]interface{}) *db.DBError {
+	if err := cfg.db.Model(item).Updates(updatedFields).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return db.NewDBError(db.System, "Something went wrong.", err.Error())
+		}
+
+		return db.NewDBError(db.NotFound, "Entity not found.", err.Error())
+	}
+
+	return nil
+}
+
+func (cfg *PostgresDatabase[T]) RawUpdate(id string, updatedFields interface{}) (*T, *db.DBError) {
 	var item T
 
 	updatedFieldsReflect := reflect.ValueOf(updatedFields)
@@ -104,8 +148,6 @@ func (cfg *PostgresDatabase[T]) Update(id string, updatedFields interface{}) (*T
 			finalFieldsMap[genericField.Name] = value
 		}
 	}
-
-	fmt.Println(finalFieldsMap)
 
 	if len(finalFieldsMap) == 0 {
 		return nil, db.NewDBError(db.Update, "Nothing to update.", gorm.ErrEmptySlice.Error())

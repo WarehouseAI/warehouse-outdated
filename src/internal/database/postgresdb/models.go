@@ -55,9 +55,11 @@ type (
 		Owner       uuid.UUID  `json:"owner" gorm:"foreignKey:ID"`
 		FavoriteFor []*User    `json:"-" gorm:"many2many:user_favorites"`
 		Commands    []Command  `json:"commands" gorm:"foreignKey:AIID"`
+		Description string     `json:"description" gorm:"type:string;not null"`
 		Name        string     `json:"name" gorm:"type:string;unique;not null"`
 		ApiKey      string     `json:"-" gorm:"type:string;not null"`
-		AuthScheme  AuthScheme `json:"auth_scheme" gorm:"type:AuthScheme;not null"`
+		AuthScheme  AuthScheme `json:"-" gorm:"type:AuthScheme;not null"`
+		Used        int        `json:"used" gorm:"type:int;default:0"`
 		CreatedAt   time.Time  `json:"created_at" gorm:"type:time"`
 		UpdatedAt   time.Time  `json:"updated_at" gorm:"type:time"`
 	}

@@ -13,21 +13,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type request struct {
+	Description string `json:"description"`
+}
+
 type RequestWithoutKey struct {
+	request
 	Name       string        `json:"name"`
 	AuthScheme pg.AuthScheme `json:"auth_scheme"`
 }
 
 type RequestWithKey struct {
+	request
 	Name       string        `json:"name"`
 	AuthScheme pg.AuthScheme `json:"auth_scheme"`
 	AuthKey    string        `json:"auth_key"`
-}
-
-type Response struct {
-	Name       string        `json:"name"`
-	AuthScheme pg.AuthScheme `json:"auth_scheme"`
-	ApiKey     string        `json:"api_key"`
 }
 
 type AICreator interface {
@@ -45,13 +45,14 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, userId string, aiCreator 
 	apiKey := fmt.Sprintf("wh.%s", key)
 
 	newAI := &pg.AI{
-		ID:         uuid.Must(uuid.NewV4()),
-		Name:       aiInfo.Name,
-		Owner:      uuid.Must(uuid.FromString(userId)),
-		AuthScheme: aiInfo.AuthScheme,
-		ApiKey:     apiKey,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:          uuid.Must(uuid.NewV4()),
+		Name:        aiInfo.Name,
+		Description: aiInfo.Description,
+		Owner:       uuid.Must(uuid.FromString(userId)),
+		AuthScheme:  aiInfo.AuthScheme,
+		ApiKey:      apiKey,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	if dbErr := aiCreator.Add(newAI); err != nil {
@@ -64,13 +65,14 @@ func CreateWithGeneratedKey(aiInfo *RequestWithoutKey, userId string, aiCreator 
 
 func CreateWithOwnKey(aiInfo *RequestWithKey, userId string, aiCreator AICreator, logger *logrus.Logger, ctx context.Context) (*pg.AI, *httputils.ErrorResponse) {
 	newAI := &pg.AI{
-		ID:         uuid.Must(uuid.NewV4()),
-		Name:       aiInfo.Name,
-		Owner:      uuid.Must(uuid.FromString(userId)),
-		AuthScheme: aiInfo.AuthScheme,
-		ApiKey:     aiInfo.AuthKey,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:          uuid.Must(uuid.NewV4()),
+		Name:        aiInfo.Name,
+		Description: aiInfo.Description,
+		Owner:       uuid.Must(uuid.FromString(userId)),
+		AuthScheme:  aiInfo.AuthScheme,
+		ApiKey:      aiInfo.AuthKey,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	if dbErr := aiCreator.Add(newAI); dbErr != nil {

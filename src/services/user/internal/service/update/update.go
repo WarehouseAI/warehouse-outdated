@@ -43,7 +43,7 @@ type UpdateUserRequest struct {
 }
 
 type UserUpdater interface {
-	Update(id string, updatedFields interface{}) (*pg.User, *db.DBError)
+	RawUpdate(id string, updatedFields interface{}) (*pg.User, *db.DBError)
 	DeleteWithAssociation(*pg.User, interface{}, string) *db.DBError
 }
 
@@ -52,7 +52,7 @@ type AiProvider interface {
 }
 
 func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, *httputils.ErrorResponse) {
-	updatedUser, dbErr := userUpdater.Update(userId, request)
+	updatedUser, dbErr := userUpdater.RawUpdate(userId, request)
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update user")
@@ -71,7 +71,7 @@ func UpdateUserPassword(request UpdatePasswordRequest, user *pg.User, userUpdate
 	hash, _ := bcrypt.GenerateFromPassword([]byte(request.Password), 12)
 	request.Password = string(hash)
 
-	if _, dbErr := userUpdater.Update(user.ID.String(), request); dbErr != nil {
+	if _, dbErr := userUpdater.RawUpdate(user.ID.String(), request); dbErr != nil {
 		fmt.Println("Invalid update")
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update user password")
 		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
@@ -90,7 +90,7 @@ func AddUserFavoriteAi(request *gen.GetAiByIdMsg, user *pg.User, userUpdater Use
 	newAi := grpcutils.ProtoToAi(ai)
 	newFavorites := append(user.FavoriteAi, &newAi)
 	updatedFields := UpdateFavoriteAiRequest{newFavorites}
-	if _, dbErr := userUpdater.Update(user.ID.String(), updatedFields); dbErr != nil {
+	if _, dbErr := userUpdater.RawUpdate(user.ID.String(), updatedFields); dbErr != nil {
 		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
@@ -114,7 +114,7 @@ func RemoveUserFavoriteAi(request *gen.GetAiByIdMsg, user *pg.User, userUpdater 
 }
 
 func UpdateUserEmail(wg *sync.WaitGroup, respch chan *httputils.ErrorResponse, request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) {
-	if _, dbErr := userUpdater.Update(userId, request); dbErr != nil {
+	if _, dbErr := userUpdater.RawUpdate(userId, request); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update email")
 		respch <- httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	} else {

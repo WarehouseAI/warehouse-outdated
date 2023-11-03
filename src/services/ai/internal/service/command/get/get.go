@@ -15,11 +15,18 @@ type Request struct {
 	Name string    `json:"name"`
 }
 
+type Response struct {
+	AI         *pg.AI
+	Payload    pg.Command
+	ApiKey     string
+	AuthScheme pg.AuthScheme
+}
+
 type AiProvider interface {
 	GetOneByPreload(map[string]interface{}, string) (*pg.AI, *db.DBError)
 }
 
-func GetCommand(getRequest Request, aiProvider AiProvider, logger *logrus.Logger) (*pg.Command, *httputils.ErrorResponse) {
+func GetCommand(getRequest Request, aiProvider AiProvider, logger *logrus.Logger) (*Response, *httputils.ErrorResponse) {
 	existAI, dbErr := aiProvider.GetOneByPreload(map[string]interface{}{"id": getRequest.AiID}, "Commands")
 
 	if dbErr != nil {
@@ -29,7 +36,7 @@ func GetCommand(getRequest Request, aiProvider AiProvider, logger *logrus.Logger
 
 	for i := 0; i <= len(existAI.Commands); i++ {
 		if existAI.Commands[i].Name == getRequest.Name {
-			return &existAI.Commands[i], nil
+			return &Response{existAI, existAI.Commands[i], existAI.ApiKey, existAI.AuthScheme}, nil
 		}
 	}
 

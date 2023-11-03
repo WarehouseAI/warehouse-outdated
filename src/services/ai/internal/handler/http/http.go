@@ -7,9 +7,10 @@ import (
 	mv "warehouse/src/internal/middleware"
 	"warehouse/src/internal/utils/httputils"
 	aiCreate "warehouse/src/services/ai/internal/service/ai/create"
+	getAi "warehouse/src/services/ai/internal/service/ai/get"
 	commandCreate "warehouse/src/services/ai/internal/service/command/create"
 	"warehouse/src/services/ai/internal/service/command/execute"
-	"warehouse/src/services/ai/internal/service/command/get"
+	getCmd "warehouse/src/services/ai/internal/service/command/get"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofrs/uuid"
@@ -74,6 +75,18 @@ func (pvd *AIServiceProvider) CreateWithKeyHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(ai)
 }
 
+func (pvd *AIServiceProvider) GetAIHandler(c *fiber.Ctx) error {
+	aiId := c.Params("id")
+
+	existAi, svcErr := getAi.GetLoadedAiByID(aiId, pvd.aiDatabase, pvd.logger)
+
+	if svcErr != nil {
+		return c.Status(svcErr.ErrorCode).JSON(svcErr)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(existAi)
+}
+
 func (pvd *AIServiceProvider) AddCommandHandler(c *fiber.Ctx) error {
 	var commandCreds commandCreate.Request
 
@@ -93,13 +106,13 @@ func (pvd *AIServiceProvider) ExecuteCommandHandler(c *fiber.Ctx) error {
 	AiID := c.Query("ai_id")
 	commandName := c.Query("command_name")
 
-	existCommand, svcErr := get.GetCommand(get.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.aiDatabase, pvd.logger)
+	existCommand, svcErr := getCmd.GetCommand(getCmd.Request{AiID: uuid.FromStringOrNil(AiID), Name: commandName}, pvd.aiDatabase, pvd.logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
 	}
 
-	if existCommand.PayloadType == pg.FormData {
+	if existCommand.Payload.PayloadType == pg.FormData {
 		formData, err := c.MultipartForm()
 
 		if err != nil {
@@ -139,6 +152,7 @@ func (pvd *AIServiceProvider) Init() *fiber.App {
 
 	route.Post("/create/generate", pvd.sessionMiddleware, pvd.CreateWithoutKeyHandler)
 	route.Post("/create/exist", pvd.sessionMiddleware, pvd.CreateWithKeyHandler)
+	route.Get("/get/:id", pvd.GetAIHandler)
 	route.Post("/command/create", pvd.sessionMiddleware, pvd.AddCommandHandler)
 	route.Post("/command/execute", pvd.sessionMiddleware, pvd.ExecuteCommandHandler)
 

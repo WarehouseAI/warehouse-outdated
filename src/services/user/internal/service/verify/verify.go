@@ -15,7 +15,7 @@ type Request struct {
 }
 
 type UserUpdater interface {
-	Update(id string, updatedFields interface{}) (*pg.User, *db.DBError)
+	RawUpdate(id string, updatedFields interface{}) (*pg.User, *db.DBError)
 }
 
 func VerifyUserEmail(request Request, user *pg.User, userUpdater UserUpdater, logger *logrus.Logger) *httputils.ErrorResponse {
@@ -31,7 +31,7 @@ func VerifyUserEmail(request Request, user *pg.User, userUpdater UserUpdater, lo
 
 	request.VerificationCode = nil
 
-	if _, dbErr := userUpdater.Update(user.ID.String(), request); dbErr != nil {
+	if _, dbErr := userUpdater.RawUpdate(user.ID.String(), request); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Verify user")
 		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}

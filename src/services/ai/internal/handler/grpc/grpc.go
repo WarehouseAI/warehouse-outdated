@@ -31,7 +31,7 @@ func (pvd *AiServiceProvider) GetAiById(ctx context.Context, req *gen.GetAiByIdM
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	ai, err := get.GetLoadedAiByID(req, pvd.aiDatabase, pvd.logger)
+	ai, err := get.GetLoadedAiByID(req.Id, pvd.aiDatabase, pvd.logger)
 
 	if err != nil {
 		if err.ErrorCode == httputils.NotFound {
