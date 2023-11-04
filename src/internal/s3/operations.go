@@ -12,14 +12,12 @@ import (
 func (cfg *S3Storage) UploadFile(file multipart.File, fileName string) (string, *S3Error) {
 	uploader := s3manager.NewUploader(cfg.Session)
 
-	output, err := uploader.Upload(&s3manager.UploadInput{
+	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(cfg.Bucket),
 		ACL:    aws.String("public-read"),
 		Key:    aws.String(fileName),
 		Body:   file,
 	})
-
-	fmt.Println(output)
 
 	if err != nil {
 		fmt.Println(err)

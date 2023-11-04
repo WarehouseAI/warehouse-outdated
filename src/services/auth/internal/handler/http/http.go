@@ -2,6 +2,8 @@ package http
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"warehouse/gen"
 	r "warehouse/src/internal/database/redisdb"
 	mv "warehouse/src/internal/middleware"
@@ -64,7 +66,9 @@ func (pvd *AuthServiceProvider) RegisterHandler(c *fiber.Ctx) error {
 
 	defer picture.Close()
 
-	link, svcErr := register.UploadAvatar(picture, username, pvd.logger, pvd.s3)
+	fileName := fmt.Sprintf("%s_avatar%s", username, filepath.Ext(rawPicture.Filename))
+
+	link, svcErr := register.UploadAvatar(picture, fileName, pvd.logger, pvd.s3)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
