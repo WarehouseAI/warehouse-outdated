@@ -2,6 +2,7 @@ package httputils
 
 import (
 	db "warehouse/src/internal/database"
+	"warehouse/src/internal/s3"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -29,9 +30,20 @@ var dbErrorMapper = map[db.DBErrorType]int{
 	db.System:   InternalError,
 }
 
+var s3ErrorMapper = map[s3.S3ErrorType]int{
+	s3.System: InternalError,
+}
+
 func NewErrorResponseFromDBError(errorType db.DBErrorType, message string) *ErrorResponse {
 	return &ErrorResponse{
 		ErrorCode:    dbErrorMapper[errorType],
+		ErrorMessage: message,
+	}
+}
+
+func NewErrorResponseFromS3Error(errorType s3.S3ErrorType, message string) *ErrorResponse {
+	return &ErrorResponse{
+		ErrorCode:    s3ErrorMapper[errorType],
 		ErrorMessage: message,
 	}
 }

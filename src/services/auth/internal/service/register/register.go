@@ -2,8 +2,10 @@ package register
 
 import (
 	"context"
+	"mime/multipart"
 	"time"
 	"warehouse/gen"
+	"warehouse/src/internal/s3"
 	"warehouse/src/internal/utils/httputils"
 
 	"github.com/sirupsen/logrus"
@@ -33,4 +35,15 @@ func Register(userInfo *gen.CreateUserMsg, userCreator UserCreator, logger *logr
 	}
 
 	return userId, nil
+}
+
+func UploadAvatar(file multipart.File, fileName string, logger *logrus.Logger, s3 *s3.S3Storage) (string, *httputils.ErrorResponse) {
+	link, err := s3.UploadFile(file, fileName)
+
+	if err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Upload avatar")
+		return "", httputils.NewErrorResponseFromS3Error(err.ErrorType, err.Message)
+	}
+
+	return link, nil
 }
