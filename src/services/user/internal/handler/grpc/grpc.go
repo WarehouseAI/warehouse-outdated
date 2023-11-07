@@ -8,6 +8,7 @@ import (
 	"warehouse/src/internal/utils/httputils"
 	"warehouse/src/services/user/internal/service/create"
 	"warehouse/src/services/user/internal/service/get"
+	"warehouse/src/services/user/internal/service/update"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -43,6 +44,24 @@ func (pvd *UserServiceProvider) CreateUser(ctx context.Context, req *gen.CreateU
 	}
 
 	return &gen.CreateUserResponse{Id: grpcutils.UserToProto(user).Id}, nil
+}
+
+func (pvd *UserServiceProvider) ResetPassword(ctx context.Context, req *gen.ResetPasswordRequest) (*gen.ResetPasswordResponse, error) {
+	if req == nil || req.UserId == "" || req.Password == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "Empty request data")
+	}
+
+	resetRequest := update.ResetPasswordRequest{
+		Password: req.Password,
+	}
+
+	user, err := update.UpdateUser(resetRequest, "id", req.UserId, pvd.userDatabase, pvd.logger)
+
+	if err != nil {
+		return nil, status.Errorf(codes.Aborted, err.ErrorMessage)
+	}
+
+	return &gen.ResetPasswordResponse{Id: user.ID.String()}, nil
 }
 
 func (pvd *UserServiceProvider) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {

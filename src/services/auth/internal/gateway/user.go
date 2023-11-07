@@ -46,6 +46,31 @@ func (c UserGrpcConnection) Create(ctx context.Context, userInfo *gen.CreateUser
 	return &register.Response{ID: resp.Id}, nil
 }
 
+func (c UserGrpcConnection) ResetPassword(ctx context.Context, updateInfo *gen.ResetPasswordRequest) (*gen.ResetPasswordResponse, *httputils.ErrorResponse) {
+	conn, err := utils.ServiceConnection(ctx, c.grpcUrl)
+
+	if err != nil {
+		return nil, httputils.NewErrorResponse(httputils.InternalError, err.Error())
+	}
+
+	defer conn.Close()
+
+	client := gen.NewUserServiceClient(conn)
+	resp, err := client.ResetPassword(ctx, updateInfo)
+
+	if err != nil {
+		s, _ := status.FromError(err)
+
+		if s.Code() == codes.Aborted {
+			return nil, httputils.NewErrorResponse(httputils.BadRequest, s.Message())
+		}
+
+		return nil, httputils.NewErrorResponse(httputils.InternalError, s.Message())
+	}
+
+	return resp, nil
+}
+
 func (c UserGrpcConnection) GetByEmail(ctx context.Context, userInfo *gen.GetUserByEmailMsg) (*gen.User, *httputils.ErrorResponse) {
 	conn, err := utils.ServiceConnection(ctx, c.grpcUrl)
 

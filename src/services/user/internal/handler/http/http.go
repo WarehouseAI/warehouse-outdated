@@ -49,7 +49,7 @@ func (pvd *UserServiceProvider) UpdateHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(httputils.NewErrorResponse(httputils.BadRequest, "Invalid request body."))
 	}
 
-	updatedUser, err := userUpdate.UpdateUser(updatedFields, userId, pvd.userDatabase, pvd.logger)
+	updatedUser, err := userUpdate.UpdateUser(updatedFields, "id", userId, pvd.userDatabase, pvd.logger)
 
 	if err != nil {
 		if err.ErrorCode == httputils.BadRequest {

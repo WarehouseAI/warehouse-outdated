@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"warehouse/gen"
+	pg "warehouse/src/internal/database/postgresdb"
 	r "warehouse/src/internal/database/redisdb"
 	mv "warehouse/src/internal/middleware"
 	"warehouse/src/internal/s3"
@@ -12,6 +13,7 @@ import (
 	gw "warehouse/src/services/auth/internal/gateway"
 	"warehouse/src/services/auth/internal/service/login"
 	"warehouse/src/services/auth/internal/service/logout"
+	"warehouse/src/services/auth/internal/service/recovery"
 	"warehouse/src/services/auth/internal/service/register"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,6 +22,7 @@ import (
 
 type AuthServiceProvider struct {
 	sessionDatabase   *r.RedisDatabase
+	tokenDatabase     *pg.PostgresDatabase[pg.ResetToken]
 	s3                *s3.S3Storage
 	sessionMiddleware mv.Middleware
 	userGateway       *gw.UserGrpcConnection
@@ -27,7 +30,7 @@ type AuthServiceProvider struct {
 	ctx               context.Context
 }
 
-func NewAuthAPI(sessionDatabase *r.RedisDatabase, sessionMiddleware mv.Middleware, logger *logrus.Logger, s3 *s3.S3Storage) *AuthServiceProvider {
+func NewAuthAPI(tokenDatabase *pg.PostgresDatabase[pg.ResetToken], sessionDatabase *r.RedisDatabase, sessionMiddleware mv.Middleware, logger *logrus.Logger, s3 *s3.S3Storage) *AuthServiceProvider {
 	ctx := context.Background()
 	userGateway := gw.NewUserGrpcConnection("user-service:8001")
 
@@ -35,6 +38,7 @@ func NewAuthAPI(sessionDatabase *r.RedisDatabase, sessionMiddleware mv.Middlewar
 		userGateway:       userGateway,
 		sessionDatabase:   sessionDatabase,
 		sessionMiddleware: sessionMiddleware,
+		tokenDatabase:     tokenDatabase,
 		s3:                s3,
 		ctx:               ctx,
 		logger:            logger,
@@ -116,6 +120,54 @@ func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
+func (pvd *AuthServiceProvider) PasswordReset(c *fiber.Ctx) error {
+	resetTokenId := c.Query("token_id")
+	var request gen.ResetPasswordRequest
+
+	if err := c.BodyParser(&request); err != nil {
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body"))
+	}
+
+	response, err := recovery.PasswordReset(&request, resetTokenId, pvd.userGateway, pvd.tokenDatabase, pvd.logger, pvd.ctx)
+
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (pvd *AuthServiceProvider) VerifyReset(c *fiber.Ctx) error {
+	verificationCode := c.Query("verification")
+	tokenId := c.Query("token_id")
+
+	resetToken, err := recovery.VerifyResetCode(verificationCode, tokenId, pvd.tokenDatabase, pvd.logger, pvd.ctx)
+
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(resetToken)
+}
+
+func (pvd *AuthServiceProvider) SendResetHandler(c *fiber.Ctx) error {
+	var request recovery.ResetAttemptRequest
+
+	if err := c.BodyParser(&request); err != nil {
+		statusCode := httputils.BadRequest
+		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body"))
+	}
+
+	resetToken, err := recovery.SendResetEmail(request, pvd.tokenDatabase, pvd.userGateway, pvd.logger, pvd.ctx)
+
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(resetToken)
+}
+
 func (pvd *AuthServiceProvider) LogoutHandler(c *fiber.Ctx) error {
 	sessionId := c.Cookies("sessionId")
 
@@ -143,6 +195,9 @@ func (pvd *AuthServiceProvider) Init() *fiber.App {
 
 	route.Post("/register", pvd.RegisterHandler)
 	route.Post("/login", pvd.LoginHandler)
+	route.Post("/reset/request", pvd.SendResetHandler)
+	route.Get("/reset/verify", pvd.VerifyReset)
+	route.Post("/reset/confirm", pvd.PasswordReset)
 	route.Delete("/logout", pvd.LogoutHandler)
 	route.Get("/whoami", pvd.sessionMiddleware, pvd.WhoAmIHandler)
 

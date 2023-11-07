@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	pg "warehouse/src/internal/database/postgresdb"
 	"warehouse/src/internal/database/redisdb"
 	mv "warehouse/src/internal/middleware"
 	"warehouse/src/internal/s3"
@@ -35,11 +36,18 @@ func main() {
 		panic(err)
 	}
 
+	resetTokenDatabase, err := pg.NewPostgresDatabase[pg.ResetToken](os.Getenv("DATA_DB_HOST"), os.Getenv("DATA_DB_USER"), os.Getenv("DATA_DB_PASSWORD"), os.Getenv("DATA_DB_NAME"), os.Getenv("DATA_DB_PORT"))
+	if err != nil {
+		panic(err)
+	}
+
 	// -----------START SERVER-----------
 	sessionMiddleware := mv.Session(log)
-	api := http.NewAuthAPI(session, sessionMiddleware, log, s3)
+	api := http.NewAuthAPI(resetTokenDatabase, session, sessionMiddleware, log, s3)
 
 	app := api.Init()
+
+	go resetTokenDatabase.AutoDeleteSQL(5*time.Minute, "expires_at < ?", time.Now())
 
 	if err := app.Listen(":8010"); err != nil {
 		fmt.Println("❌Failed to start the Auth Microservice.")

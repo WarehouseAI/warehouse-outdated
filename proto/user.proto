@@ -10,12 +10,12 @@ message User {
   string password = 5;
   string picture = 6;
   string email = 7;
-  bool viaGoogle = 8 [json_name = "via_google"];
+  bool viaGoogle = 8 [json_name="via_google"];
   bool verified = 9;
-  string verification_code = 10 [json_name = "verification_code"];
-  string created_at = 11 [json_name = "created_at"];
-  string updated_at = 12 [json_name = "updated_at"];
-  repeated AI owned_ai = 13 [json_name = "owned_ai"];
+  string verification_code = 10 [json_name="verification_code"];
+  string created_at = 11 [json_name="created_at"];
+  string updated_at = 12 [json_name="updated_at"];
+  repeated AI owned_ai = 13 [json_name="owned_ai"];
 }
 
 // REQ's and RES's
@@ -35,10 +35,19 @@ message CreateUserMsg {
   string password = 4;
   string picture = 5;
   string email = 6;
-  bool viaGoogle = 7 [json_name = "via_google"];
+  bool viaGoogle = 7 [json_name="via_google"];
 }
 
 message CreateUserResponse {
+  string id = 1;
+}
+
+message ResetPasswordRequest {
+  string userId = 1 [json_name="user_id"];
+  string password = 2;
+}
+
+message ResetPasswordResponse {
   string id = 1;
 }
 
@@ -46,5 +55,6 @@ service UserService {
   rpc GetUserByEmail(GetUserByEmailMsg) returns (User);
   rpc GetUserById(GetUserByIdMsg) returns (User);
   rpc CreateUser(CreateUserMsg) returns (CreateUserResponse);
+  rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse);
 }
 

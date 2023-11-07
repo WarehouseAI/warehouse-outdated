@@ -8,7 +8,7 @@ import (
 )
 
 type All interface {
-	AI | Command | User
+	AI | Command | User | ResetToken
 }
 
 type AuthScheme string
@@ -94,5 +94,13 @@ type (
 		OwnedAi          []AI      `json:"owned_ai" gorm:"foreignKey:Owner"`
 		CreatedAt        time.Time `json:"created_at" gorm:"type:time"`
 		UpdatedAt        time.Time `json:"updated_at" gorm:"type:time"`
+	}
+
+	ResetToken struct {
+		ID        uuid.UUID `json:"id" gorm:"type:uuid;primarykey"`
+		UserId    uuid.UUID `json:"-" gorm:"type:uuid;not null;unique"`
+		Token     string    `json:"-" gorm:"type:string;not null"`
+		ExpiresAt time.Time `json:"-" gorm:"type:time"`
+		CreatedAt time.Time `json:"-" gorm:"type:time"`
 	}
 )

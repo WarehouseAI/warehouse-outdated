@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 	db "warehouse/src/internal/database"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -85,36 +86,18 @@ func (cfg *PostgresDatabase[T]) GetOneByPreload(conditions map[string]interface{
 	return &item, nil
 }
 
-func (cfg *PostgresDatabase[T]) GetOneByWithUpdate(conditions map[string]interface{}, preload string, updatedFields map[string]interface{}) (*T, *db.DBError) {
-	var item T
-
-	err := cfg.db.Transaction(func(tx *gorm.DB) error {
-		if preload != "" {
-			if err := tx.Where(conditions).Preload(preload).First(&item).Error; err != nil {
-				return err
-			}
-		} else {
-			if err := tx.Where(conditions).First(&item).Error; err != nil {
-				return err
-			}
-		}
-
-		if err := tx.Model(&item).Updates(updatedFields).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
+func (cfg *PostgresDatabase[T]) Transaction(transaction func(tx *gorm.DB) error) *db.DBError {
+	err := cfg.db.Transaction(transaction)
 
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, db.NewDBError(db.System, "Something went wrong.", err.Error())
+			return db.NewDBError(db.System, "Something went wrong.", err.Error())
 		}
 
-		return nil, db.NewDBError(db.NotFound, "Entity not found.", err.Error())
+		return db.NewDBError(db.NotFound, "Entity not found.", err.Error())
 	}
 
-	return &item, nil
+	return nil
 }
 
 func (cfg *PostgresDatabase[T]) Update(item *T, updatedFields map[string]interface{}) *db.DBError {
@@ -129,7 +112,7 @@ func (cfg *PostgresDatabase[T]) Update(item *T, updatedFields map[string]interfa
 	return nil
 }
 
-func (cfg *PostgresDatabase[T]) RawUpdate(id string, updatedFields interface{}) (*T, *db.DBError) {
+func (cfg *PostgresDatabase[T]) RawUpdate(condition map[string]interface{}, updatedFields interface{}) (*T, *db.DBError) {
 	var item T
 
 	updatedFieldsReflect := reflect.ValueOf(updatedFields)
@@ -153,17 +136,50 @@ func (cfg *PostgresDatabase[T]) RawUpdate(id string, updatedFields interface{}) 
 		return nil, db.NewDBError(db.Update, "Nothing to update.", gorm.ErrEmptySlice.Error())
 	}
 
-	cfg.db.Model(&item).Clauses(clause.Returning{}).Where("id", id).Updates(finalFieldsMap)
+	cfg.db.Model(&item).Clauses(clause.Returning{}).Where(condition).Updates(finalFieldsMap)
 
 	return &item, nil
 }
 
-func (cfg *PostgresDatabase[T]) DeleteWithAssociation(parent *T, deleteable interface{}, association string) *db.DBError {
+func (cfg *PostgresDatabase[T]) DeleteAssociation(parent *T, deleteable interface{}, association string) *db.DBError {
 	if err := cfg.db.Model(parent).Association(association).Delete(deleteable); err != nil {
 		return db.NewDBError(db.System, "Unable to delete from entity", err.Error())
 	}
 
 	return nil
+}
+
+func (cfg *PostgresDatabase[T]) DeleteEntity(condition map[string]interface{}) *db.DBError {
+	var item T
+
+	if err := cfg.db.Where(condition).Delete(&item).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return db.NewDBError(db.System, "Something went wrong.", err.Error())
+		}
+
+		return db.NewDBError(db.NotFound, "Entity not found.", err.Error())
+	}
+
+	return nil
+}
+
+func (cfg *PostgresDatabase[T]) AutoDeleteSQL(duration time.Duration, query string, arg interface{}) func() {
+	var item T
+
+	ticker := time.NewTicker(duration)
+	quit := make(chan struct{})
+
+	return func() {
+		for {
+			select {
+			case <-ticker.C:
+				cfg.db.Where(query, arg).Delete(&item)
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}
 }
 
 func isDuplicateKeyError(err error) bool {

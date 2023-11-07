@@ -36,6 +36,10 @@ type UpdatePasswordRequest struct {
 	Password    string `json:"password"`
 }
 
+type ResetPasswordRequest struct {
+	Password string `json:"password"`
+}
+
 type UpdateUserRequest struct {
 	Username  string `json:"username"`
 	Firstname string `json:"firstname"`
@@ -43,16 +47,16 @@ type UpdateUserRequest struct {
 }
 
 type UserUpdater interface {
-	RawUpdate(id string, updatedFields interface{}) (*pg.User, *db.DBError)
-	DeleteWithAssociation(*pg.User, interface{}, string) *db.DBError
+	RawUpdate(map[string]interface{}, interface{}) (*pg.User, *db.DBError)
+	DeleteAssociation(*pg.User, interface{}, string) *db.DBError
 }
 
 type AiProvider interface {
 	GetById(context.Context, *gen.GetAiByIdMsg) (*gen.AI, *httputils.ErrorResponse)
 }
 
-func UpdateUser(request UpdateUserRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, *httputils.ErrorResponse) {
-	updatedUser, dbErr := userUpdater.RawUpdate(userId, request)
+func UpdateUser(request interface{}, key string, value string, userUpdater UserUpdater, logger *logrus.Logger) (*pg.User, *httputils.ErrorResponse) {
+	updatedUser, dbErr := userUpdater.RawUpdate(map[string]interface{}{key: value}, request)
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update user")
@@ -71,8 +75,7 @@ func UpdateUserPassword(request UpdatePasswordRequest, user *pg.User, userUpdate
 	hash, _ := bcrypt.GenerateFromPassword([]byte(request.Password), 12)
 	request.Password = string(hash)
 
-	if _, dbErr := userUpdater.RawUpdate(user.ID.String(), request); dbErr != nil {
-		fmt.Println("Invalid update")
+	if _, dbErr := userUpdater.RawUpdate(map[string]interface{}{"id": user.ID.String()}, request); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update user password")
 		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
@@ -90,7 +93,7 @@ func AddUserFavoriteAi(request *gen.GetAiByIdMsg, user *pg.User, userUpdater Use
 	newAi := grpcutils.ProtoToAi(ai)
 	newFavorites := append(user.FavoriteAi, &newAi)
 	updatedFields := UpdateFavoriteAiRequest{newFavorites}
-	if _, dbErr := userUpdater.RawUpdate(user.ID.String(), updatedFields); dbErr != nil {
+	if _, dbErr := userUpdater.RawUpdate(map[string]interface{}{"id": user.ID.String()}, updatedFields); dbErr != nil {
 		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
@@ -106,7 +109,7 @@ func RemoveUserFavoriteAi(request *gen.GetAiByIdMsg, user *pg.User, userUpdater 
 
 	ai := grpcutils.ProtoToAi(aiProto)
 
-	if dbErr := userUpdater.DeleteWithAssociation(user, &ai, "FavoriteAi"); dbErr != nil {
+	if dbErr := userUpdater.DeleteAssociation(user, &ai, "FavoriteAi"); dbErr != nil {
 		return httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
@@ -114,7 +117,7 @@ func RemoveUserFavoriteAi(request *gen.GetAiByIdMsg, user *pg.User, userUpdater 
 }
 
 func UpdateUserEmail(wg *sync.WaitGroup, respch chan *httputils.ErrorResponse, request UpdateEmailRequest, userId string, userUpdater UserUpdater, logger *logrus.Logger) {
-	if _, dbErr := userUpdater.RawUpdate(userId, request); dbErr != nil {
+	if _, dbErr := userUpdater.RawUpdate(map[string]interface{}{"id": userId}, request); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Update email")
 		respch <- httputils.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	} else {
