@@ -1,0 +1,1 @@
+protoc -I=./proto --go_out=./services/user/adapter/grpc --go-grpc_out=./services/user/adapter/grpc ai.proto user.proto
