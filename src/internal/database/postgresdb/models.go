@@ -86,11 +86,11 @@ type (
 		Picture          string    `json:"picture" gorm:"type:string"`
 		Password         string    `json:"-" gorm:"type:string;not null"`
 		Email            string    `json:"email" gorm:"type:string;not null;unique"`
-		ViaGoogle        bool      `json:"via_google;omitempty" gorm:"default:false;not null"`
+		ViaGoogle        bool      `json:"via_google" gorm:"default:false;not null"`
 		Verified         bool      `json:"-" gorm:"default:false;not null"`
 		VerificationCode *string   `json:"-" gorm:"type:string"`
 		Role             UserRole  `json:"role" gorm:"type:UserRole;default:Base;not null"`
-		FavoriteAi       []*AI     `json:"favorite_ai" gorm:"many2many:user_favorites"`
+		FavoriteAi       []*AI     `json:"-" gorm:"many2many:user_favorites"`
 		OwnedAi          []AI      `json:"owned_ai" gorm:"foreignKey:Owner"`
 		CreatedAt        time.Time `json:"created_at" gorm:"type:time"`
 		UpdatedAt        time.Time `json:"updated_at" gorm:"type:time"`

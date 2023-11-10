@@ -178,6 +178,18 @@ func (pvd *UserServiceProvider) GetFavoriteAIHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(favoriteAi)
 }
 
+func (pvd *UserServiceProvider) GetUserById(c *fiber.Ctx) error {
+	userId := c.Query("id")
+
+	user, err := get.GetById(&gen.GetUserByIdMsg{Id: userId}, pvd.userDatabase, pvd.logger, pvd.ctx)
+
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(user)
+}
+
 // INIT
 func (pvd *UserServiceProvider) Init() *fiber.App {
 	app := fiber.New()
@@ -189,6 +201,7 @@ func (pvd *UserServiceProvider) Init() *fiber.App {
 	route.Patch("/update/password", pvd.sessionMiddleware, pvd.userMiddleware, pvd.UpdatePasswordHandler)
 	route.Patch("/favorites/add", pvd.sessionMiddleware, pvd.userMiddleware, pvd.AddFavoriteAIHandler)
 	route.Patch("/favorites/remove", pvd.sessionMiddleware, pvd.userMiddleware, pvd.RemoveFavoriteAIHandler)
+	route.Get("/get", pvd.GetUserById)
 	route.Get("/favorites", pvd.sessionMiddleware, pvd.GetFavoriteAIHandler)
 	route.Get("/verify/:code", pvd.sessionMiddleware, pvd.userMiddleware, pvd.VerifyUserHandler)
 

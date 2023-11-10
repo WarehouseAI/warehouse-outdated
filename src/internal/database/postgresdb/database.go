@@ -163,20 +163,18 @@ func (cfg *PostgresDatabase[T]) DeleteEntity(condition map[string]interface{}) *
 	return nil
 }
 
-func (cfg *PostgresDatabase[T]) AutoDeleteSQL(duration time.Duration, query string, arg interface{}) func() {
-	var item T
-
+func (cfg *PostgresDatabase[T]) DeleteSQL(duration time.Duration) func() {
 	ticker := time.NewTicker(duration)
-	quit := make(chan struct{})
+	done := make(chan bool)
 
 	return func() {
 		for {
 			select {
-			case <-ticker.C:
-				cfg.db.Where(query, arg).Delete(&item)
-			case <-quit:
-				ticker.Stop()
+			case <-done:
 				return
+			case t := <-ticker.C:
+				fmt.Println("Tick at: ", t)
+				cfg.db.Exec("DELETE FROM reset_tokens WHERE expires_at < ?;", time.Now())
 			}
 		}
 	}

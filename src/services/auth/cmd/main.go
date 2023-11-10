@@ -47,7 +47,9 @@ func main() {
 
 	app := api.Init()
 
-	go resetTokenDatabase.AutoDeleteSQL(5*time.Minute, "expires_at < ?", time.Now())
+	cleaner := resetTokenDatabase.DeleteSQL(1 * time.Minute)
+
+	go cleaner()
 
 	if err := app.Listen(":8010"); err != nil {
 		fmt.Println("❌Failed to start the Auth Microservice.")
