@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (pvd *UserGrpcProducer) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
+func (pvd *UserGrpcServer) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
 	if req == nil || req.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "Empty request data")
 	}

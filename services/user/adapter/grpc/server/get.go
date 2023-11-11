@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (pvd *UserGrpcProducer) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {
+func (pvd *UserGrpcServer) GetUserByEmail(ctx context.Context, req *gen.GetUserByEmailMsg) (*gen.User, error) {
 	if req == nil || req.Email == "" {
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
@@ -29,7 +29,7 @@ func (pvd *UserGrpcProducer) GetUserByEmail(ctx context.Context, req *gen.GetUse
 	return models.UserToProto(user), nil
 }
 
-func (pvd *UserGrpcProducer) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
+func (pvd *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
 	if req == nil || req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}

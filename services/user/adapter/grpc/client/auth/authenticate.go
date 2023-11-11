@@ -2,15 +2,15 @@ package auth
 
 import (
 	"context"
+	"warehouseai/user/adapter/grpc/client"
 	"warehouseai/user/adapter/grpc/gen"
-	r "warehouseai/user/adapter/grpc/receiver"
 	errs "warehouseai/user/errors"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func Authenticate(consumer *r.GrpcReceiver, sessionId string) (*string, *errs.ErrorResponse) {
+func Authenticate(consumer *client.GrpcClient, sessionId string) (*string, *errs.ErrorResponse) {
 	conn, err := consumer.Connect()
 
 	if err != nil {

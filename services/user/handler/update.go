@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func (h *Handler) UpdatePersonalData(c *fiber.Ctx) error {
+func (h *Handler) UpdatePersonalDataHandler(c *fiber.Ctx) error {
 	userId := c.Locals("userId").(string)
 	var newPersonalData service.UpdatePersonalDataRequest
 
