@@ -172,8 +172,7 @@ func (cfg *PostgresDatabase[T]) DeleteSQL(duration time.Duration) func() {
 			select {
 			case <-done:
 				return
-			case t := <-ticker.C:
-				fmt.Println("Tick at: ", t)
+			case <-ticker.C:
 				cfg.db.Exec("DELETE FROM reset_tokens WHERE expires_at < ?;", time.Now())
 			}
 		}

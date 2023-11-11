@@ -56,26 +56,36 @@ func (pvd *AuthServiceProvider) RegisterHandler(c *fiber.Ctx) error {
 	username := form.Value["username"][0]
 	rawPicture, err := c.FormFile("picture")
 
-	if err != nil {
-		response := httputils.NewErrorResponse(httputils.InternalError, err.Error())
-		return c.Status(response.ErrorCode).JSON(response)
-	}
+	var pictureLink string
 
-	picture, err := rawPicture.Open()
+	if rawPicture != nil {
+		if err != nil {
+			response := httputils.NewErrorResponse(httputils.InternalError, err.Error())
+			return c.Status(response.ErrorCode).JSON(response)
+		}
 
-	if err != nil {
-		response := httputils.NewErrorResponse(httputils.InternalError, err.Error())
-		return c.Status(response.ErrorCode).JSON(response)
-	}
+		fmt.Println(rawPicture.Size)
 
-	defer picture.Close()
+		picture, err := rawPicture.Open()
 
-	fileName := fmt.Sprintf("%s_avatar%s", username, filepath.Ext(rawPicture.Filename))
+		if err != nil {
+			response := httputils.NewErrorResponse(httputils.InternalError, err.Error())
+			return c.Status(response.ErrorCode).JSON(response)
+		}
 
-	link, svcErr := register.UploadAvatar(picture, fileName, pvd.logger, pvd.s3)
+		defer picture.Close()
 
-	if svcErr != nil {
-		return c.Status(svcErr.ErrorCode).JSON(svcErr)
+		fileName := fmt.Sprintf("%s_avatar%s", username, filepath.Ext(rawPicture.Filename))
+
+		link, svcErr := register.UploadAvatar(picture, fileName, pvd.logger, pvd.s3)
+
+		if svcErr != nil {
+			return c.Status(svcErr.ErrorCode).JSON(svcErr)
+		}
+
+		pictureLink = link
+	} else {
+		pictureLink = ""
 	}
 
 	userInfo := &gen.CreateUserMsg{
@@ -84,7 +94,7 @@ func (pvd *AuthServiceProvider) RegisterHandler(c *fiber.Ctx) error {
 		Lastname:  form.Value["lastname"][0],
 		Password:  form.Value["password"][0],
 		Email:     form.Value["email"][0],
-		Picture:   link,
+		Picture:   pictureLink,
 	}
 
 	userId, svcErr := register.Register(userInfo, pvd.userGateway, pvd.logger, pvd.ctx)
