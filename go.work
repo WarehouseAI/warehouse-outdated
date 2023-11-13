@@ -1,3 +1,7 @@
 go 1.20
 
-use ./services/user
+use (
+	./internal
+	./services/auth
+	./services/user
+)

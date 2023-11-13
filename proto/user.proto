@@ -15,6 +15,7 @@ message User {
   string updated_at = 12 [json_name="updated_at"];
   repeated string owned_ai = 13 [json_name="owned_ai"];
   repeated string favorite_ai = 14 [json_name="favorite_ai"];
+  string password = 15;
 }
 
 // REQ's and RES's
@@ -24,7 +25,7 @@ message GetUserByEmailMsg {
 }
 
 message GetUserByIdMsg {
-  string id = 1;
+  string user_id = 1;
 }
 
 message CreateUserMsg {
@@ -38,7 +39,7 @@ message CreateUserMsg {
 }
 
 message CreateUserResponse {
-  string id = 1;
+  string user_id = 1;
 }
 
 message ResetPasswordRequest {
@@ -47,7 +48,7 @@ message ResetPasswordRequest {
 }
 
 message ResetPasswordResponse {
-  string id = 1;
+  string user_id = 1;
 }
 
 service UserService {

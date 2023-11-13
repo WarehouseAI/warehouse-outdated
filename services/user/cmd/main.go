@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"warehouseai/user/adapter/grpc/server"
+	"warehouseai/user/cmd/dataservice"
+	"warehouseai/user/cmd/grpc"
+	"warehouseai/user/cmd/server"
 	"warehouseai/user/config"
-	"warehouseai/user/dataservice"
-	"warehouseai/user/handler"
 
 	"github.com/sirupsen/logrus"
 )
@@ -24,14 +24,12 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	db := dataservice.InitDatabase(config.NewDatabaseCfg())
+	db := dataservice.InitUserDatabase(config.NewDatabaseCfg())
 	fmt.Println("✅Database successfully connected.")
 
-	grpcProducer := server.NewUserGrpcServer(db, log)
-	go grpcProducer.Start("user-service:8001")
+	go grpc.Start("user-service:8001", db, log)
 
-	httpHandler := handler.NewHttpHandler(db, log)
-	if err := httpHandler.Start(":8000"); err != nil {
+	if err := server.StartServer(":8000", db, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)
