@@ -114,7 +114,7 @@ func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body"))
 	}
 
-	session, err := login.Login(&creds, pvd.userGateway, pvd.sessionDatabase, pvd.logger, pvd.ctx)
+	resp, session, err := login.Login(&creds, pvd.userGateway, pvd.sessionDatabase, pvd.logger, pvd.ctx)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -127,7 +127,7 @@ func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
 		Secure:   true,
 	})
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
 func (pvd *AuthServiceProvider) PasswordReset(c *fiber.Ctx) error {
