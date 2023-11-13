@@ -6,6 +6,7 @@ import (
 	"warehouseai/auth/adapter/grpc/client/user"
 	"warehouseai/auth/dataservice/sessiondata"
 	"warehouseai/auth/dataservice/tokendata"
+	e "warehouseai/internal/errors"
 	"warehouseai/internal/gen"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,11 +20,11 @@ type Handler struct {
 	AuthClient   *user.UserGrpcClient
 }
 
-func (pvd *AuthServiceProvider) RegisterHandler(c *fiber.Ctx) error {
+func (pvd *Handler) RegisterHandler(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 
 	if err != nil {
-		response := httputils.NewErrorResponse(httputils.BadRequest, err.Error())
+		response := e.NewErrorResponse(e.HttpBadRequest, err.Error())
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
@@ -31,14 +32,14 @@ func (pvd *AuthServiceProvider) RegisterHandler(c *fiber.Ctx) error {
 	rawPicture, err := c.FormFile("picture")
 
 	if err != nil {
-		response := httputils.NewErrorResponse(httputils.InternalError, err.Error())
+		response := e.NewErrorResponse(e.HttpInternalError, err.Error())
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
 	picture, err := rawPicture.Open()
 
 	if err != nil {
-		response := httputils.NewErrorResponse(httputils.InternalError, err.Error())
+		response := e.NewErrorResponse(e.HttpInternalError, err.Error())
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
