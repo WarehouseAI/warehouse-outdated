@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	e "warehouseai/internal/errors"
-	"warehouseai/internal/gen"
+	"warehouseai/user/adapter/grpc/gen"
+	e "warehouseai/user/errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,7 +27,7 @@ func NewAuthGrpcClient(grpcUrl string) *AuthGrpcClient {
 	}
 }
 
-func (c *AuthGrpcClient) Authenticate(sessionId string) (*string, *e.ErrorResponse) {
+func (c *AuthGrpcClient) Authenticate(sessionId string) (*string, *string, *e.ErrorResponse) {
 	client := gen.NewAuthServiceClient(c.conn)
 	resp, err := client.Authenticate(context.Background(), &gen.AuthenticationRequest{SessionId: sessionId})
 
@@ -35,11 +35,11 @@ func (c *AuthGrpcClient) Authenticate(sessionId string) (*string, *e.ErrorRespon
 		s, _ := status.FromError(err)
 
 		if s.Code() == codes.NotFound {
-			return nil, e.NewErrorResponse(e.HttpNotFound, s.Message())
+			return nil, nil, e.NewErrorResponse(e.HttpNotFound, s.Message())
 		}
 
-		return nil, e.NewErrorResponse(e.HttpInternalError, s.Message())
+		return nil, nil, e.NewErrorResponse(e.HttpInternalError, s.Message())
 	}
 
-	return &resp.UserId, nil
+	return &resp.UserId, &resp.SessionId, nil
 }

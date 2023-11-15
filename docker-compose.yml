@@ -15,107 +15,139 @@ services:
     depends_on:
       - auth
       - user
-      - ai
+      # - ai
     volumes:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
     networks:
       - svc-network
 
-  db:
+  db-auth:
     image: postgres:14.1-alpine
-    container_name: data_db
+    container_name: db-auth
     networks:
       - svc-network
     restart: always
     env_file:
       - .env
     environment:
-      POSTGRES_USER: '${DATA_DB_USER}'
-      POSTGRES_PASSWORD: '${DATA_DB_PASSWORD}'
-      POSTGRES_DB: '${DATA_DB_NAME}'
-      POSTGRES_AI_SERVICE_USER: '${AI_SERVICE_DB_USER}'
-      POSTGRES_USER_SERVICE_USER: '${USER_SERVICE_DB_USER}'
-      POSTGRES_AI_SERVICE_PASS: '${AI_SERVICE_DB_PASS}'
-      POSTGRES_USER_SERVICE_PASS: '${USER_SERVICE_DB_PASS}'
+      POSTGRES_USER: '${AUTH_DB_USER}'
+      POSTGRES_PASSWORD: '${AUTH_DB_PASS}'
+      POSTGRES_DB: '${AUTH_DB_NAME}'
     ports:
-      - '${DATA_DB_PORT}:${DATA_DB_PORT}'
+      - '${AUTH_DB_PORT}:5432'
+    volumes:
+      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+
+  db-users:
+    image: postgres:14.1-alpine
+    container_name: db-users
+    networks:
+      - svc-network
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: '${USERS_DB_USER}'
+      POSTGRES_PASSWORD: '${USERS_DB_PASS}'
+      POSTGRES_DB: '${USERS_DB_NAME}'
+    ports:
+      - '${USERS_DB_PORT}:5432'
     volumes:
       - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
 
   session:
     image: redis:6.2-alpine
-    container_name: session_db
+    container_name: db-session
     restart: always
     networks:
       - svc-network
     env_file:
       - .env
     environment:
-      REDIS_PASSWORD: '${SESSION_DB_PASSWORD}'
+      REDIS_PASSWORD: '${REDIS_PASSWORD}'
     ports:
-      - '${SESSION_DB_PORT}:${SESSION_DB_PORT}'
-    command: redis-server --save 20 1 --loglevel warning --requirepass ${SESSION_DB_PASSWORD}
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - '2181:2181'
+    networks:
+      - svc-network
 
   kafka:
     image: wurstmeister/kafka
+    container_name: kafka
     ports:
       - '9092:9092'
     env_file:
       - .env
     environment:
       KAFKA_ADVERTISED_HOST_NAME: kafka
-      KAFKA_CREATE_TOPICS: ${MAIL_KAFKA_TOPIC}:1:1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: ${KAFKA_MAIL_TOPIC}:1:1
     networks:
       - svc-network
 
   auth:
     restart: always
-    container_name: auth-service
+    container_name: auth
     networks:
       - svc-network
     build:
       context: .
       dockerfile: dockerfiles/auth.Dockerfile
-    command: ./auth
+    command: /auth
     depends_on:
       - session
-      - user
+      - db-auth
     env_file: .env
-    expose:
-      - '8001'
+    environment:
+      DB_NAME: '${AUTH_DB_NAME}'
+      DB_PASS: '${AUTH_DB_PASS}'
+      DB_USER: '${AUTH_DB_USER}'
+      DB_PORT: '${AUTH_DB_PORT}'
     ports:
-      - 8010:8010
+      - 8040:8040
+      - 8041:8041
 
   user:
     restart: always
-    container_name: user-service
+    container_name: user
     networks:
       - svc-network
     build:
       context: .
       dockerfile: dockerfiles/user.Dockerfile
-    command: ./wait-4-postgres.sh data_db ./user
+    command: /user
     depends_on:
-      - db
+      - db-users
     env_file: .env
+    environment:
+      DB_NAME: '${USERS_DB_NAME}'
+      DB_PASS: '${USERS_DB_PASS}'
+      DB_USER: '${USERS_DB_USER}'
+      DB_PORT: '${USERS_DB_PORT}'
     ports:
       - 8000:8000
       - 8001:8001
 
-  ai:
-    restart: always
-    container_name: ai-service
-    networks:
-      - svc-network
-    build:
-      context: .
-      dockerfile: dockerfiles/ai.Dockerfile
-    command: ./wait-4-postgres.sh data_db ./ai
-    depends_on:
-      - db
-      - session
-    env_file: .env
-    ports:
-      - 8020:8020
-      - 8021:8021
+  # ai:
+  #   restart: always
+  #   container_name: ai-service
+  #   networks:
+  #     - svc-network
+  #   build:
+  #     context: .
+  #     dockerfile: dockerfiles/ai.Dockerfile
+  #   command: ./wait-4-postgres.sh data_db ./ai
+  #   depends_on:
+  #     - db
+  #     - session
+  #   env_file: .env
+  #   ports:
+  #     - 8020:8020
+  #     - 8021:8021

@@ -2,8 +2,8 @@ package adapter
 
 import (
 	"context"
-	e "warehouseai/internal/errors"
-	"warehouseai/internal/gen"
+	"warehouseai/auth/adapter/grpc/gen"
+	e "warehouseai/auth/errors"
 )
 
 type UserGrpcInterface interface {

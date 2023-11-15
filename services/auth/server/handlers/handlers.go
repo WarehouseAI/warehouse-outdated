@@ -1,26 +1,28 @@
 package handlers
 
 import (
-	"fmt"
-	"path/filepath"
+	"warehouseai/auth/adapter/broker/mail"
 	"warehouseai/auth/adapter/grpc/client/user"
+	"warehouseai/auth/dataservice/picturedata"
 	"warehouseai/auth/dataservice/sessiondata"
 	"warehouseai/auth/dataservice/tokendata"
-	e "warehouseai/internal/errors"
-	"warehouseai/internal/gen"
+	e "warehouseai/auth/errors"
+	"warehouseai/auth/service"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
-	ResetTokenDB *tokendata.Database
-	SessionDB    *sessiondata.Database
-	Logger       *logrus.Logger
-	AuthClient   *user.UserGrpcClient
+	ResetTokenDB   *tokendata.Database
+	SessionDB      *sessiondata.Database
+	PictureStorage *picturedata.Storage
+	MailProducer   *mail.MailProducer
+	Logger         *logrus.Logger
+	UserClient     *user.UserGrpcClient
 }
 
-func (pvd *Handler) RegisterHandler(c *fiber.Ctx) error {
+func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 
 	if err != nil {
@@ -36,33 +38,16 @@ func (pvd *Handler) RegisterHandler(c *fiber.Ctx) error {
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	picture, err := rawPicture.Open()
-
-	if err != nil {
-		response := e.NewErrorResponse(e.HttpInternalError, err.Error())
-		return c.Status(response.ErrorCode).JSON(response)
-	}
-
-	defer picture.Close()
-
-	fileName := fmt.Sprintf("%s_avatar%s", username, filepath.Ext(rawPicture.Filename))
-
-	link, svcErr := register.UploadAvatar(picture, fileName, pvd.logger, pvd.s3)
-
-	if svcErr != nil {
-		return c.Status(svcErr.ErrorCode).JSON(svcErr)
-	}
-
-	userInfo := &gen.CreateUserMsg{
+	registerRequest := &service.RegisterRequest{
 		Username:  username,
 		Firstname: form.Value["firstname"][0],
 		Lastname:  form.Value["lastname"][0],
 		Password:  form.Value["password"][0],
 		Email:     form.Value["email"][0],
-		Picture:   link,
+		Picture:   rawPicture,
 	}
 
-	userId, svcErr := register.Register(userInfo, pvd.userGateway, pvd.logger, pvd.ctx)
+	userId, svcErr := service.Register(registerRequest, h.UserClient, h.PictureStorage, h.Logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
@@ -71,15 +56,15 @@ func (pvd *Handler) RegisterHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(userId)
 }
 
-func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
-	var creds login.Request
+func (h *Handler) LoginHandler(c *fiber.Ctx) error {
+	var request service.LoginRequest
 
-	if err := c.BodyParser(&creds); err != nil {
-		statusCode := httputils.BadRequest
-		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body"))
+	if err := c.BodyParser(&request); err != nil {
+		response := e.NewErrorResponse(e.HttpBadRequest, "Invalid request body")
+		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	session, err := login.Login(&creds, pvd.userGateway, pvd.sessionDatabase, pvd.logger, pvd.ctx)
+	response, session, err := service.Login(&request, h.UserClient, h.SessionDB, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -92,19 +77,19 @@ func (pvd *AuthServiceProvider) LoginHandler(c *fiber.Ctx) error {
 		Secure:   true,
 	})
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-func (pvd *AuthServiceProvider) PasswordReset(c *fiber.Ctx) error {
+func (h *Handler) PasswordReset(c *fiber.Ctx) error {
 	resetTokenId := c.Query("token_id")
-	var request gen.ResetPasswordRequest
+	var request service.ResetConfirmRequest
 
 	if err := c.BodyParser(&request); err != nil {
-		statusCode := httputils.BadRequest
-		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body"))
+		response := e.NewErrorResponse(e.HttpBadRequest, "Invalid request body")
+		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	response, err := recovery.PasswordReset(&request, resetTokenId, pvd.userGateway, pvd.tokenDatabase, pvd.logger, pvd.ctx)
+	response, err := service.PasswordReset(&request, resetTokenId, h.UserClient, h.ResetTokenDB, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -113,11 +98,11 @@ func (pvd *AuthServiceProvider) PasswordReset(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-func (pvd *AuthServiceProvider) VerifyReset(c *fiber.Ctx) error {
+func (h *Handler) VerifyReset(c *fiber.Ctx) error {
 	verificationCode := c.Query("verification")
-	tokenId := c.Query("token_id")
+	resetTokenId := c.Query("token_id")
 
-	resetToken, err := recovery.VerifyResetCode(verificationCode, tokenId, pvd.tokenDatabase, pvd.logger, pvd.ctx)
+	resetToken, err := service.VerifyResetCode(verificationCode, resetTokenId, h.ResetTokenDB, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -126,15 +111,15 @@ func (pvd *AuthServiceProvider) VerifyReset(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(resetToken)
 }
 
-func (pvd *AuthServiceProvider) SendResetHandler(c *fiber.Ctx) error {
-	var request recovery.ResetAttemptRequest
+func (h *Handler) SendResetHandler(c *fiber.Ctx) error {
+	var request service.ResetAttemptRequest
 
 	if err := c.BodyParser(&request); err != nil {
-		statusCode := httputils.BadRequest
-		return c.Status(statusCode).JSON(httputils.NewErrorResponse(statusCode, "Invalid request body"))
+		response := e.NewErrorResponse(e.HttpBadRequest, "Invalid request body")
+		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	resetToken, err := recovery.SendResetEmail(request, pvd.tokenDatabase, pvd.userGateway, pvd.logger, pvd.ctx)
+	resetToken, err := service.SendResetEmail(request, h.ResetTokenDB, h.UserClient, h.MailProducer, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -143,14 +128,15 @@ func (pvd *AuthServiceProvider) SendResetHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(resetToken)
 }
 
-func (pvd *AuthServiceProvider) LogoutHandler(c *fiber.Ctx) error {
+func (h *Handler) LogoutHandler(c *fiber.Ctx) error {
 	sessionId := c.Cookies("sessionId")
 
 	if sessionId == "" {
-		return c.Status(httputils.Unauthorized).JSON(httputils.NewErrorResponse(httputils.Unauthorized, "Empty session key."))
+		response := e.NewErrorResponse(e.HttpUnauthorized, "Empty session key")
+		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	if err := logout.Logout(sessionId, pvd.sessionDatabase, pvd.logger, pvd.ctx); err != nil {
+	if err := service.Logout(sessionId, h.SessionDB, h.Logger); err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
 	}
 	c.ClearCookie("sessionId")
@@ -158,6 +144,26 @@ func (pvd *AuthServiceProvider) LogoutHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-func (api *AuthServiceProvider) WhoAmIHandler(c *fiber.Ctx) error {
+func (h *Handler) WhoAmIHandler(c *fiber.Ctx) error {
+	sessionId := c.Cookies("sessionId")
+
+	if sessionId == "" {
+		response := e.NewErrorResponse(e.HttpUnauthorized, "Empty session key")
+		return c.Status(response.ErrorCode).JSON(response)
+	}
+
+	_, newSession, err := service.Authenticate(sessionId, h.SessionDB, h.Logger)
+
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "sessionId",
+		Value:    newSession.ID,
+		SameSite: fiber.CookieSameSiteNoneMode,
+		Secure:   true,
+	})
+
 	return c.SendStatus(fiber.StatusOK)
 }

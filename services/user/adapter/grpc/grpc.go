@@ -1,7 +1,7 @@
 package grpc
 
-import e "warehouseai/internal/errors"
+import e "warehouseai/user/errors"
 
 type AuthGrpcInterface interface {
-	Authenticate(sessionId string) (*string, *e.ErrorResponse)
+	Authenticate(sessionId string) (*string, *string, *e.ErrorResponse)
 }

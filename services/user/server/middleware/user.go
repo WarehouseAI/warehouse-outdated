@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"time"
-	e "warehouseai/internal/errors"
 	"warehouseai/user/dataservice/userdata"
+	e "warehouseai/user/errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"

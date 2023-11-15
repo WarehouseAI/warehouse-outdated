@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 	"warehouseai/auth/dataservice"
-	e "warehouseai/internal/errors"
+	e "warehouseai/auth/errors"
 
 	"github.com/sirupsen/logrus"
 )

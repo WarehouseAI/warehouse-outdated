@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
+	"warehouseai/auth/adapter/grpc/gen"
 	"warehouseai/auth/dataservice"
+	e "warehouseai/auth/errors"
 	"warehouseai/auth/service"
-	e "warehouseai/internal/errors"
-	"warehouseai/internal/gen"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -30,7 +30,7 @@ func (s *AuthGrpcServer) Authenticate(ctx context.Context, req *gen.Authenticati
 		return nil, status.Errorf(codes.InvalidArgument, "Empty request data")
 	}
 
-	userId, err := service.Authenticate(req.SessionId, s.db, s.logger)
+	userId, session, err := service.Authenticate(req.SessionId, s.db, s.logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
@@ -40,5 +40,5 @@ func (s *AuthGrpcServer) Authenticate(ctx context.Context, req *gen.Authenticati
 		return nil, status.Error(codes.Internal, err.ErrorMessage)
 	}
 
-	return &gen.AuthenticationResponse{UserId: *userId}, nil
+	return &gen.AuthenticationResponse{UserId: *userId, SessionId: session.ID}, nil
 }

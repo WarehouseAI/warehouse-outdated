@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+	e "warehouseai/auth/errors"
 	m "warehouseai/auth/model"
-	e "warehouseai/internal/errors"
 
 	"github.com/gofrs/uuid"
 	"github.com/redis/go-redis/v9"
@@ -65,16 +65,18 @@ func (d *Database) Delete(ctx context.Context, sessionId string) *e.DBError {
 	return nil
 }
 
-func (d *Database) Update(ctx context.Context, sessionId string) (*m.Session, *e.DBError) {
+func (d *Database) Update(ctx context.Context, sessionId string) (*string, *m.Session, *e.DBError) {
 	session, err := d.Get(ctx, sessionId)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := d.Delete(ctx, sessionId); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return d.Create(ctx, session.Payload.UserId)
+	newSession, err := d.Create(ctx, session.Payload.UserId)
+
+	return &session.Payload.UserId, newSession, err
 }

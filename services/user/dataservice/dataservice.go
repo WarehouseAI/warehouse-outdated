@@ -1,7 +1,7 @@
 package dataservice
 
 import (
-	e "warehouseai/internal/errors"
+	e "warehouseai/user/errors"
 	m "warehouseai/user/model"
 )
 

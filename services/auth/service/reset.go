@@ -6,10 +6,10 @@ import (
 	"math/rand"
 	"time"
 	"warehouseai/auth/adapter"
+	"warehouseai/auth/adapter/grpc/gen"
 	"warehouseai/auth/dataservice"
+	e "warehouseai/auth/errors"
 	"warehouseai/auth/model"
-	e "warehouseai/internal/errors"
-	"warehouseai/internal/gen"
 
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
@@ -37,7 +37,7 @@ type ResetVerifyResponse struct {
 	UserId string `json:"user_id"`
 }
 
-func PasswordReset(request ResetConfirmRequest, resetTokenId string, user adapter.UserGrpcInterface, resetToken dataservice.ResetTokenInterface, logger *logrus.Logger, ctx context.Context) (*ResetConfirmResponse, *e.ErrorResponse) {
+func PasswordReset(request *ResetConfirmRequest, resetTokenId string, user adapter.UserGrpcInterface, resetToken dataservice.ResetTokenInterface, logger *logrus.Logger) (*ResetConfirmResponse, *e.ErrorResponse) {
 	existResetToken, dbErr := resetToken.Get(map[string]interface{}{"id": resetTokenId})
 
 	if dbErr != nil {
@@ -57,7 +57,7 @@ func PasswordReset(request ResetConfirmRequest, resetTokenId string, user adapte
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Error while hashing new password.")
 	}
 
-	resp, gwErr := user.ResetPassword(ctx, &gen.ResetPasswordRequest{UserId: request.UserId, Password: string(hash)})
+	resp, gwErr := user.ResetPassword(context.Background(), &gen.ResetPasswordRequest{UserId: request.UserId, Password: string(hash)})
 
 	if gwErr != nil {
 		return nil, gwErr
@@ -82,7 +82,7 @@ func VerifyResetCode(verificationCode string, resetTokenId string, resetToken da
 	return &ResetVerifyResponse{UserId: existResetToken.UserId.String()}, nil
 }
 
-func SendResetEmail(req ResetAttemptRequest, resetToken dataservice.ResetTokenInterface, user adapter.UserGrpcInterface, broker adapter.MailProducerInterface, logger *logrus.Logger) (*ResetAttemptResponse, *e.ErrorResponse) {
+func SendResetEmail(req ResetAttemptRequest, resetToken dataservice.ResetTokenInterface, user adapter.UserGrpcInterface, mail adapter.MailProducerInterface, logger *logrus.Logger) (*ResetAttemptResponse, *e.ErrorResponse) {
 	existUser, gwErr := user.GetByEmail(context.Background(), req.Email)
 
 	if gwErr != nil {
@@ -114,9 +114,9 @@ func SendResetEmail(req ResetAttemptRequest, resetToken dataservice.ResetTokenIn
 		To:      req.Email,
 		Subject: "Восстановление пароля",
 		Message: fmt.Sprintf(`
-      Здраствуйте, %s!
+      Здравствуйте, %s!
       
-      Мы получили запрос на восстановление пароля от Вашего аккаунта, связанного с почтой %s.
+      Мы получили запрос на восстановление пароля от аккаунта, связанного с почтой %s.
       Ваш код верификации: %s
       
       Если это не вы - проигнорируйте данное письмо.
@@ -125,7 +125,7 @@ func SendResetEmail(req ResetAttemptRequest, resetToken dataservice.ResetTokenIn
       `, existUser.Firstname, existUser.Email, verificationCode),
 	}
 
-	if err := broker.SendEmail(message); err != nil {
+	if err := mail.SendEmail(message); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Send email")
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to send email.")
 	}

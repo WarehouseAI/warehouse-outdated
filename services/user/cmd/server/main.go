@@ -1,9 +1,10 @@
 package server
 
 import (
+	"warehouseai/user/adapter/broker/mail"
 	"warehouseai/user/adapter/grpc/client/auth"
 	"warehouseai/user/dataservice/userdata"
-	h "warehouseai/user/server/handler"
+	h "warehouseai/user/server/handlers"
 	"warehouseai/user/server/middleware"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,8 +12,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StartServer(port string, db *userdata.Database, logger *logrus.Logger) error {
-	handler := newHttpHandler(db, logger)
+func StartServer(port string, db *userdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) error {
+	handler := newHttpHandler(db, mailProducer, logger)
 	app := fiber.New()
 	app.Use(setupCORS())
 
@@ -31,13 +32,14 @@ func StartServer(port string, db *userdata.Database, logger *logrus.Logger) erro
 	return app.Listen(port)
 }
 
-func newHttpHandler(db *userdata.Database, logger *logrus.Logger) *h.Handler {
+func newHttpHandler(db *userdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) *h.Handler {
 	authClient := auth.NewAuthGrpcClient("auth-service:8041")
 
 	return &h.Handler{
-		DB:         db,
-		Logger:     logger,
-		AuthClient: authClient,
+		DB:           db,
+		Logger:       logger,
+		MailProducer: mailProducer,
+		AuthClient:   authClient,
 	}
 }
 

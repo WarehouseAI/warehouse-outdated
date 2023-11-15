@@ -11,7 +11,7 @@ import (
 
 type Storage struct {
 	Bucket  string
-	Host    string
+	Domain  string
 	Session *session.Session
 }
 
@@ -29,7 +29,7 @@ func (s *Storage) UploadFile(file multipart.File, fileName string) (string, erro
 		return "", err
 	}
 
-	fileLink := s.Host + fileName
+	fileLink := s.Domain + fileName
 
 	return fileLink, nil
 }

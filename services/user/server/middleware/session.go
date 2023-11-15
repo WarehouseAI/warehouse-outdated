@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	e "warehouseai/internal/errors"
 	"warehouseai/user/adapter/grpc"
+	e "warehouseai/user/errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -16,11 +16,19 @@ func Session(logger *logrus.Logger, auth grpc.AuthGrpcInterface) func(c *fiber.C
 			return c.Status(e.HttpUnauthorized).JSON(e.NewErrorResponse(e.HttpUnauthorized, "Empty session key."))
 		}
 
-		userId, authErr := auth.Authenticate(sessionId)
+		userId, newSessionId, authErr := auth.Authenticate(sessionId)
 
 		if authErr != nil {
 			return c.Status(authErr.ErrorCode).JSON(authErr)
 		}
+
+		c.ClearCookie("sessionId")
+		c.Cookie(&fiber.Cookie{
+			Name:     "sessionId",
+			Value:    *newSessionId,
+			SameSite: fiber.CookieSameSiteNoneMode,
+			Secure:   true,
+		})
 
 		c.Locals("userId", userId)
 		return c.Next()

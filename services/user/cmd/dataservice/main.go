@@ -10,8 +10,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitUserDatabase(cfg config.DatabaseCfg) *userdata.Database {
-	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port)
+func NewUserDatabase() *userdata.Database {
+	config := config.NewUserDatabaseCfg()
+	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", config.Host, config.User, config.Password, config.Name, config.Port)
 
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
 	if err != nil {

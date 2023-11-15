@@ -1,1 +1,0 @@
-time="2023-09-07T19:24:27+03:00" level=info msg=Database error="failed to connect to `host=localhost user=admin database=users`: dial error (dial tcp [::1]:5432: connect: connection refused)" fields.time="2023-09-07 19:24:27.966672408 +0300 MSK m=+0.004577725"

@@ -2,8 +2,8 @@ package tokendata
 
 import (
 	"errors"
+	e "warehouseai/auth/errors"
 	m "warehouseai/auth/model"
-	e "warehouseai/internal/errors"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"

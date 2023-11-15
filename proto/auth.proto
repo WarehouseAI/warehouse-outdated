@@ -9,6 +9,7 @@ message AuthenticationRequest {
 
 message AuthenticationResponse {
   string user_id = 1;
+  string session_id = 2;
 }
 
 service AuthService {

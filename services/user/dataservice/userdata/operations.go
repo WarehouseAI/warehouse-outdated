@@ -3,7 +3,7 @@ package userdata
 import (
 	"errors"
 	"reflect"
-	e "warehouseai/internal/errors"
+	e "warehouseai/user/errors"
 	m "warehouseai/user/model"
 
 	"github.com/jackc/pgx/v5/pgconn"

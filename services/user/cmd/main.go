@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"warehouseai/user/cmd/adapter/broker/mail"
+	"warehouseai/user/cmd/adapter/grpc"
 	"warehouseai/user/cmd/dataservice"
-	"warehouseai/user/cmd/grpc"
 	"warehouseai/user/cmd/server"
-	"warehouseai/user/config"
 
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	log := logrus.New()
-	file, err := os.OpenFile("../user.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile("./user.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 
 	if err != nil {
 		fmt.Println("❌Failed to set up the logger")
@@ -24,12 +24,13 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	db := dataservice.InitUserDatabase(config.NewDatabaseCfg())
+	db := dataservice.NewUserDatabase()
+	mailProducer := mail.NewMailProducer()
 	fmt.Println("✅Database successfully connected.")
 
 	go grpc.Start("user-service:8001", db, log)
 
-	if err := server.StartServer(":8000", db, log); err != nil {
+	if err := server.StartServer(":8000", db, mailProducer, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)

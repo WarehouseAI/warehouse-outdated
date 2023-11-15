@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	e "warehouseai/internal/errors"
-	"warehouseai/internal/gen"
-	"warehouseai/internal/utils"
+	"warehouseai/user/adapter/grpc/gen"
+	"warehouseai/user/adapter/grpc/mapper"
 	"warehouseai/user/dataservice"
+	e "warehouseai/user/errors"
 	m "warehouseai/user/model"
 	"warehouseai/user/service"
 
@@ -41,7 +41,7 @@ func (s *UserGrpcServer) CreateUser(ctx context.Context, req *gen.CreateUserMsg)
 		Email:     req.Email,
 	}
 
-	userId, err := service.Create(newUser, s.db, s.logger, ctx)
+	userId, err := service.Create(newUser, s.db, s.logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpAlreadyExist {
@@ -75,7 +75,7 @@ func (s *UserGrpcServer) GetUserByEmail(ctx context.Context, req *gen.GetUserByE
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	user, err := service.GetByEmail(req.Email, s.db, s.logger, ctx)
+	user, err := service.GetByEmail(req.Email, s.db, s.logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
@@ -85,7 +85,7 @@ func (s *UserGrpcServer) GetUserByEmail(ctx context.Context, req *gen.GetUserByE
 		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
 	}
 
-	return utils.UserToProto(user), nil
+	return mapper.UserToProto(user), nil
 }
 
 func (s *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMsg) (*gen.User, error) {
@@ -93,7 +93,7 @@ func (s *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMs
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	user, err := service.GetById(req.UserId, s.db, s.logger, ctx)
+	user, err := service.GetById(req.UserId, s.db, s.logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
@@ -103,5 +103,5 @@ func (s *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMs
 		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
 	}
 
-	return utils.UserToProto(user), nil
+	return mapper.UserToProto(user), nil
 }

@@ -2,8 +2,8 @@ package user
 
 import (
 	"context"
-	e "warehouseai/internal/errors"
-	"warehouseai/internal/gen"
+	"warehouseai/auth/adapter/grpc/gen"
+	e "warehouseai/auth/errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

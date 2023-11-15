@@ -5,8 +5,8 @@ import (
 	"time"
 	"warehouseai/auth/adapter"
 	"warehouseai/auth/dataservice"
+	e "warehouseai/auth/errors"
 	"warehouseai/auth/model"
-	e "warehouseai/internal/errors"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -17,25 +17,29 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func Login(req *LoginRequest, user adapter.UserGrpcInterface, session dataservice.SessionInterface, logger *logrus.Logger, ctx context.Context) (*model.Session, *e.ErrorResponse) {
+type LoginResponse struct {
+	UserId string `json:"user_id"`
+}
+
+func Login(req *LoginRequest, user adapter.UserGrpcInterface, session dataservice.SessionInterface, logger *logrus.Logger) (*LoginResponse, *model.Session, *e.ErrorResponse) {
 	existUser, gwErr := user.GetByEmail(context.Background(), req.Email)
 
 	if gwErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Login user")
-		return nil, gwErr
+		return nil, nil, gwErr
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(existUser.Password), []byte(req.Password)); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
-		return nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid credentials")
+		return nil, nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid credentials")
 	}
 
-	newSession, sessErr := session.Create(ctx, existUser.Id)
+	newSession, sessErr := session.Create(context.Background(), existUser.Id)
 
 	if sessErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": sessErr}).Info("Login user")
-		return nil, e.NewErrorResponseFromDBError(sessErr.ErrorType, sessErr.Message)
+		return nil, nil, e.NewErrorResponseFromDBError(sessErr.ErrorType, sessErr.Message)
 	}
 
-	return newSession, nil
+	return &LoginResponse{UserId: existUser.Id}, newSession, nil
 }
