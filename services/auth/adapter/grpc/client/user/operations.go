@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"warehouseai/auth/adapter/grpc/gen"
 	e "warehouseai/auth/errors"
 
@@ -33,6 +34,7 @@ func (c *UserGrpcClient) Create(ctx context.Context, userInfo *gen.CreateUserMsg
 	resp, err := c.conn.CreateUser(ctx, userInfo)
 
 	if err != nil {
+		fmt.Println(err)
 		s, _ := status.FromError(err)
 
 		if s.Code() == codes.AlreadyExists {

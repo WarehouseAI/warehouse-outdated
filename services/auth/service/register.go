@@ -10,6 +10,7 @@ import (
 	"warehouseai/auth/adapter/grpc/gen"
 	"warehouseai/auth/dataservice"
 	e "warehouseai/auth/errors"
+	"warehouseai/auth/model"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -29,7 +30,7 @@ type RegisterResponse struct {
 	UserId string `json:"user_id"`
 }
 
-func Register(req *RegisterRequest, user adapter.UserGrpcInterface, picture dataservice.PictureInterface, logger *logrus.Logger) (*RegisterResponse, *e.ErrorResponse) {
+func Register(req *RegisterRequest, user adapter.UserGrpcInterface, picture dataservice.PictureInterface, mail adapter.MailProducerInterface, logger *logrus.Logger) (*RegisterResponse, *e.ErrorResponse) {
 	if len(req.Password) > 72 {
 		return nil, e.NewErrorResponse(e.HttpBadRequest, "Password is too long.")
 	}
@@ -60,6 +61,27 @@ func Register(req *RegisterRequest, user adapter.UserGrpcInterface, picture data
 	if gwErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
 		return nil, gwErr
+	}
+
+	message := model.Email{
+		To:      req.Email,
+		Subject: "Подтверждение электронной почты",
+		Message: fmt.Sprintf(`
+      Здравствуйте, %s!
+      
+      Для завершения регистрации перейдите, пожалуйста, по ссылке:
+      %s
+      
+      Если вы не указывали эту электронную почту - проигнорируйте данное письмо.
+      
+      WarehouseAI Team
+      `, req.Firstname, "1234"),
+	}
+
+	if err := mail.SendEmail(message); err != nil {
+		fmt.Println(err)
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Send email")
+		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to send email.")
 	}
 
 	return &RegisterResponse{UserId: *userId}, nil

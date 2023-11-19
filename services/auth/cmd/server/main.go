@@ -32,7 +32,7 @@ func StartServer(port string, tokenDB *tokendata.Database, sessionDB *sessiondat
 }
 
 func newHttpHandler(tokenDB *tokendata.Database, sessionDB *sessiondata.Database, pictureStorage *picturedata.Storage, mailProducer *mail.MailProducer, logger *logrus.Logger) *h.Handler {
-	userClient := user.NewUserGrpcClient("user-service:8001")
+	userClient := user.NewUserGrpcClient("user:8001")
 
 	return &h.Handler{
 		ResetTokenDB:   tokenDB,

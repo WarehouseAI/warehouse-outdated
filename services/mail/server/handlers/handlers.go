@@ -2,40 +2,50 @@ package handlers
 
 import (
 	"encoding/json"
+	"warehouseai/mail/cmd/broker"
 	"warehouseai/mail/model"
 	"warehouseai/mail/service"
 
-	"github.com/IBM/sarama"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 )
 
 type Handler struct {
-	Logger *logrus.Logger
-	Dialer *gomail.Dialer
-	Sender string
+	Logger     *logrus.Logger
+	MailDialer *gomail.Dialer
+	Sender     string
 }
 
-func (h *Handler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	for msg := range claim.Messages() {
-		receivedEmailEvent := model.EmailReceivedEvent{}
+func (h *Handler) SendMailHandler() {
+	channel, queue, connection := broker.NewMailConsumer()
 
-		if err := json.Unmarshal(msg.Value, &receivedEmailEvent); err != nil {
-			continue
-		}
+	messages, err := channel.Consume(
+		queue.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
 
-		if mailErr := service.SendEmail(h.Sender, receivedEmailEvent.Data, h.Dialer, h.Logger); mailErr != nil {
-			continue
-		}
+	if err != nil {
+		panic(err)
 	}
 
-	return nil
-}
+	defer func() {
+		channel.Close()
+		connection.Close()
+	}()
 
-func (*Handler) Setup(sarama.ConsumerGroupSession) error {
-	return nil
-}
+	go func() {
+		for message := range messages {
+			var email model.Email
+			json.Unmarshal(message.Body, &email)
 
-func (*Handler) Cleanup(sarama.ConsumerGroupSession) error {
-	return nil
+			if err := service.SendEmail(h.Sender, email, h.MailDialer, h.Logger); err != nil {
+				continue
+			}
+		}
+	}()
 }

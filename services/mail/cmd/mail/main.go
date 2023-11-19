@@ -7,7 +7,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func NewMailDialer(config config.MailCfg) *gomail.Dialer {
+func NewMailDialer(config config.MailConfig) *gomail.Dialer {
 	dialer := gomail.NewDialer(config.Host, 25, config.User, config.Password)
 	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 

@@ -50,6 +50,6 @@ func NewTokenDatabaseCfg() DatabaseCfg {
 		Name:     os.Getenv("AUTH_DB_NAME"),
 		User:     os.Getenv("AUTH_DB_USER"),
 		Password: os.Getenv("AUTH_DB_PASS"),
-		Port:     os.Getenv("AUTH_DB_PORT"),
+		Port:     "5432",
 	}
 }

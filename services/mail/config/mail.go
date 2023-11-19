@@ -2,15 +2,15 @@ package config
 
 import "os"
 
-type MailCfg struct {
+type MailConfig struct {
 	Host     string
 	Sender   string
 	User     string
 	Password string
 }
 
-func NewMailCfg() MailCfg {
-	return MailCfg{
+func NewMailCfg() MailConfig {
+	return MailConfig{
 		Host:     os.Getenv("MAIL_HOST"),
 		Password: os.Getenv("MAIL_PASSWORD"),
 		Sender:   os.Getenv("MAIL_SENDER"),

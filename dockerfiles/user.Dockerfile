@@ -1,6 +1,6 @@
 FROM golang:1.20-alpine AS build-stage
 
-WORKDIR /user_service
+WORKDIR /user-service
 ENV GOPATH=/
 
 # Download packages only if module files changed
@@ -15,7 +15,7 @@ FROM alpine:3.16 AS prod-stage
 
 WORKDIR /
 
-COPY --from=build-stage /user .
+COPY --from=build-stage /user /user
 
 EXPOSE 8000
 EXPOSE 8001
@@ -26,5 +26,4 @@ RUN apk update
 RUN apk add postgresql-client
 RUN chmod +x wait-4-postgres.sh
 
-RUN chmod +x /user
-ENTRYPOINT ["./user"]
+ENTRYPOINT [ "/user" ]

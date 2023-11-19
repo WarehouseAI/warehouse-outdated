@@ -47,7 +47,7 @@ func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 		Picture:   rawPicture,
 	}
 
-	userId, svcErr := service.Register(registerRequest, h.UserClient, h.PictureStorage, h.Logger)
+	userId, svcErr := service.Register(registerRequest, h.UserClient, h.PictureStorage, h.MailProducer, h.Logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)

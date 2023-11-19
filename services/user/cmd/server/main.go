@@ -33,7 +33,7 @@ func StartServer(port string, db *userdata.Database, mailProducer *mail.MailProd
 }
 
 func newHttpHandler(db *userdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) *h.Handler {
-	authClient := auth.NewAuthGrpcClient("auth-service:8041")
+	authClient := auth.NewAuthGrpcClient("auth:8041")
 
 	return &h.Handler{
 		DB:           db,

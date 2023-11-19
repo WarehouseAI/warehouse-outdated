@@ -60,8 +60,8 @@ func NewSessionDatabase() *sessiondata.Database {
 }
 
 func NewResetTokenDatabase() *tokendata.Database {
-	config := config.NewTokenDatabaseCfg()
-	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", config.Host, config.User, config.Password, config.Name, config.Port)
+	cfg := config.NewTokenDatabaseCfg()
+	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port)
 
 	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
 	if err != nil {

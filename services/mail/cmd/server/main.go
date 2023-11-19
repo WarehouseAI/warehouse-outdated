@@ -9,8 +9,8 @@ import (
 
 func NewMailHandler(dialer *gomail.Dialer, logger *logrus.Logger, sender string) *handlers.Handler {
 	return &handlers.Handler{
-		Dialer: dialer,
-		Logger: logger,
-		Sender: sender,
+		MailDialer: dialer,
+		Logger:     logger,
+		Sender:     sender,
 	}
 }

@@ -18,6 +18,6 @@ func NewUserDatabaseCfg() DatabaseCfg {
 		Name:     os.Getenv("USERS_DB_NAME"),
 		User:     os.Getenv("USERS_DB_USER"),
 		Password: os.Getenv("USERS_DB_PASS"),
-		Port:     os.Getenv("USERS_DB_PORT"),
+		Port:     "5432",
 	}
 }

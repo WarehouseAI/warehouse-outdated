@@ -1,69 +1,39 @@
 package broker
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"time"
+	"warehouseai/mail/config"
 
-	"github.com/IBM/sarama"
-	"github.com/sirupsen/logrus"
+	rmq "github.com/rabbitmq/amqp091-go"
 )
 
-func RunConsumers(logger *logrus.Logger, handlers map[string]sarama.ConsumerGroupHandler) {
-	kafkaConsumerGroups := initAllConsumerGroups(logger)
+func NewMailConsumer() (*rmq.Channel, rmq.Queue, *rmq.Connection) {
+	config := config.NewMailBrokerCfg()
 
-	for topic, group := range kafkaConsumerGroups {
-		go func(topic string, group *sarama.ConsumerGroup) {
-			defer func() {
-				if r := recover(); r != nil {
-					logger.WithFields(logrus.Fields{"time": time.Now(), "error": r}).Info("Setup email")
-					fmt.Println(r)
-				}
-			}()
+	conn, err := rmq.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/", config.User, config.Password, config.Host, config.Port))
 
-			for {
-				err := (*group).Consume(context.Background(), []string{topic}, handlers[topic])
-				if err != nil {
-					logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Setup email")
-					fmt.Println("Consumer group error")
-				}
-			}
-		}(topic, group)
-	}
-}
-
-func initAllConsumerGroups(logger *logrus.Logger) map[string]*sarama.ConsumerGroup {
-	return map[string]*sarama.ConsumerGroup{
-		os.Getenv("KAFKA_MAIL_TOPIC"): initGroup(os.Getenv("KAFKA_MAIL_TOPIC"), logger),
-	}
-}
-
-func initGroup(topic string, logger *logrus.Logger) *sarama.ConsumerGroup {
-	cfg := sarama.NewConfig()
-	cfg.Version = sarama.V2_3_0_0
-	cfg.Consumer.Return.Errors = true
-
-	group, err := sarama.NewConsumerGroup([]string{os.Getenv("KAFKA_ADDR")}, topic, cfg)
 	if err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Setup email")
-		fmt.Println("Message hasn't been marshaled.")
-		return nil
+		panic(fmt.Sprintf("Unable to open connect to RabbitMQ; %s", err))
 	}
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logger.WithFields(logrus.Fields{"time": time.Now(), "error": r}).Info("Setup email")
-				fmt.Println(fmt.Sprintf("%s", r))
-			}
-		}()
+	ch, err := conn.Channel()
 
-		for err := range group.Errors() {
-			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Setup email")
-			fmt.Println("Consumer group error")
-		}
-	}()
+	if err != nil {
+		panic(fmt.Sprintf("Unable to open channel; %s", err))
+	}
 
-	return &group
+	queue, err := ch.QueueDeclare(
+		"mail",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	if err != nil {
+		panic(fmt.Sprintf("Unable to create queue in the channel; %s", err))
+	}
+
+	return ch, queue, conn
 }

@@ -3,13 +3,17 @@ package config
 import "os"
 
 type BrokerCfg struct {
-	Address string
-	Topic   string
+	User     string
+	Password string
+	Host     string
+	Port     string
 }
 
 func NewMailBrokerCfg() BrokerCfg {
 	return BrokerCfg{
-		Address: os.Getenv("KAFKA_MAIL_ADDRESS"),
-		Topic:   os.Getenv("KAFKA_MAIL_TOPIC"),
+		User:     os.Getenv("RMQ_USER"),
+		Password: os.Getenv("RMQ_PASS"),
+		Host:     os.Getenv("RMQ_HOST"),
+		Port:     os.Getenv("RMQ_PORT"),
 	}
 }

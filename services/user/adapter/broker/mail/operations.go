@@ -3,7 +3,7 @@ package mail
 import (
 	"context"
 	"encoding/json"
-	"warehouseai/auth/model"
+	"warehouseai/user/model"
 
 	rmq "github.com/rabbitmq/amqp091-go"
 )

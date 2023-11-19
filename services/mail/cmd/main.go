@@ -1,14 +1,12 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"os"
-	"warehouseai/mail/cmd/broker"
 	"warehouseai/mail/cmd/mail"
 	"warehouseai/mail/cmd/server"
 	"warehouseai/mail/config"
 
-	"github.com/IBM/sarama"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,10 +24,8 @@ func main() {
 
 	config := config.NewMailCfg()
 	mailDialer := mail.NewMailDialer(config)
+	server := server.NewMailHandler(mailDialer, log, config.Sender)
 
-	handlers := map[string]sarama.ConsumerGroupHandler{
-		os.Getenv("KAFKA_MAIL_TOPIC"): server.NewMailHandler(mailDialer, log, config.Sender),
-	}
-
-	broker.RunConsumers(log, handlers)
+	fmt.Println("Start the Mail service...")
+	server.SendMailHandler()
 }

@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"fmt"
@@ -28,7 +28,8 @@ func main() {
 	mailProducer := mail.NewMailProducer()
 	fmt.Println("✅Database successfully connected.")
 
-	go grpc.Start("user-service:8001", db, log)
+	grpcServer := grpc.Start("user:8001", db, log)
+	go grpcServer()
 
 	if err := server.StartServer(":8000", db, mailProducer, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")

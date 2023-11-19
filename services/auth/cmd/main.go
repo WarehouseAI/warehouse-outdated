@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"fmt"
@@ -31,11 +31,17 @@ func main() {
 
 	fmt.Println("✅Database successfully connected.")
 
-	go grpc.Start("auth-service:8041", sessionDB, log)
+	grpcServer := grpc.Start("auth:8041", sessionDB, log)
+	go grpcServer()
 
 	if err := server.StartServer(":8040", resetTokenDB, sessionDB, pictureStorage, mailProducer, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)
 	}
+
+	defer func() {
+		mailProducer.Channel.Close()
+		mailProducer.Connection.Close()
+	}()
 }

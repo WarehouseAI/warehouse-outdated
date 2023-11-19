@@ -1,7 +1,7 @@
 version: '3'
 
 networks:
-  svc-network:
+  server-network:
     driver: bridge
 
 services:
@@ -20,13 +20,13 @@ services:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
     networks:
-      - svc-network
+      - server-network
 
   db-auth:
     image: postgres:14.1-alpine
-    container_name: db-auth
+    container_name: token-database
     networks:
-      - svc-network
+      - server-network
     restart: always
     env_file:
       - .env
@@ -41,9 +41,9 @@ services:
 
   db-users:
     image: postgres:14.1-alpine
-    container_name: db-users
+    container_name: users-database
     networks:
-      - svc-network
+      - server-network
     restart: always
     env_file:
       - .env
@@ -61,7 +61,7 @@ services:
     container_name: db-session
     restart: always
     networks:
-      - svc-network
+      - server-network
     env_file:
       - .env
     environment:
@@ -70,40 +70,36 @@ services:
       - '${REDIS_PORT}:${REDIS_PORT}'
     command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
 
-  zookeeper:
-    image: wurstmeister/zookeeper
-    container_name: zookeeper
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    container_name: rabbitmq
     ports:
-      - '2181:2181'
-    networks:
-      - svc-network
-
-  kafka:
-    image: wurstmeister/kafka
-    container_name: kafka
-    ports:
-      - '9092:9092'
+      - '${RMQ_PORT}:5672'
+      - 15672:15672
+    restart: always
     env_file:
       - .env
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: kafka
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: ${KAFKA_MAIL_TOPIC}:1:1
+      RABBITMQ_DEFAULT_USER: '${RMQ_USER}'
+      RABBITMQ_DEFAULT_PASS: '${RMQ_PASS}'
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit disk_free_limit 2147483648
     networks:
-      - svc-network
+      - server-network
 
   auth:
     restart: always
     container_name: auth
     networks:
-      - svc-network
+      - server-network
     build:
       context: .
       dockerfile: dockerfiles/auth.Dockerfile
-    command: /auth
+    command: ./wait-4-postgres.sh db-auth ./auth
     depends_on:
       - session
       - db-auth
+      - rabbitmq
     env_file: .env
     environment:
       DB_NAME: '${AUTH_DB_NAME}'
@@ -118,13 +114,14 @@ services:
     restart: always
     container_name: user
     networks:
-      - svc-network
+      - server-network
     build:
       context: .
       dockerfile: dockerfiles/user.Dockerfile
-    command: /user
+    command: ./wait-4-postgres.sh db-users ./user
     depends_on:
       - db-users
+      - rabbitmq
     env_file: .env
     environment:
       DB_NAME: '${USERS_DB_NAME}'
@@ -134,6 +131,23 @@ services:
     ports:
       - 8000:8000
       - 8001:8001
+
+  mail:
+    restart: always
+    container_name: mail
+    networks:
+      - server-network
+    env_file: .env
+    build:
+      context: .
+      dockerfile: dockerfiles/mail.Dockerfile
+    command: ./mail
+    depends_on:
+      - user
+      - auth
+      - rabbitmq
+    expose:
+      - 5672
 
   # ai:
   #   restart: always
