@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"warehouseai/mail/cmd/broker"
 	"warehouseai/mail/cmd/mail"
 	"warehouseai/mail/cmd/server"
 	"warehouseai/mail/config"
@@ -24,8 +25,14 @@ func main() {
 
 	config := config.NewMailCfg()
 	mailDialer := mail.NewMailDialer(config)
-	server := server.NewMailHandler(mailDialer, log, config.Sender)
+	mailConsumer := broker.NewMailConsumer()
+	server := server.NewMailHandler(mailDialer, mailConsumer, log, config.Sender)
 
 	fmt.Println("Start the Mail service...")
 	server.SendMailHandler()
+
+	defer func() {
+		mailConsumer.Channel.Close()
+		mailConsumer.Connection.Close()
+	}()
 }

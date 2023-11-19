@@ -7,9 +7,16 @@ import (
 	rmq "github.com/rabbitmq/amqp091-go"
 )
 
-func NewMailConsumer() (*rmq.Channel, rmq.Queue, *rmq.Connection) {
+type MailConsumer struct {
+	Channel    *rmq.Channel
+	Connection *rmq.Connection
+	Queue      rmq.Queue
+}
+
+func NewMailConsumer() *MailConsumer {
 	config := config.NewMailBrokerCfg()
 
+	fmt.Println(config)
 	conn, err := rmq.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/", config.User, config.Password, config.Host, config.Port))
 
 	if err != nil {
@@ -35,5 +42,9 @@ func NewMailConsumer() (*rmq.Channel, rmq.Queue, *rmq.Connection) {
 		panic(fmt.Sprintf("Unable to create queue in the channel; %s", err))
 	}
 
-	return ch, queue, conn
+	return &MailConsumer{
+		Channel:    ch,
+		Connection: conn,
+		Queue:      queue,
+	}
 }

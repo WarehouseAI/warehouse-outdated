@@ -146,8 +146,6 @@ services:
       - user
       - auth
       - rabbitmq
-    expose:
-      - 5672
 
   # ai:
   #   restart: always

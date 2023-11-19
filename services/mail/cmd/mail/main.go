@@ -8,7 +8,7 @@ import (
 )
 
 func NewMailDialer(config config.MailConfig) *gomail.Dialer {
-	dialer := gomail.NewDialer(config.Host, 25, config.User, config.Password)
+	dialer := gomail.NewDialer(config.Host, 25, config.Sender, config.Password)
 	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	return dialer

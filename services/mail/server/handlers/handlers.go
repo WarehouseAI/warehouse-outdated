@@ -12,15 +12,14 @@ import (
 
 type Handler struct {
 	Logger     *logrus.Logger
+	Consumer   *broker.MailConsumer
 	MailDialer *gomail.Dialer
 	Sender     string
 }
 
 func (h *Handler) SendMailHandler() {
-	channel, queue, connection := broker.NewMailConsumer()
-
-	messages, err := channel.Consume(
-		queue.Name,
+	messages, err := h.Consumer.Channel.Consume(
+		h.Consumer.Queue.Name,
 		"",
 		true,
 		false,
@@ -33,19 +32,18 @@ func (h *Handler) SendMailHandler() {
 		panic(err)
 	}
 
-	defer func() {
-		channel.Close()
-		connection.Close()
-	}()
+	stop := make(chan bool)
 
 	go func() {
 		for message := range messages {
-			var email model.Email
-			json.Unmarshal(message.Body, &email)
+			var emailEvent model.EmailReceivedEvent
+			json.Unmarshal(message.Body, &emailEvent)
 
-			if err := service.SendEmail(h.Sender, email, h.MailDialer, h.Logger); err != nil {
+			if err := service.SendEmail(h.Sender, emailEvent.Data, h.MailDialer, h.Logger); err != nil {
 				continue
 			}
 		}
 	}()
+
+	<-stop
 }

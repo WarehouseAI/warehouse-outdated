@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"time"
 	"warehouseai/mail/model"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func SendEmail(from string, email model.Email, dialer *gomail.Dialer, logger *logrus.Logger) error {
+	fmt.Println(from)
 	m := gomail.NewMessage()
 
 	m.SetHeader("From", from)
