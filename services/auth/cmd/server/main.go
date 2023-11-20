@@ -31,6 +31,7 @@ func StartServer(
 	route := app.Group("/auth")
 
 	route.Post("/register", handler.RegisterHandler)
+	route.Get("/register/confirm", handler.RegisterVerifyHandler)
 	route.Post("/login", handler.LoginHandler)
 	route.Post("/reset/request", handler.SendResetHandler)
 	route.Get("/reset/verify", handler.VerifyReset)
@@ -53,12 +54,13 @@ func newHttpHandler(
 	userClient := user.NewUserGrpcClient("user:8001")
 
 	return &h.Handler{
-		ResetTokenDB:   resetTokenDB,
-		SessionDB:      sessionDB,
-		PictureStorage: pictureStorage,
-		MailProducer:   mailProducer,
-		Logger:         logger,
-		UserClient:     userClient,
+		ResetTokenDB:        resetTokenDB,
+		VerificationTokenDB: verificationTokenDB,
+		SessionDB:           sessionDB,
+		PictureStorage:      pictureStorage,
+		MailProducer:        mailProducer,
+		Logger:              logger,
+		UserClient:          userClient,
 	}
 }
 

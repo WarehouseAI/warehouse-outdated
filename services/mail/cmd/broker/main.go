@@ -16,7 +16,6 @@ type MailConsumer struct {
 func NewMailConsumer() *MailConsumer {
 	config := config.NewMailBrokerCfg()
 
-	fmt.Println(config)
 	conn, err := rmq.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/", config.User, config.Password, config.Host, config.Port))
 
 	if err != nil {
