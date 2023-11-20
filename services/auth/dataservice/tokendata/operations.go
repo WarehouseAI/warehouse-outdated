@@ -9,11 +9,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type Database struct {
+type Database[T m.Tokens] struct {
 	DB *gorm.DB
 }
 
-func (d *Database) Create(token *m.ResetToken) *e.DBError {
+func (d *Database[T]) Create(token *T) *e.DBError {
 	if err := d.DB.Create(token).Error; err != nil {
 		if isDuplicateKeyError(err) {
 			return e.NewDBError(e.DbExist, "Entity with this key/keys already exists.", err.Error())
@@ -25,10 +25,10 @@ func (d *Database) Create(token *m.ResetToken) *e.DBError {
 	return nil
 }
 
-func (d *Database) Get(conditions map[string]interface{}) (*m.ResetToken, *e.DBError) {
-	var user m.ResetToken
+func (d *Database[T]) Get(conditions map[string]interface{}) (*T, *e.DBError) {
+	var token T
 
-	result := d.DB.Where(conditions).First(&user)
+	result := d.DB.Where(conditions).First(&token)
 
 	if result.Error != nil {
 		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -38,13 +38,13 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.ResetToken, *e.DBE
 		return nil, e.NewDBError(e.DbNotFound, "Entity not found.", result.Error.Error())
 	}
 
-	return &user, nil
+	return &token, nil
 }
 
-func (d *Database) Delete(condition map[string]interface{}) *e.DBError {
-	var item m.ResetToken
+func (d *Database[T]) Delete(condition map[string]interface{}) *e.DBError {
+	var token T
 
-	if err := d.DB.Where(condition).Delete(&item).Error; err != nil {
+	if err := d.DB.Where(condition).Delete(&token).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 		}
@@ -54,6 +54,7 @@ func (d *Database) Delete(condition map[string]interface{}) *e.DBError {
 
 	return nil
 }
+
 func isDuplicateKeyError(err error) bool {
 	pgErr, ok := err.(*pgconn.PgError)
 	if ok {

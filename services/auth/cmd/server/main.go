@@ -6,6 +6,7 @@ import (
 	"warehouseai/auth/dataservice/picturedata"
 	"warehouseai/auth/dataservice/sessiondata"
 	"warehouseai/auth/dataservice/tokendata"
+	m "warehouseai/auth/model"
 	h "warehouseai/auth/server/handlers"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,8 +14,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StartServer(port string, tokenDB *tokendata.Database, sessionDB *sessiondata.Database, pictureStorage *picturedata.Storage, mailProducer *mail.MailProducer, logger *logrus.Logger) error {
-	handler := newHttpHandler(tokenDB, sessionDB, pictureStorage, mailProducer, logger)
+func StartServer(
+	port string,
+	resetTokenDB *tokendata.Database[m.ResetToken],
+	verificationTokenDB *tokendata.Database[m.VerificationToken],
+	sessionDB *sessiondata.Database,
+	pictureStorage *picturedata.Storage,
+	mailProducer *mail.MailProducer,
+	logger *logrus.Logger,
+) error {
+
+	handler := newHttpHandler(resetTokenDB, verificationTokenDB, sessionDB, pictureStorage, mailProducer, logger)
 	app := fiber.New()
 	app.Use(setupCORS())
 
@@ -31,11 +41,19 @@ func StartServer(port string, tokenDB *tokendata.Database, sessionDB *sessiondat
 	return app.Listen(port)
 }
 
-func newHttpHandler(tokenDB *tokendata.Database, sessionDB *sessiondata.Database, pictureStorage *picturedata.Storage, mailProducer *mail.MailProducer, logger *logrus.Logger) *h.Handler {
+func newHttpHandler(
+	resetTokenDB *tokendata.Database[m.ResetToken],
+	verificationTokenDB *tokendata.Database[m.VerificationToken],
+	sessionDB *sessiondata.Database,
+	pictureStorage *picturedata.Storage,
+	mailProducer *mail.MailProducer,
+	logger *logrus.Logger,
+) *h.Handler {
+
 	userClient := user.NewUserGrpcClient("user:8001")
 
 	return &h.Handler{
-		ResetTokenDB:   tokenDB,
+		ResetTokenDB:   resetTokenDB,
 		SessionDB:      sessionDB,
 		PictureStorage: pictureStorage,
 		MailProducer:   mailProducer,

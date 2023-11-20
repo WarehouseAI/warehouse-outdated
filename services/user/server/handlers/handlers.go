@@ -69,20 +69,3 @@ func (h *Handler) UpdatePasswordHandler(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusOK)
 }
-
-func (h *Handler) UpdateVerificationHandler(c *fiber.Ctx) error {
-	user := c.Locals("user").(*model.User)
-	verificationCode := c.Params("code")
-
-	if verificationCode == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(e.NewErrorResponse(e.HttpBadRequest, "Empty verification code"))
-	}
-
-	newVerification := service.UpdateVerificationRequest{Verified: true, VerificationCode: &verificationCode}
-
-	if err := service.UpdateUserVerification(newVerification, user, h.DB, h.Logger); err != nil {
-		return c.Status(err.ErrorCode).JSON(err)
-	}
-
-	return c.SendStatus(fiber.StatusOK)
-}

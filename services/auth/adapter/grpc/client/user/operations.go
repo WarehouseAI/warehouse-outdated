@@ -30,7 +30,7 @@ func NewUserGrpcClient(grpcUrl string) *UserGrpcClient {
 	}
 }
 
-func (c *UserGrpcClient) Create(ctx context.Context, userInfo *gen.CreateUserMsg) (*string, *e.ErrorResponse) {
+func (c *UserGrpcClient) Create(ctx context.Context, userInfo *gen.CreateUserMsg) (string, *e.ErrorResponse) {
 	resp, err := c.conn.CreateUser(ctx, userInfo)
 
 	if err != nil {
@@ -38,29 +38,29 @@ func (c *UserGrpcClient) Create(ctx context.Context, userInfo *gen.CreateUserMsg
 		s, _ := status.FromError(err)
 
 		if s.Code() == codes.AlreadyExists {
-			return nil, e.NewErrorResponse(e.HttpAlreadyExist, s.Message())
+			return "", e.NewErrorResponse(e.HttpAlreadyExist, s.Message())
 		}
 
-		return nil, e.NewErrorResponse(e.HttpInternalError, s.Message())
+		return "", e.NewErrorResponse(e.HttpInternalError, s.Message())
 	}
 
-	return &resp.UserId, nil
+	return resp.UserId, nil
 }
 
-func (c *UserGrpcClient) ResetPassword(ctx context.Context, resetPasswordRequest *gen.ResetPasswordRequest) (*string, *e.ErrorResponse) {
+func (c *UserGrpcClient) ResetPassword(ctx context.Context, resetPasswordRequest *gen.ResetPasswordRequest) (string, *e.ErrorResponse) {
 	resp, err := c.conn.ResetPassword(ctx, resetPasswordRequest)
 
 	if err != nil {
 		s, _ := status.FromError(err)
 
 		if s.Code() == codes.Aborted {
-			return nil, e.NewErrorResponse(e.HttpBadRequest, s.Message())
+			return "", e.NewErrorResponse(e.HttpBadRequest, s.Message())
 		}
 
-		return nil, e.NewErrorResponse(e.HttpInternalError, s.Message())
+		return "", e.NewErrorResponse(e.HttpInternalError, s.Message())
 	}
 
-	return &resp.UserId, nil
+	return resp.UserId, nil
 }
 
 func (c *UserGrpcClient) GetByEmail(ctx context.Context, email string) (*gen.User, *e.ErrorResponse) {
@@ -77,6 +77,26 @@ func (c *UserGrpcClient) GetByEmail(ctx context.Context, email string) (*gen.Use
 	}
 
 	return resp, nil
+}
+
+func (c *UserGrpcClient) UpdateVerificationStatus(ctx context.Context, userId string) (bool, *e.ErrorResponse) {
+	resp, err := c.conn.UpdateVerificationStatus(ctx, &gen.UpdateVerificationStatusRequest{UserId: userId})
+
+	if err != nil {
+		s, _ := status.FromError(err)
+
+		if s.Code() == codes.InvalidArgument {
+			return false, e.NewErrorResponse(e.HttpBadRequest, s.Message())
+		}
+
+		if s.Code() == codes.NotFound {
+			return false, e.NewErrorResponse(e.HttpNotFound, s.Message())
+		}
+
+		return false, e.NewErrorResponse(e.HttpInternalError, s.Message())
+	}
+
+	return resp.Verified, nil
 }
 
 func (c *UserGrpcClient) GetById(ctx context.Context, userId string) (*gen.User, *e.ErrorResponse) {

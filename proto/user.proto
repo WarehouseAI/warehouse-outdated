@@ -51,10 +51,19 @@ message ResetPasswordResponse {
   string user_id = 1;
 }
 
+message UpdateVerificationStatusRequest {
+  string user_id = 1;
+}
+
+message UpdateVerificationStatusResponse {
+  bool verified = 1;
+}
+
 service UserService {
   rpc GetUserByEmail(GetUserByEmailMsg) returns (User);
   rpc GetUserById(GetUserByIdMsg) returns (User);
   rpc CreateUser(CreateUserMsg) returns (CreateUserResponse);
   rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse);
+  rpc UpdateVerificationStatus(UpdateVerificationStatusRequest) returns (UpdateVerificationStatusResponse);
 }
 

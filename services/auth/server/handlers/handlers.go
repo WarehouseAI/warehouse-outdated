@@ -7,6 +7,7 @@ import (
 	"warehouseai/auth/dataservice/sessiondata"
 	"warehouseai/auth/dataservice/tokendata"
 	e "warehouseai/auth/errors"
+	"warehouseai/auth/model"
 	"warehouseai/auth/service"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,12 +15,13 @@ import (
 )
 
 type Handler struct {
-	ResetTokenDB   *tokendata.Database
-	SessionDB      *sessiondata.Database
-	PictureStorage *picturedata.Storage
-	MailProducer   *mail.MailProducer
-	Logger         *logrus.Logger
-	UserClient     *user.UserGrpcClient
+	ResetTokenDB        *tokendata.Database[model.ResetToken]
+	VerificationTokenDB *tokendata.Database[model.VerificationToken]
+	SessionDB           *sessiondata.Database
+	PictureStorage      *picturedata.Storage
+	MailProducer        *mail.MailProducer
+	Logger              *logrus.Logger
+	UserClient          *user.UserGrpcClient
 }
 
 func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
@@ -45,9 +47,10 @@ func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 		Password:  form.Value["password"][0],
 		Email:     form.Value["email"][0],
 		Picture:   rawPicture,
+		ViaGoogle: false,
 	}
 
-	userId, svcErr := service.Register(registerRequest, h.UserClient, h.PictureStorage, h.MailProducer, h.Logger)
+	userId, svcErr := service.Register(registerRequest, h.UserClient, h.VerificationTokenDB, h.PictureStorage, h.MailProducer, h.Logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
@@ -76,6 +79,24 @@ func (h *Handler) LoginHandler(c *fiber.Ctx) error {
 		SameSite: fiber.CookieSameSiteNoneMode,
 		Secure:   true,
 	})
+
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (h *Handler) RegisterVerifyHandler(c *fiber.Ctx) error {
+	token := c.Query("token")
+	user := c.Query("user")
+
+	request := service.RegisterVerifyRequest{
+		UserId: user,
+		Token:  token,
+	}
+
+	response, err := service.RegisterVerify(request, h.UserClient, h.VerificationTokenDB, h.Logger)
+
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err.ErrorMessage)
+	}
 
 	return c.Status(fiber.StatusOK).JSON(response)
 }

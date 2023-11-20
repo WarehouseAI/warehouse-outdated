@@ -17,8 +17,7 @@ import (
 )
 
 type UpdateVerificationRequest struct {
-	Verified         bool    `json:"verified"`
-	VerificationCode *string `json:"verification_code"`
+	Verified bool `json:"verified"`
 }
 
 type UpdatePersonalDataRequest struct {
@@ -44,18 +43,21 @@ type UserUpdater interface {
 
 // TODO: добавить обновление избранного
 
-func UpdateUserVerification(request UpdateVerificationRequest, existUser *m.User, user d.UserInterface, logger *logrus.Logger) *e.ErrorResponse {
+func UpdateUserVerification(userId string, user d.UserInterface, logger *logrus.Logger) *e.ErrorResponse {
+	existUser, err := GetById(userId, user, logger)
+
+	if err != nil {
+		return err
+	}
+
+	request := UpdateVerificationRequest{
+		Verified: true,
+	}
+
 	if existUser.Verified {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": "Already verified"}).Info("Verify user")
 		return e.NewErrorResponse(e.HttpBadRequest, "User already verified")
 	}
-
-	if request.VerificationCode != existUser.VerificationCode {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": "Invalid verification code"}).Info("Verify user")
-		return e.NewErrorResponse(e.HttpBadRequest, "Invalid verification code")
-	}
-
-	request.VerificationCode = nil
 
 	if _, dbErr := user.RawUpdate(existUser.ID.String(), request); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Verify user")

@@ -105,3 +105,23 @@ func (s *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMs
 
 	return mapper.UserToProto(user), nil
 }
+
+func (s *UserGrpcServer) UpdateVerificationStatus(ctx context.Context, req *gen.UpdateVerificationStatusRequest) (*gen.UpdateVerificationStatusResponse, error) {
+	if req == nil || req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "Empty request data")
+	}
+
+	if err := service.UpdateUserVerification(req.UserId, s.db, s.logger); err != nil {
+		if err.ErrorCode == e.HttpBadRequest {
+			return nil, status.Errorf(codes.InvalidArgument, err.ErrorMessage)
+		}
+
+		if err.ErrorCode == e.HttpNotFound {
+			return nil, status.Errorf(codes.NotFound, err.ErrorMessage)
+		}
+
+		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
+	}
+
+	return &gen.UpdateVerificationStatusResponse{Verified: true}, nil
+}

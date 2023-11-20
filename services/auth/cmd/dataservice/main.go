@@ -6,7 +6,7 @@ import (
 	"warehouseai/auth/dataservice/picturedata"
 	"warehouseai/auth/dataservice/sessiondata"
 	"warehouseai/auth/dataservice/tokendata"
-	"warehouseai/auth/model"
+	m "warehouseai/auth/model"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -59,7 +59,7 @@ func NewSessionDatabase() *sessiondata.Database {
 	}
 }
 
-func NewResetTokenDatabase() *tokendata.Database {
+func NewResetTokenDatabase() *tokendata.Database[m.ResetToken] {
 	cfg := config.NewTokenDatabaseCfg()
 	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port)
 
@@ -69,7 +69,22 @@ func NewResetTokenDatabase() *tokendata.Database {
 		panic(err)
 	}
 
-	db.AutoMigrate(&model.ResetToken{})
+	db.AutoMigrate(&m.ResetToken{})
 
-	return &tokendata.Database{DB: db}
+	return &tokendata.Database[m.ResetToken]{DB: db}
+}
+
+func NewVerificationTokenDatabase() *tokendata.Database[m.VerificationToken] {
+	cfg := config.NewTokenDatabaseCfg()
+	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port)
+
+	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
+	if err != nil {
+		fmt.Println("❌Failed to connect to the database.")
+		panic(err)
+	}
+
+	db.AutoMigrate(&m.VerificationToken{})
+
+	return &tokendata.Database[m.VerificationToken]{DB: db}
 }

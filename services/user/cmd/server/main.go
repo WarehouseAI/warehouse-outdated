@@ -27,7 +27,6 @@ func StartServer(port string, db *userdata.Database, mailProducer *mail.MailProd
 	// route.Patch("/favorites/add", h.sessionMiddleware, h.userMiddleware, h.AddFavoriteAIHandler)
 	// route.Patch("/favorites/remove", h.sessionMiddleware, h.userMiddleware, h.RemoveFavoriteAIHandler)
 	// route.Get("/favorites", h.sessionMiddleware, h.GetFavoriteAIHandler)
-	route.Get("/verify/:code", sessionMw, userMw, handler.UpdateVerificationHandler)
 
 	return app.Listen(port)
 }

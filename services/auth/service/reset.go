@@ -30,7 +30,7 @@ type ResetConfirmRequest struct {
 }
 
 type ResetConfirmResponse struct {
-	UserId *string `json:"user_id"`
+	UserId string `json:"user_id"`
 }
 
 type ResetVerifyResponse struct {

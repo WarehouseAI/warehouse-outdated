@@ -29,6 +29,10 @@ func Login(req *LoginRequest, user adapter.UserGrpcInterface, session dataservic
 		return nil, nil, gwErr
 	}
 
+	if !existUser.Verified {
+		return nil, nil, e.NewErrorResponse(e.HttpForbidden, "Verify your email first")
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(existUser.Password), []byte(req.Password)); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
 		return nil, nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid credentials")

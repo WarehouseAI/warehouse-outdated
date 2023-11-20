@@ -26,6 +26,7 @@ func main() {
 
 	sessionDB := dataservice.NewSessionDatabase()
 	resetTokenDB := dataservice.NewResetTokenDatabase()
+	verificationTokenDB := dataservice.NewVerificationTokenDatabase()
 	pictureStorage := dataservice.NewPictureStorage()
 	mailProducer := mail.NewMailProducer()
 
@@ -34,7 +35,7 @@ func main() {
 	grpcServer := grpc.Start("auth:8041", sessionDB, log)
 	go grpcServer()
 
-	if err := server.StartServer(":8040", resetTokenDB, sessionDB, pictureStorage, mailProducer, log); err != nil {
+	if err := server.StartServer(":8040", resetTokenDB, verificationTokenDB, sessionDB, pictureStorage, mailProducer, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)

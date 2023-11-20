@@ -13,6 +13,12 @@ type ResetTokenInterface interface {
 	Delete(condition map[string]interface{}) *e.DBError
 }
 
+type VerificationTokenInterface interface {
+	Create(newVerificationToken *m.VerificationToken) *e.DBError
+	Get(condition map[string]interface{}) (*m.VerificationToken, *e.DBError)
+	Delete(condition map[string]interface{}) *e.DBError
+}
+
 type SessionInterface interface {
 	Create(ctx context.Context, userId string) (*m.Session, *e.DBError)
 	Get(ctx context.Context, sessionId string) (*m.Session, *e.DBError)
