@@ -6,16 +6,16 @@ message User {
   string username = 2;
   string firstname = 3;
   string lastname = 4;
-  string picture = 6;
-  string email = 7;
-  bool via_google = 8 [json_name="via_google"];
-  bool verified = 9;
-  string verification_code = 10 [json_name="verification_code"];
-  string created_at = 11 [json_name="created_at"];
-  string updated_at = 12 [json_name="updated_at"];
-  repeated string owned_ai = 13 [json_name="owned_ai"];
-  repeated string favorite_ai = 14 [json_name="favorite_ai"];
-  string password = 15;
+  string picture = 5;
+  string email = 6;
+  bool via_google = 7 [json_name="via_google"];
+  bool verified = 8;
+  string role = 9;
+  string created_at = 10 [json_name="created_at"];
+  string updated_at = 11 [json_name="updated_at"];
+  repeated string owned_ai = 12 [json_name="owned_ai"];
+  repeated string favorite_ai = 13 [json_name="favorite_ai"];
+  string password = 14;
 }
 
 // REQ's and RES's

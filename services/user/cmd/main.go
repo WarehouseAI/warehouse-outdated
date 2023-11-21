@@ -24,14 +24,15 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	db := dataservice.NewUserDatabase()
+	userDB := dataservice.NewUserDatabase()
+	favoritesDB := dataservice.NewFavoritesDatabase()
 	mailProducer := mail.NewMailProducer()
 	fmt.Println("✅Database successfully connected.")
 
-	grpcServer := grpc.Start("user:8001", db, log)
+	grpcServer := grpc.Start("user:8001", userDB, log)
 	go grpcServer()
 
-	if err := server.StartServer(":8000", db, mailProducer, log); err != nil {
+	if err := server.StartServer(":8000", userDB, favoritesDB, mailProducer, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)

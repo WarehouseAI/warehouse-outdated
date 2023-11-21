@@ -13,7 +13,7 @@ import (
 func Create(userInfo m.User, user dataservice.UserInterface, logger *logrus.Logger) (*string, *e.ErrorResponse) {
 	userInfo.ID = uuid.Must(uuid.NewV4())
 
-	if err := user.Add(&userInfo); err != nil {
+	if err := user.Create(&userInfo); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Create user")
 		return nil, e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
 	}

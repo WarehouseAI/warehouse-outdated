@@ -2,7 +2,9 @@ package server
 
 import (
 	"warehouseai/user/adapter/broker/mail"
+	"warehouseai/user/adapter/grpc/client/ai"
 	"warehouseai/user/adapter/grpc/client/auth"
+	"warehouseai/user/dataservice/favoritesdata"
 	"warehouseai/user/dataservice/userdata"
 	h "warehouseai/user/server/handlers"
 	"warehouseai/user/server/middleware"
@@ -12,32 +14,35 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StartServer(port string, db *userdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) error {
-	handler := newHttpHandler(db, mailProducer, logger)
+func StartServer(port string, userDb *userdata.Database, favoritesDb *favoritesdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) error {
+	handler := newHttpHandler(userDb, favoritesDb, mailProducer, logger)
 	app := fiber.New()
 	app.Use(setupCORS())
 
 	sessionMw := middleware.Session(logger, handler.AuthClient)
-	userMw := middleware.User(logger, handler.DB)
+	userMw := middleware.User(logger, handler.UserDB)
 
 	route := app.Group("/user")
 	route.Patch("/update", sessionMw, handler.UpdatePersonalDataHandler)
 	route.Patch("/update/email", sessionMw, handler.UpdateEmailHandler)
 	route.Patch("/update/password", sessionMw, userMw, handler.UpdatePasswordHandler)
-	// route.Patch("/favorites/add", h.sessionMiddleware, h.userMiddleware, h.AddFavoriteAIHandler)
-	// route.Patch("/favorites/remove", h.sessionMiddleware, h.userMiddleware, h.RemoveFavoriteAIHandler)
-	// route.Get("/favorites", h.sessionMiddleware, h.GetFavoriteAIHandler)
+	route.Patch("/favorites/add", sessionMw, handler.AddFavoriteHandler)
+	route.Delete("/favorites/delete", sessionMw, handler.RemoveFavoriteHandler)
+	route.Get("/favorites", sessionMw, handler.GetFavoritesHandler)
 
 	return app.Listen(port)
 }
 
-func newHttpHandler(db *userdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) *h.Handler {
+func newHttpHandler(userDb *userdata.Database, favoritesDB *favoritesdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) *h.Handler {
 	authClient := auth.NewAuthGrpcClient("auth:8041")
+	aiClient := ai.NewAiGrpcClient("ai:8021")
 
 	return &h.Handler{
-		DB:           db,
+		UserDB:       userDb,
+		FavoritesDB:  favoritesDB,
 		Logger:       logger,
 		MailProducer: mailProducer,
+		AiClient:     aiClient,
 		AuthClient:   authClient,
 	}
 }

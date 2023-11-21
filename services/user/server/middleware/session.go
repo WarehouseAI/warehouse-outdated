@@ -1,14 +1,14 @@
 package middleware
 
 import (
-	"warehouseai/user/adapter/grpc"
+	"warehouseai/user/adapter"
 	e "warehouseai/user/errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 )
 
-func Session(logger *logrus.Logger, auth grpc.AuthGrpcInterface) func(c *fiber.Ctx) error {
+func Session(logger *logrus.Logger, auth adapter.AuthGrpcInterface) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		sessionId := c.Cookies("sessionId")
 
@@ -25,7 +25,7 @@ func Session(logger *logrus.Logger, auth grpc.AuthGrpcInterface) func(c *fiber.C
 		c.ClearCookie("sessionId")
 		c.Cookie(&fiber.Cookie{
 			Name:     "sessionId",
-			Value:    *newSessionId,
+			Value:    newSessionId,
 			SameSite: fiber.CookieSameSiteNoneMode,
 			Secure:   true,
 		})

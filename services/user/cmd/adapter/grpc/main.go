@@ -14,7 +14,7 @@ import (
 
 func Start(host string, db dataservice.UserInterface, logger *logrus.Logger) func() {
 	grpc := grpc.NewServer()
-	server := server.NewUserGrpcServer(db, logger)
+	server := newUserGrpcServer(db, logger)
 	listener, err := net.Listen("tcp", host)
 
 	if err != nil {
@@ -31,5 +31,12 @@ func Start(host string, db dataservice.UserInterface, logger *logrus.Logger) fun
 			logger.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 			panic(err)
 		}
+	}
+}
+
+func newUserGrpcServer(database dataservice.UserInterface, logger *logrus.Logger) *server.UserGrpcServer {
+	return &server.UserGrpcServer{
+		DB:     database,
+		Logger: logger,
 	}
 }

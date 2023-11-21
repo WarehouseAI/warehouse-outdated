@@ -29,3 +29,9 @@ type User struct {
 	CreatedAt  time.Time   `json:"created_at" gorm:"type:time"`
 	UpdatedAt  time.Time   `json:"updated_at" gorm:"type:time"`
 }
+
+type UserFavorites struct {
+	ID     uint      `json:"-" gorm:"primarykey"`
+	AiId   uuid.UUID `json:"ai_id" gorm:"type:uuid;not null"`
+	UserId uuid.UUID `json:"user_id" gorm:"uuid"`
+}

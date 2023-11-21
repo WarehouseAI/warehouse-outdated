@@ -14,15 +14,8 @@ import (
 
 type AuthGrpcServer struct {
 	gen.UnimplementedAuthServiceServer
-	db     dataservice.SessionInterface
-	logger *logrus.Logger
-}
-
-func NewAuthGrpcServer(database dataservice.SessionInterface, logger *logrus.Logger) *AuthGrpcServer {
-	return &AuthGrpcServer{
-		db:     database,
-		logger: logger,
-	}
+	DB     dataservice.SessionInterface
+	Logger *logrus.Logger
 }
 
 func (s *AuthGrpcServer) Authenticate(ctx context.Context, req *gen.AuthenticationRequest) (*gen.AuthenticationResponse, error) {
@@ -30,11 +23,12 @@ func (s *AuthGrpcServer) Authenticate(ctx context.Context, req *gen.Authenticati
 		return nil, status.Errorf(codes.InvalidArgument, "Empty request data")
 	}
 
-	userId, session, err := service.Authenticate(req.SessionId, s.db, s.logger)
+	userId, session, err := service.Authenticate(req.SessionId, s.DB, s.Logger)
 
 	if err != nil {
+		// Если сессия не найдена => возвращаем 401 статус
 		if err.ErrorCode == e.HttpNotFound {
-			return nil, status.Errorf(codes.NotFound, err.ErrorMessage)
+			return nil, status.Errorf(codes.Aborted, err.ErrorMessage)
 		}
 
 		return nil, status.Error(codes.Internal, err.ErrorMessage)

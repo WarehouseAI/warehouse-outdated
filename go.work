@@ -1,6 +1,7 @@
 go 1.20
 
 use (
+	./services/ai
 	./services/auth
 	./services/mail
 	./services/user

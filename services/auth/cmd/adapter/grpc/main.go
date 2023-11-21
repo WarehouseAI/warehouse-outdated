@@ -14,7 +14,7 @@ import (
 
 func Start(host string, db dataservice.SessionInterface, logger *logrus.Logger) func() {
 	grpc := grpc.NewServer()
-	server := server.NewAuthGrpcServer(db, logger)
+	server := newAuthGrpcServer(db, logger)
 	listener, err := net.Listen("tcp", host)
 
 	if err != nil {
@@ -31,5 +31,12 @@ func Start(host string, db dataservice.SessionInterface, logger *logrus.Logger) 
 			logger.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("Auth Microservice")
 			panic(err)
 		}
+	}
+}
+
+func newAuthGrpcServer(database dataservice.SessionInterface, logger *logrus.Logger) *server.AuthGrpcServer {
+	return &server.AuthGrpcServer{
+		DB:     database,
+		Logger: logger,
 	}
 }

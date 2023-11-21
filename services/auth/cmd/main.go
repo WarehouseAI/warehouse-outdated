@@ -34,6 +34,8 @@ func main() {
 
 	grpcServer := grpc.Start("auth:8041", sessionDB, log)
 	go grpcServer()
+	go resetTokenDB.Flusher(time.Minute)
+	go verificationTokenDB.Flusher(time.Minute)
 
 	if err := server.StartServer(":8040", resetTokenDB, verificationTokenDB, sessionDB, pictureStorage, mailProducer, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")

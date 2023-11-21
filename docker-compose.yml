@@ -56,6 +56,23 @@ services:
     volumes:
       - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
 
+  db-ai:
+    image: postgres:14.1-alpine
+    container_name: ai-database
+    networks:
+      - server-network
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: '${AI_DB_USER}'
+      POSTGRES_PASSWORD: '${AI_DB_PASS}'
+      POSTGRES_DB: '${AI_DB_NAME}'
+    ports:
+      - '${AI_DB_PORT}:5432'
+    volumes:
+      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+
   session:
     image: redis:6.2-alpine
     container_name: db-session
@@ -147,19 +164,18 @@ services:
       - auth
       - rabbitmq
 
-  # ai:
-  #   restart: always
-  #   container_name: ai-service
-  #   networks:
-  #     - svc-network
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfiles/ai.Dockerfile
-  #   command: ./wait-4-postgres.sh data_db ./ai
-  #   depends_on:
-  #     - db
-  #     - session
-  #   env_file: .env
-  #   ports:
-  #     - 8020:8020
-  #     - 8021:8021
+  ai:
+    restart: always
+    container_name: ai
+    networks:
+      - server-network
+    build:
+      context: .
+      dockerfile: dockerfiles/ai.Dockerfile
+    command: ./wait-4-postgres.sh db-ai ./ai
+    depends_on:
+      - db-ai
+    env_file: .env
+    ports:
+      - 8020:8020
+      # - 8021:8021

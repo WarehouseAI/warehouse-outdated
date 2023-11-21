@@ -102,8 +102,6 @@ func UpdateUserEmail(request UpdateUserEmailRequest, userId string, user d.UserI
 		return e.NewErrorResponse(e.HttpInternalError, err.Error())
 	}
 
-	// TODO: переработать систему подтверждения. Производить изменения после перехода пользователем по ссылке.
-	// Можно использовать отдельную таблицу для этого.
 	request.Verified = false
 	request.VerificationCode = key
 

@@ -27,19 +27,19 @@ func NewAuthGrpcClient(grpcUrl string) *AuthGrpcClient {
 	}
 }
 
-func (c *AuthGrpcClient) Authenticate(sessionId string) (*string, *string, *e.ErrorResponse) {
+func (c *AuthGrpcClient) Authenticate(sessionId string) (string, string, *e.ErrorResponse) {
 	client := gen.NewAuthServiceClient(c.conn)
 	resp, err := client.Authenticate(context.Background(), &gen.AuthenticationRequest{SessionId: sessionId})
 
 	if err != nil {
 		s, _ := status.FromError(err)
 
-		if s.Code() == codes.NotFound {
-			return nil, nil, e.NewErrorResponse(e.HttpNotFound, s.Message())
+		if s.Code() == codes.Aborted {
+			return "", "", e.NewErrorResponse(e.HttpUnauthorized, s.Message())
 		}
 
-		return nil, nil, e.NewErrorResponse(e.HttpInternalError, s.Message())
+		return "", "", e.NewErrorResponse(e.HttpInternalError, s.Message())
 	}
 
-	return &resp.UserId, &resp.SessionId, nil
+	return resp.UserId, resp.SessionId, nil
 }

@@ -16,15 +16,8 @@ import (
 
 type UserGrpcServer struct {
 	gen.UnimplementedUserServiceServer
-	db     dataservice.UserInterface
-	logger *logrus.Logger
-}
-
-func NewUserGrpcServer(database dataservice.UserInterface, logger *logrus.Logger) *UserGrpcServer {
-	return &UserGrpcServer{
-		db:     database,
-		logger: logger,
-	}
+	DB     dataservice.UserInterface
+	Logger *logrus.Logger
 }
 
 func (s *UserGrpcServer) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
@@ -41,7 +34,7 @@ func (s *UserGrpcServer) CreateUser(ctx context.Context, req *gen.CreateUserMsg)
 		Email:     req.Email,
 	}
 
-	userId, err := service.Create(newUser, s.db, s.logger)
+	userId, err := service.Create(newUser, s.DB, s.Logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpAlreadyExist {
@@ -63,7 +56,7 @@ func (s *UserGrpcServer) ResetPassword(ctx context.Context, req *gen.ResetPasswo
 		Password: req.Password,
 	}
 
-	if err := service.ResetUserPassword(resetPasswordRequest, req.UserId, s.db, s.logger); err != nil {
+	if err := service.ResetUserPassword(resetPasswordRequest, req.UserId, s.DB, s.Logger); err != nil {
 		return nil, status.Errorf(codes.Aborted, err.ErrorMessage)
 	}
 
@@ -75,7 +68,7 @@ func (s *UserGrpcServer) GetUserByEmail(ctx context.Context, req *gen.GetUserByE
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	user, err := service.GetByEmail(req.Email, s.db, s.logger)
+	user, err := service.GetByEmail(req.Email, s.DB, s.Logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
@@ -93,7 +86,7 @@ func (s *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMs
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	user, err := service.GetById(req.UserId, s.db, s.logger)
+	user, err := service.GetById(req.UserId, s.DB, s.Logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
@@ -111,7 +104,7 @@ func (s *UserGrpcServer) UpdateVerificationStatus(ctx context.Context, req *gen.
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	if err := service.UpdateUserVerification(req.UserId, s.db, s.logger); err != nil {
+	if err := service.UpdateUserVerification(req.UserId, s.DB, s.Logger); err != nil {
 		if err.ErrorCode == e.HttpBadRequest {
 			return nil, status.Errorf(codes.InvalidArgument, err.ErrorMessage)
 		}

@@ -44,14 +44,14 @@ func (d *Database) Get(ctx context.Context, sessionId string) (*m.Session, *e.DB
 	recordTTL := d.DB.TTL(ctx, sessionId)
 
 	if record.Err() != nil {
-		return nil, e.NewDBError(e.DbNotFound, "Record not found.", record.Err().Error())
+		return nil, e.NewDBError(e.DbNotFound, "Session not found.", record.Err().Error())
 	}
 
 	recordInfo, _ := record.Result()
 	TTLInfo, _ := recordTTL.Result()
 
 	if err := json.Unmarshal([]byte(recordInfo), &sessionPayload); err != nil {
-		return nil, e.NewDBError(e.DbSystem, "Can't unmarhal record", err.Error())
+		return nil, e.NewDBError(e.DbSystem, "Can't unmarhal session payload", err.Error())
 	}
 
 	return &m.Session{ID: sessionId, Payload: sessionPayload, TTL: TTLInfo}, nil
@@ -59,7 +59,7 @@ func (d *Database) Get(ctx context.Context, sessionId string) (*m.Session, *e.DB
 
 func (d *Database) Delete(ctx context.Context, sessionId string) *e.DBError {
 	if err := d.DB.Del(ctx, sessionId).Err(); err != nil {
-		return e.NewDBError(e.DbNotFound, "Record not found.", err.Error())
+		return e.NewDBError(e.DbNotFound, "Session not found.", err.Error())
 	}
 
 	return nil
