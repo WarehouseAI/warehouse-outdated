@@ -1,116 +1,164 @@
 version: '3'
 
 networks:
-  svc-network:
+  server-network:
     driver: bridge
 
 services:
-  db:
+  db-auth:
     image: postgres:14.1-alpine
-    container_name: data_db
+    container_name: token-database
     networks:
-      - svc-network
+      - server-network
     restart: always
     env_file:
       - .env
     environment:
-      POSTGRES_USER: '${DATA_DB_USER}'
-      POSTGRES_PASSWORD: '${DATA_DB_PASSWORD}'
-      POSTGRES_DB: '${DATA_DB_NAME}'
-      POSTGRES_AI_SERVICE_USER: '${AI_SERVICE_DB_USER}'
-      POSTGRES_USER_SERVICE_USER: '${USER_SERVICE_DB_USER}'
-      POSTGRES_AI_SERVICE_PASS: '${AI_SERVICE_DB_PASS}'
-      POSTGRES_USER_SERVICE_PASS: '${USER_SERVICE_DB_PASS}'
+      POSTGRES_USER: '${AUTH_DB_USER}'
+      POSTGRES_PASSWORD: '${AUTH_DB_PASS}'
+      POSTGRES_DB: '${AUTH_DB_NAME}'
     ports:
-      - '${DATA_DB_PORT}:${DATA_DB_PORT}'
+      - '${AUTH_DB_PORT}:5432'
+    volumes:
+      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+
+  db-users:
+    image: postgres:14.1-alpine
+    container_name: users-database
+    networks:
+      - server-network
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: '${USERS_DB_USER}'
+      POSTGRES_PASSWORD: '${USERS_DB_PASS}'
+      POSTGRES_DB: '${USERS_DB_NAME}'
+    ports:
+      - '${USERS_DB_PORT}:5432'
+    volumes:
+      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+
+  db-ai:
+    image: postgres:14.1-alpine
+    container_name: ai-database
+    networks:
+      - server-network
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: '${AI_DB_USER}'
+      POSTGRES_PASSWORD: '${AI_DB_PASS}'
+      POSTGRES_DB: '${AI_DB_NAME}'
+    ports:
+      - '${AI_DB_PORT}:5432'
     volumes:
       - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
 
   session:
     image: redis:6.2-alpine
-    container_name: session_db
+    container_name: db-session
     restart: always
     networks:
-      - svc-network
+      - server-network
     env_file:
       - .env
     environment:
-      REDIS_PASSWORD: '${SESSION_DB_PASSWORD}'
+      REDIS_PASSWORD: '${REDIS_PASSWORD}'
     ports:
-      - '${SESSION_DB_PORT}:${SESSION_DB_PORT}'
-    command: redis-server --save 20 1 --loglevel warning --requirepass ${SESSION_DB_PASSWORD}
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    container_name: rabbitmq
+    ports:
+      - '${RMQ_PORT}:5672'
+      - 15672:15672
+    restart: always
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_DEFAULT_USER: '${RMQ_USER}'
+      RABBITMQ_DEFAULT_PASS: '${RMQ_PASS}'
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit disk_free_limit 2147483648
+    networks:
+      - server-network
 
   auth:
     restart: always
-    container_name: auth-service
+    container_name: auth
     networks:
-      - svc-network
+      - server-network
     build:
       context: .
       dockerfile: dockerfiles/auth.Dockerfile
-    command: ./auth
+    command: ./wait-4-postgres.sh db-auth ./auth
     depends_on:
       - session
-      - user
+      - db-auth
+      - rabbitmq
     env_file: .env
-    expose:
-      - '8001'
+    environment:
+      DB_NAME: '${AUTH_DB_NAME}'
+      DB_PASS: '${AUTH_DB_PASS}'
+      DB_USER: '${AUTH_DB_USER}'
+      DB_PORT: '${AUTH_DB_PORT}'
     ports:
-      - 8010:8010
+      - 8040:8040
+      - 8041:8041
 
   user:
     restart: always
-    container_name: user-service
+    container_name: user
     networks:
-      - svc-network
+      - server-network
     build:
       context: .
       dockerfile: dockerfiles/user.Dockerfile
-    command: ./wait-4-postgres.sh data_db ./user
+    command: ./wait-4-postgres.sh db-users ./user
     depends_on:
-      - db
+      - db-users
+      - rabbitmq
     env_file: .env
+    environment:
+      DB_NAME: '${USERS_DB_NAME}'
+      DB_PASS: '${USERS_DB_PASS}'
+      DB_USER: '${USERS_DB_USER}'
+      DB_PORT: '${USERS_DB_PORT}'
     ports:
       - 8000:8000
       - 8001:8001
 
+  mail:
+    restart: always
+    container_name: mail
+    networks:
+      - server-network
+    env_file: .env
+    build:
+      context: .
+      dockerfile: dockerfiles/mail.Dockerfile
+    command: ./mail
+    depends_on:
+      - user
+      - auth
+      - rabbitmq
+
   ai:
     restart: always
-    container_name: ai-service
+    container_name: ai
     networks:
-      - svc-network
+      - server-network
     build:
       context: .
       dockerfile: dockerfiles/ai.Dockerfile
-    command: ./wait-4-postgres.sh data_db ./ai
+    command: ./wait-4-postgres.sh db-ai ./ai
     depends_on:
-      - db
-      - session
+      - db-ai
     env_file: .env
     ports:
       - 8020:8020
       - 8021:8021
-
-  # mailserver:
-  #   image: ghcr.io/docker-mailserver/docker-mailserver:latest
-  #   container_name: mailserver
-  #   # Provide the FQDN of your mail server here (Your DNS MX record should point to this value)
-  #   hostname: mail.pay-with-crypto.xyz
-  #   ports:
-  #     - '25:25'
-  #     - '465:465'
-  #     - '587:587'
-  #     - '993:993'
-  #   volumes:
-  #     - ./docker-data/dms/mail-data/:/var/mail/
-  #     - ./docker-data/dms/mail-state/:/var/mail-state/
-  #     - ./docker-data/dms/mail-logs/:/var/log/mail/
-  #     - ./docker-data/dms/config/:/tmp/docker-mailserver/
-  #     - /etc/localtime:/etc/localtime:ro
-  #   environment:
-  #     - ENABLE_RSPAMD=1
-  #     - ENABLE_CLAMAV=1
-  #     - ENABLE_FAIL2BAN=1
-  #   cap_add:
-  #     - NET_ADMIN # For Fail2Ban to work
-  #   restart: always
