@@ -18,6 +18,7 @@ WORKDIR /
 COPY --from=build-stage /ai /ai
 
 EXPOSE 8020
+EXPOSE 8021
 
 # Download alpine package and install psql-client for the script
 COPY wait-4-postgres.sh ./
