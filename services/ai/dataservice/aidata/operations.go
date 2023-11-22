@@ -2,6 +2,7 @@ package aidata
 
 import (
 	"errors"
+	"fmt"
 	e "warehouseai/ai/errors"
 	m "warehouseai/ai/model"
 
@@ -56,12 +57,26 @@ func (d *Database) GetWithPreload(conditions map[string]interface{}, preload str
 func (d *Database) GetMany(ids []string) (*[]m.AI, *e.DBError) {
 	var ais []m.AI
 
-	if err := d.DB.Preload("Commands").Find(&ais, ids).Error; err != nil {
+	if err := d.DB.Where("id IN ?", ids).Preload("Commands").Find(&ais).Error; err != nil {
 		return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 	}
 
 	if len(ais) == 0 {
 		return nil, e.NewDBError(e.DbNotFound, "AIs not found.", "Empty favorites")
+	}
+
+	return &ais, nil
+}
+
+func (d *Database) GetLike(field string, value string) (*[]m.AI, *e.DBError) {
+	var ais []m.AI
+
+	if err := d.DB.Where(fmt.Sprintf("%s LIKE ?", field), value).Preload("Commands").Find(&ais).Error; err != nil {
+		if !isFieldNotFoundError(err) {
+			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
+		}
+
+		return nil, e.NewDBError(e.DbNotFound, "Invalid field property", err.Error())
 	}
 
 	return &ais, nil
@@ -77,6 +92,16 @@ func (d *Database) Update(ai *m.AI, updatedFields map[string]interface{}) *e.DBE
 	}
 
 	return nil
+}
+
+func isFieldNotFoundError(err error) bool {
+	pgErr, ok := err.(*pgconn.PgError)
+
+	if ok {
+		return pgErr.Code == "42703"
+	}
+
+	return false
 }
 
 func isDuplicateKeyError(err error) bool {

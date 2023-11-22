@@ -29,7 +29,7 @@ func main() {
 	mailProducer := mail.NewMailProducer()
 	fmt.Println("✅Database successfully connected.")
 
-	grpcServer := grpc.Start("user:8001", userDB, log)
+	grpcServer := grpc.Start("user:8001", userDB, favoritesDB, log)
 	go grpcServer()
 
 	if err := server.StartServer(":8000", userDB, favoritesDB, mailProducer, log); err != nil {

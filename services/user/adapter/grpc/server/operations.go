@@ -16,8 +16,9 @@ import (
 
 type UserGrpcServer struct {
 	gen.UnimplementedUserServiceServer
-	DB     dataservice.UserInterface
-	Logger *logrus.Logger
+	FavoriteDB dataservice.FavoritesInterface
+	UserDB     dataservice.UserInterface
+	Logger     *logrus.Logger
 }
 
 func (s *UserGrpcServer) CreateUser(ctx context.Context, req *gen.CreateUserMsg) (*gen.CreateUserResponse, error) {
@@ -34,7 +35,7 @@ func (s *UserGrpcServer) CreateUser(ctx context.Context, req *gen.CreateUserMsg)
 		Email:     req.Email,
 	}
 
-	userId, err := service.Create(newUser, s.DB, s.Logger)
+	userId, err := service.Create(newUser, s.UserDB, s.Logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpAlreadyExist {
@@ -56,7 +57,7 @@ func (s *UserGrpcServer) ResetPassword(ctx context.Context, req *gen.ResetPasswo
 		Password: req.Password,
 	}
 
-	if err := service.ResetUserPassword(resetPasswordRequest, req.UserId, s.DB, s.Logger); err != nil {
+	if err := service.ResetUserPassword(resetPasswordRequest, req.UserId, s.UserDB, s.Logger); err != nil {
 		return nil, status.Errorf(codes.Aborted, err.ErrorMessage)
 	}
 
@@ -68,7 +69,7 @@ func (s *UserGrpcServer) GetUserByEmail(ctx context.Context, req *gen.GetUserByE
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	user, err := service.GetByEmail(req.Email, s.DB, s.Logger)
+	user, err := service.GetByEmail(req.Email, s.UserDB, s.Logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
@@ -86,7 +87,7 @@ func (s *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMs
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	user, err := service.GetById(req.UserId, s.DB, s.Logger)
+	user, err := service.GetById(req.UserId, s.UserDB, s.Logger)
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
@@ -99,12 +100,30 @@ func (s *UserGrpcServer) GetUserById(ctx context.Context, req *gen.GetUserByIdMs
 	return mapper.UserToProto(user), nil
 }
 
+func (s *UserGrpcServer) GetFavorite(ctx context.Context, req *gen.GetFavoriteRequest) (*gen.GetFavoriteResponse, error) {
+	if req == nil || req.AiId == "" || req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "Empty request data")
+	}
+
+	favorite, err := service.GetFavorite(req.UserId, req.AiId, s.FavoriteDB, s.Logger)
+
+	if err != nil {
+		if err.ErrorCode == e.HttpNotFound {
+			return nil, status.Errorf(codes.NotFound, err.ErrorMessage)
+		}
+
+		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
+	}
+
+	return &gen.GetFavoriteResponse{AiId: favorite.AiId.String()}, nil
+}
+
 func (s *UserGrpcServer) UpdateVerificationStatus(ctx context.Context, req *gen.UpdateVerificationStatusRequest) (*gen.UpdateVerificationStatusResponse, error) {
 	if req == nil || req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "Empty request data")
 	}
 
-	if err := service.UpdateUserVerification(req.UserId, s.DB, s.Logger); err != nil {
+	if err := service.UpdateUserVerification(req.UserId, s.UserDB, s.Logger); err != nil {
 		if err.ErrorCode == e.HttpBadRequest {
 			return nil, status.Errorf(codes.InvalidArgument, err.ErrorMessage)
 		}

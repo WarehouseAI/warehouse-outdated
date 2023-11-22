@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-func Start(host string, db dataservice.UserInterface, logger *logrus.Logger) func() {
+func Start(host string, userDB dataservice.UserInterface, favoriteDB dataservice.FavoritesInterface, logger *logrus.Logger) func() {
 	grpc := grpc.NewServer()
-	server := newUserGrpcServer(db, logger)
+	server := newUserGrpcServer(userDB, favoriteDB, logger)
 	listener, err := net.Listen("tcp", host)
 
 	if err != nil {
@@ -34,9 +34,10 @@ func Start(host string, db dataservice.UserInterface, logger *logrus.Logger) fun
 	}
 }
 
-func newUserGrpcServer(database dataservice.UserInterface, logger *logrus.Logger) *server.UserGrpcServer {
+func newUserGrpcServer(user dataservice.UserInterface, favorites dataservice.FavoritesInterface, logger *logrus.Logger) *server.UserGrpcServer {
 	return &server.UserGrpcServer{
-		DB:     database,
-		Logger: logger,
+		UserDB:     user,
+		FavoriteDB: favorites,
+		Logger:     logger,
 	}
 }

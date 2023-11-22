@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	UserService_GetUserByEmail_FullMethodName           = "/UserService/GetUserByEmail"
 	UserService_GetUserById_FullMethodName              = "/UserService/GetUserById"
+	UserService_GetFavorite_FullMethodName              = "/UserService/GetFavorite"
 	UserService_CreateUser_FullMethodName               = "/UserService/CreateUser"
 	UserService_ResetPassword_FullMethodName            = "/UserService/ResetPassword"
 	UserService_UpdateVerificationStatus_FullMethodName = "/UserService/UpdateVerificationStatus"
@@ -32,6 +33,7 @@ const (
 type UserServiceClient interface {
 	GetUserByEmail(ctx context.Context, in *GetUserByEmailMsg, opts ...grpc.CallOption) (*User, error)
 	GetUserById(ctx context.Context, in *GetUserByIdMsg, opts ...grpc.CallOption) (*User, error)
+	GetFavorite(ctx context.Context, in *GetFavoriteRequest, opts ...grpc.CallOption) (*GetFavoriteResponse, error)
 	CreateUser(ctx context.Context, in *CreateUserMsg, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error)
 	UpdateVerificationStatus(ctx context.Context, in *UpdateVerificationStatusRequest, opts ...grpc.CallOption) (*UpdateVerificationStatusResponse, error)
@@ -57,6 +59,15 @@ func (c *userServiceClient) GetUserByEmail(ctx context.Context, in *GetUserByEma
 func (c *userServiceClient) GetUserById(ctx context.Context, in *GetUserByIdMsg, opts ...grpc.CallOption) (*User, error) {
 	out := new(User)
 	err := c.cc.Invoke(ctx, UserService_GetUserById_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetFavorite(ctx context.Context, in *GetFavoriteRequest, opts ...grpc.CallOption) (*GetFavoriteResponse, error) {
+	out := new(GetFavoriteResponse)
+	err := c.cc.Invoke(ctx, UserService_GetFavorite_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +107,7 @@ func (c *userServiceClient) UpdateVerificationStatus(ctx context.Context, in *Up
 type UserServiceServer interface {
 	GetUserByEmail(context.Context, *GetUserByEmailMsg) (*User, error)
 	GetUserById(context.Context, *GetUserByIdMsg) (*User, error)
+	GetFavorite(context.Context, *GetFavoriteRequest) (*GetFavoriteResponse, error)
 	CreateUser(context.Context, *CreateUserMsg) (*CreateUserResponse, error)
 	ResetPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error)
 	UpdateVerificationStatus(context.Context, *UpdateVerificationStatusRequest) (*UpdateVerificationStatusResponse, error)
@@ -111,6 +123,9 @@ func (UnimplementedUserServiceServer) GetUserByEmail(context.Context, *GetUserBy
 }
 func (UnimplementedUserServiceServer) GetUserById(context.Context, *GetUserByIdMsg) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserById not implemented")
+}
+func (UnimplementedUserServiceServer) GetFavorite(context.Context, *GetFavoriteRequest) (*GetFavoriteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFavorite not implemented")
 }
 func (UnimplementedUserServiceServer) CreateUser(context.Context, *CreateUserMsg) (*CreateUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
@@ -166,6 +181,24 @@ func _UserService_GetUserById_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).GetUserById(ctx, req.(*GetUserByIdMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetFavorite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFavoriteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetFavorite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetFavorite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetFavorite(ctx, req.(*GetFavoriteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -238,6 +271,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserById",
 			Handler:    _UserService_GetUserById_Handler,
+		},
+		{
+			MethodName: "GetFavorite",
+			Handler:    _UserService_GetFavorite_Handler,
 		},
 		{
 			MethodName: "CreateUser",

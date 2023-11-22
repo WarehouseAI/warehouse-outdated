@@ -59,9 +59,19 @@ message UpdateVerificationStatusResponse {
   bool verified = 1;
 }
 
+message GetFavoriteRequest {
+  string user_id = 1;
+  string ai_id = 2;
+}
+
+message GetFavoriteResponse {
+  string ai_id = 1;
+}
+
 service UserService {
   rpc GetUserByEmail(GetUserByEmailMsg) returns (User);
   rpc GetUserById(GetUserByIdMsg) returns (User);
+  rpc GetFavorite(GetFavoriteRequest) returns (GetFavoriteResponse);
   rpc CreateUser(CreateUserMsg) returns (CreateUserResponse);
   rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse);
   rpc UpdateVerificationStatus(UpdateVerificationStatusRequest) returns (UpdateVerificationStatusResponse);

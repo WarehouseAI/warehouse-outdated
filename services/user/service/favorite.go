@@ -55,6 +55,17 @@ func GetFavorites(request *GetFavoritesRequest, favorites dataservice.FavoritesI
 	return userFavorites, nil
 }
 
+func GetFavorite(userId string, aiId string, favorites dataservice.FavoritesInterface, logger *logrus.Logger) (*m.UserFavorites, *e.ErrorResponse) {
+	existFavorite, dbErr := favorites.GetFavorite(userId, aiId)
+
+	if dbErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Get user favorite ai")
+		return nil, e.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
+	}
+
+	return existFavorite, nil
+}
+
 func RemoveFavorite(userId string, request *RemoveFavoriteRequest, favorites dataservice.FavoritesInterface, logger *logrus.Logger) *e.ErrorResponse {
 	if err := favorites.Delete(userId, request.AiId); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Get user by Id")

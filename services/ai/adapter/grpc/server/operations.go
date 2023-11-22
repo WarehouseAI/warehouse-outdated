@@ -34,5 +34,5 @@ func (s *AiGrpcServer) GetAiById(ctx context.Context, req *gen.GetAiByIdMsg) (*g
 		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
 	}
 
-	return mapper.AiToProto(ai), nil
+	return mapper.AiToProto(&ai.AI), nil
 }
