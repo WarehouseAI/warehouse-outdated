@@ -70,6 +70,7 @@ services:
       - '${REDIS_PORT}:${REDIS_PORT}'
     command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
 
+  # Убрать версию с UI
   rabbitmq:
     image: rabbitmq:3-management
     hostname: rabbitmq
