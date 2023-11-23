@@ -29,7 +29,7 @@ func (s *UserGrpcServer) CreateUser(ctx context.Context, req *gen.CreateUserMsg)
 	newUser := m.User{
 		Firstname: req.Firstname,
 		Lastname:  req.Lastname,
-		Username:  req.Lastname,
+		Username:  req.Username,
 		Password:  req.Password,
 		Picture:   req.Picture,
 		Email:     req.Email,

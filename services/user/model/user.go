@@ -17,7 +17,7 @@ type User struct {
 	ID        uuid.UUID `json:"id" gorm:"type:uuid;primarykey"`
 	Firstname string    `json:"firstname" gorm:"type:string;not null"`
 	Lastname  string    `json:"lastname" gorm:"type:string;not null"`
-	Username  string    `json:"username" gorm:"type:string;unique"`
+	Username  string    `json:"username" gorm:"type:string;not null;unique"`
 	Picture   string    `json:"picture" gorm:"type:string"`
 	Password  string    `json:"-" gorm:"type:string;not null"`
 	Email     string    `json:"email" gorm:"type:string;not null;unique"`

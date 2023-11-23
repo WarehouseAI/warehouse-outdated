@@ -51,8 +51,13 @@ func Register(
 ) (*RegisterResponse, *e.ErrorResponse) {
 
 	if len(req.Password) > 72 {
-		return nil, e.NewErrorResponse(e.HttpBadRequest, "Password is too long.")
+		return nil, e.NewErrorResponse(e.HttpBadRequest, "Password is too long")
 	}
+
+	if len(req.Password) < 8 {
+		return nil, e.NewErrorResponse(e.HttpBadRequest, "Password is too small")
+	}
+
 	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
 
 	// Move token create here to avoid create-missmatch with user on other service
