@@ -3,6 +3,7 @@ package aidata
 import (
 	"errors"
 	"fmt"
+	"strings"
 	e "warehouseai/ai/errors"
 	m "warehouseai/ai/model"
 
@@ -71,7 +72,7 @@ func (d *Database) GetMany(ids []string) (*[]m.AI, *e.DBError) {
 func (d *Database) GetLike(field string, value string) (*[]m.AI, *e.DBError) {
 	var ais []m.AI
 
-	if err := d.DB.Where(fmt.Sprintf("%s LIKE ?", field), value).Preload("Commands").Find(&ais).Error; err != nil {
+	if err := d.DB.Where(fmt.Sprintf("LOWER(%s) LIKE ?", field), strings.ToLower(value)).Preload("Commands").Find(&ais).Error; err != nil {
 		if !isFieldNotFoundError(err) {
 			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 		}

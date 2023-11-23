@@ -42,7 +42,11 @@ func GetLike(field string, value string, ai dataservice.AiInterface, logger *log
 		return nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid parameters")
 	}
 
-	existAis, dbErr := ai.GetLike(field, value)
+	if len(value) < 3 {
+		return nil, e.NewErrorResponse(e.HttpBadRequest, "Too small value, provide value larger or equals 3.")
+	}
+
+	existAis, dbErr := ai.GetLike(field, "%"+value+"%")
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Get AI like")

@@ -99,7 +99,7 @@ func (h *Handler) GetAIHandler(c *fiber.Ctx) error {
 
 func (h *Handler) SearchHandler(c *fiber.Ctx) error {
 	field := c.Query("field")
-	value := "%" + c.Query("value") + "%"
+	value := c.Query("value")
 
 	result, svcErr := ai.GetLike(field, value, h.DB, h.Logger)
 
