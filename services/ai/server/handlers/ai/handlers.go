@@ -6,7 +6,9 @@ import (
 	"warehouseai/ai/adapter/grpc/client/auth"
 	"warehouseai/ai/adapter/grpc/client/user"
 	"warehouseai/ai/dataservice/aidata"
+	"warehouseai/ai/dataservice/picturedata"
 	e "warehouseai/ai/errors"
+	"warehouseai/ai/model"
 	"warehouseai/ai/service/ai"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,23 +16,34 @@ import (
 )
 
 type Handler struct {
-	DB         *aidata.Database
-	Logger     *logrus.Logger
-	UserClient *user.UserGrpcClient
-	AuthClient *auth.AuthGrpcClient
+	DB             *aidata.Database
+	Logger         *logrus.Logger
+	PictureStorage *picturedata.Storage
+	UserClient     *user.UserGrpcClient
+	AuthClient     *auth.AuthGrpcClient
 }
 
 func (h *Handler) CreateAiWithKeyHandler(c *fiber.Ctx) error {
 	userId := c.Locals("userId").(string)
-	var aiData ai.CreateWithKeyRequest
-
-	if err := c.BodyParser(&aiData); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(e.NewErrorResponse(e.HttpBadRequest, "Invalid request body."))
-	}
-
-	newAi, err := ai.CreateWithOwnKey(&aiData, userId, h.DB, h.Logger)
+	imageUrl := c.Locals("imageUrl").(string)
+	form, err := c.MultipartForm()
 
 	if err != nil {
+		response := e.NewErrorResponse(e.HttpBadRequest, err.Error())
+		return c.Status(response.ErrorCode).JSON(response)
+	}
+
+	request := ai.CreateWithKeyRequest{
+		Name:        form.Value["name"][0],
+		AuthScheme:  model.AuthScheme(form.Value["auth_scheme"][0]),
+		Description: form.Value["description"][0],
+		Image:       imageUrl,
+		ApiKey:      form.Value["api_key"][0],
+	}
+
+	newAi, svcErr := ai.CreateWithOwnKey(&request, userId, h.DB, h.Logger)
+
+	if svcErr != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
@@ -39,15 +52,24 @@ func (h *Handler) CreateAiWithKeyHandler(c *fiber.Ctx) error {
 
 func (h *Handler) CreateAiWithoutKeyHandler(c *fiber.Ctx) error {
 	userId := c.Locals("userId").(string)
-	var aiData ai.CreateWithoutKeyRequest
-
-	if err := c.BodyParser(&aiData); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(e.NewErrorResponse(e.HttpBadRequest, "Invalid request body."))
-	}
-
-	newAi, err := ai.CreateWithGeneratedKey(&aiData, userId, h.DB, h.Logger)
+	imageUrl := c.Locals("imageUrl").(string)
+	form, err := c.MultipartForm()
 
 	if err != nil {
+		response := e.NewErrorResponse(e.HttpBadRequest, err.Error())
+		return c.Status(response.ErrorCode).JSON(response)
+	}
+
+	request := ai.CreateWithoutKeyRequest{
+		Name:        form.Value["name"][0],
+		AuthScheme:  model.AuthScheme(form.Value["auth_scheme"][0]),
+		Description: form.Value["description"][0],
+		Image:       imageUrl,
+	}
+
+	newAi, svcErr := ai.CreateWithGeneratedKey(&request, userId, h.DB, h.Logger)
+
+	if svcErr != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 

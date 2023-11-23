@@ -1,6 +1,7 @@
 package dataservice
 
 import (
+	"mime/multipart"
 	e "warehouseai/ai/errors"
 	m "warehouseai/ai/model"
 )
@@ -18,4 +19,9 @@ type CommandInterface interface {
 	Create(token *m.Command) *e.DBError
 	Get(conditions map[string]interface{}) (*m.Command, *e.DBError)
 	GetWithPreload(conditions map[string]interface{}, preload string) (*m.Command, *e.DBError)
+}
+
+type PictureInterface interface {
+	UploadFile(file multipart.File, fileName string) (string, error)
+	DeleteImage(fileName string) error
 }

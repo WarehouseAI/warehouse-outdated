@@ -5,6 +5,7 @@ import (
 	"warehouseai/ai/adapter/grpc/client/user"
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/commanddata"
+	"warehouseai/ai/dataservice/picturedata"
 	"warehouseai/ai/server/handlers/ai"
 	"warehouseai/ai/server/handlers/commands"
 	"warehouseai/ai/server/middleware"
@@ -14,18 +15,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StartServer(port string, aiDB *aidata.Database, commandDB *commanddata.Database, logger *logrus.Logger) error {
-	aiHandler := newHttpAiHandler(aiDB, logger)
+func StartServer(port string, aiDB *aidata.Database, commandDB *commanddata.Database, pictureStorage *picturedata.Storage, logger *logrus.Logger) error {
+	aiHandler := newHttpAiHandler(aiDB, pictureStorage, logger)
 	commandHandler := newHttpCommandHandler(commandDB, aiDB, logger)
 	app := fiber.New()
 	app.Use(setupCORS())
 
 	sessionStrictMw := middleware.SessionStrict(logger, aiHandler.AuthClient)
 	sessionMw := middleware.Session(logger, aiHandler.AuthClient)
+	pictureMW := middleware.Image(logger, pictureStorage)
 
 	route := app.Group("/ai")
-	route.Post("/create/generate", sessionStrictMw, aiHandler.CreateAiWithoutKeyHandler)
-	route.Post("/create/exist", sessionStrictMw, aiHandler.CreateAiWithKeyHandler)
+	route.Post("/create/generate", sessionStrictMw, pictureMW, aiHandler.CreateAiWithoutKeyHandler)
+	route.Post("/create/exist", sessionStrictMw, pictureMW, aiHandler.CreateAiWithKeyHandler)
 	route.Get("/get", sessionMw, aiHandler.GetAIHandler)
 	route.Get("/get/many", aiHandler.GetAisHandler)
 	route.Get("/search", aiHandler.SearchHandler)
@@ -35,15 +37,16 @@ func StartServer(port string, aiDB *aidata.Database, commandDB *commanddata.Data
 	return app.Listen(port)
 }
 
-func newHttpAiHandler(db *aidata.Database, logger *logrus.Logger) *ai.Handler {
+func newHttpAiHandler(db *aidata.Database, pictureStorage *picturedata.Storage, logger *logrus.Logger) *ai.Handler {
 	authClient := auth.NewAuthGrpcClient("auth:8041")
 	userClient := user.NewUserGrpcClient("user:8001")
 
 	return &ai.Handler{
-		DB:         db,
-		Logger:     logger,
-		UserClient: userClient,
-		AuthClient: authClient,
+		DB:             db,
+		Logger:         logger,
+		PictureStorage: pictureStorage,
+		UserClient:     userClient,
+		AuthClient:     authClient,
 	}
 }
 

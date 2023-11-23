@@ -20,8 +20,8 @@ func GetByEmail(email string, user d.UserInterface, logger *logrus.Logger) (*m.U
 	return existUser, nil
 }
 
-func GetById(id string, user d.UserInterface, logger *logrus.Logger) (*m.User, *e.ErrorResponse) {
-	existUser, dbErr := user.GetOneBy(map[string]interface{}{"id": id})
+func GetById(userId string, user d.UserInterface, logger *logrus.Logger) (*m.User, *e.ErrorResponse) {
+	existUser, dbErr := user.GetOneBy(map[string]interface{}{"id": userId})
 
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Get user by Id")

@@ -25,6 +25,7 @@ type Handler struct {
 }
 
 func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
+	var req service.RegisterRequest
 	form, err := c.MultipartForm()
 
 	if err != nil {
@@ -32,25 +33,22 @@ func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	username := form.Value["username"][0]
-	rawPicture, err := c.FormFile("picture")
+	imageUrl := c.Locals("imageUrl")
 
-	if err != nil {
-		response := e.NewErrorResponse(e.HttpInternalError, err.Error())
-		return c.Status(response.ErrorCode).JSON(response)
+	if imageUrl == nil {
+		req.Image = ""
+	} else {
+		req.Image = imageUrl.(string)
 	}
 
-	registerRequest := &service.RegisterRequest{
-		Username:  username,
-		Firstname: form.Value["firstname"][0],
-		Lastname:  form.Value["lastname"][0],
-		Password:  form.Value["password"][0],
-		Email:     form.Value["email"][0],
-		Picture:   rawPicture,
-		ViaGoogle: false,
-	}
+	req.Username = form.Value["username"][0]
+	req.Firstname = form.Value["firstname"][0]
+	req.Lastname = form.Value["lastname"][0]
+	req.Password = form.Value["password"][0]
+	req.Email = form.Value["email"][0]
+	req.ViaGoogle = false
 
-	userId, svcErr := service.Register(registerRequest, h.UserClient, h.VerificationTokenDB, h.PictureStorage, h.MailProducer, h.Logger)
+	userId, svcErr := service.Register(&req, h.UserClient, h.VerificationTokenDB, h.PictureStorage, h.MailProducer, h.Logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)

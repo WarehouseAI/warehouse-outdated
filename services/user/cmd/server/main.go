@@ -29,6 +29,7 @@ func StartServer(port string, userDb *userdata.Database, favoritesDb *favoritesd
 	route.Patch("/favorites/add", sessionMw, handler.AddFavoriteHandler)
 	route.Delete("/favorites/delete", sessionMw, handler.RemoveFavoriteHandler)
 	route.Get("/favorites", sessionMw, handler.GetFavoritesHandler)
+	route.Get("/get", handler.GetUserById)
 
 	return app.Listen(port)
 }

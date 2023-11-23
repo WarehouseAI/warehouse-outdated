@@ -111,3 +111,15 @@ func (h *Handler) RemoveFavoriteHandler(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusOK)
 }
+
+func (h *Handler) GetUserById(c *fiber.Ctx) error {
+	userId := c.Query("id")
+
+	existUser, err := service.GetById(userId, h.UserDB, h.Logger)
+
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(existUser)
+}

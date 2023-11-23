@@ -8,6 +8,7 @@ import (
 	"warehouseai/auth/dataservice/tokendata"
 	m "warehouseai/auth/model"
 	h "warehouseai/auth/server/handlers"
+	"warehouseai/auth/server/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -30,7 +31,9 @@ func StartServer(
 
 	route := app.Group("/auth")
 
-	route.Post("/register", handler.RegisterHandler)
+	pictureMw := middleware.Image(logger, pictureStorage)
+
+	route.Post("/register", pictureMw, handler.RegisterHandler)
 	route.Get("/register/confirm", handler.RegisterVerifyHandler)
 	route.Post("/login", handler.LoginHandler)
 	route.Post("/reset/request", handler.SendResetHandler)

@@ -25,12 +25,13 @@ func main() {
 
 	aiDB := dataservice.NewAiDatabase()
 	commandDB := dataservice.NewCommandDatabase()
+	pictureStorage := dataservice.NewPictureStorage()
 	fmt.Println("✅Database successfully connected.")
 
 	grpcServer := grpc.Start("ai:8021", aiDB, log)
 	go grpcServer()
 
-	if err := server.StartServer(":8020", aiDB, commandDB, log); err != nil {
+	if err := server.StartServer(":8020", aiDB, commandDB, pictureStorage, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("AI Microservice")
 		panic(err)

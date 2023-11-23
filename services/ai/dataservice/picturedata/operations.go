@@ -21,7 +21,7 @@ func (s *Storage) UploadFile(file multipart.File, fileName string) (string, erro
 	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.Bucket),
 		ACL:    aws.String("public-read"),
-		Key:    aws.String("/avatars/" + fileName),
+		Key:    aws.String("/backgrounds/" + fileName),
 		Body:   file,
 	})
 
@@ -29,7 +29,7 @@ func (s *Storage) UploadFile(file multipart.File, fileName string) (string, erro
 		return "", err
 	}
 
-	fileLink := s.Domain + "/avatars/" + fileName
+	fileLink := s.Domain + "/backgrounds/" + fileName
 
 	return fileLink, nil
 }
@@ -38,7 +38,7 @@ func (s *Storage) DeleteImage(fileName string) error {
 	svc := s3.New(s.Session)
 	objectInfo := s3.DeleteObjectInput{
 		Bucket: aws.String(s.Bucket),
-		Key:    aws.String("/avatars/" + fileName),
+		Key:    aws.String("/backgrounds/" + fileName),
 	}
 
 	_, err := svc.DeleteObject(&objectInfo)

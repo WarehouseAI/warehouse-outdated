@@ -13,21 +13,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type defaultRequest struct {
-	Description string `json:"description"`
-}
-
 type CreateWithoutKeyRequest struct {
-	defaultRequest
-	Name       string       `json:"name"`
-	AuthScheme m.AuthScheme `json:"auth_scheme"`
+	Description string       `json:"description"`
+	Name        string       `json:"name"`
+	AuthScheme  m.AuthScheme `json:"auth_scheme"`
+	Image       string       `json:"image"`
 }
 
 type CreateWithKeyRequest struct {
-	defaultRequest
-	Name       string       `json:"name"`
-	AuthScheme m.AuthScheme `json:"auth_scheme"`
-	ApiKey     string       `json:"api_key"`
+	Description string       `json:"description"`
+	Name        string       `json:"name"`
+	AuthScheme  m.AuthScheme `json:"auth_scheme"`
+	ApiKey      string       `json:"api_key"`
+	Image       string       `json:"image"`
 }
 
 type CreateResponse struct {
@@ -47,14 +45,15 @@ func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai d
 	apiKey := fmt.Sprintf("wh.%s", key)
 
 	newAI := &m.AI{
-		ID:          uuid.Must(uuid.NewV4()),
-		Name:        aiInfo.Name,
-		Description: aiInfo.Description,
-		Owner:       uuid.Must(uuid.FromString(userId)),
-		AuthScheme:  aiInfo.AuthScheme,
-		ApiKey:      apiKey,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:            uuid.Must(uuid.NewV4()),
+		Name:          aiInfo.Name,
+		Description:   aiInfo.Description,
+		Owner:         uuid.Must(uuid.FromString(userId)),
+		AuthScheme:    aiInfo.AuthScheme,
+		ApiKey:        apiKey,
+		BackgroundUrl: aiInfo.Image,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	if dbErr := ai.Create(newAI); err != nil {
@@ -71,14 +70,15 @@ func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai d
 
 func CreateWithOwnKey(aiInfo *CreateWithKeyRequest, userId string, ai dataservice.AiInterface, logger *logrus.Logger) (*CreateResponse, *e.ErrorResponse) {
 	newAI := &m.AI{
-		ID:          uuid.Must(uuid.NewV4()),
-		Name:        aiInfo.Name,
-		Description: aiInfo.Description,
-		Owner:       uuid.Must(uuid.FromString(userId)),
-		AuthScheme:  aiInfo.AuthScheme,
-		ApiKey:      aiInfo.ApiKey,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:            uuid.Must(uuid.NewV4()),
+		Name:          aiInfo.Name,
+		Description:   aiInfo.Description,
+		Owner:         uuid.Must(uuid.FromString(userId)),
+		AuthScheme:    aiInfo.AuthScheme,
+		BackgroundUrl: aiInfo.Image,
+		ApiKey:        aiInfo.ApiKey,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	if dbErr := ai.Create(newAI); dbErr != nil {

@@ -13,9 +13,7 @@ message User {
   string role = 9;
   string created_at = 10 [json_name="created_at"];
   string updated_at = 11 [json_name="updated_at"];
-  repeated string owned_ai = 12 [json_name="owned_ai"];
-  repeated string favorite_ai = 13 [json_name="favorite_ai"];
-  string password = 14;
+  string password = 12;
 }
 
 // REQ's and RES's
