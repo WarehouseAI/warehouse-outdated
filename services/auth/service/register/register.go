@@ -1,10 +1,11 @@
-package service
+package register
 
 import (
 	"context"
 	"encoding/base64"
 	"fmt"
 	"math/rand"
+	"net/mail"
 	"os"
 	"time"
 	"warehouseai/auth/adapter"
@@ -32,13 +33,33 @@ type RegisterResponse struct {
 	UserId string `json:"user_id"`
 }
 
-type RegisterVerifyRequest struct {
-	Token  string `json:"token"`
-	UserId string `json:"user_id"`
+func generateToken(length int) (string, error) {
+	randomBytes := make([]byte, length)
+
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+
+	key := base64.URLEncoding.EncodeToString(randomBytes)
+	key = key[:length]
+
+	return key, nil
 }
 
-type RegisterVerifyResponse struct {
-	Verified bool `json:"verified"`
+func validateRegisterRequest(req *RegisterRequest) *e.ErrorResponse {
+	if len(req.Password) > 72 {
+		return e.NewErrorResponse(e.HttpBadRequest, "Password is too long")
+	}
+
+	if len(req.Password) < 8 {
+		return e.NewErrorResponse(e.HttpBadRequest, "Password is too short")
+	}
+
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return e.NewErrorResponse(e.HttpBadRequest, "The provided string is not email")
+	}
+
+	return nil
 }
 
 func Register(
@@ -50,12 +71,8 @@ func Register(
 	logger *logrus.Logger,
 ) (*RegisterResponse, *e.ErrorResponse) {
 
-	if len(req.Password) > 72 {
-		return nil, e.NewErrorResponse(e.HttpBadRequest, "Password is too long")
-	}
-
-	if len(req.Password) < 8 {
-		return nil, e.NewErrorResponse(e.HttpBadRequest, "Password is too small")
+	if err := validateRegisterRequest(req); err != nil {
+		return nil, err
 	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
@@ -119,50 +136,4 @@ func Register(
 	}
 
 	return &RegisterResponse{UserId: userId}, nil
-}
-
-func RegisterVerify(
-	request RegisterVerifyRequest,
-	user adapter.UserGrpcInterface,
-	verificationToken dataservice.VerificationTokenInterface,
-	logger *logrus.Logger,
-) (*RegisterVerifyResponse, *e.ErrorResponse) {
-	existVerificationToken, dbErr := verificationToken.Get(map[string]interface{}{"user_id": request.UserId})
-
-	if dbErr != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Register verify user")
-		return nil, e.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(existVerificationToken.Token), []byte(request.Token)); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register verify user")
-		return nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid register verification key")
-	}
-
-	verified, gwErr := user.UpdateVerificationStatus(context.Background(), request.UserId)
-
-	if gwErr != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register verify user")
-		return nil, gwErr
-	}
-
-	if err := verificationToken.Delete(map[string]interface{}{"id": existVerificationToken.ID}); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Register verify user")
-		return nil, e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
-	}
-
-	return &RegisterVerifyResponse{Verified: verified}, nil
-}
-
-func generateToken(length int) (string, error) {
-	randomBytes := make([]byte, length)
-
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", err
-	}
-
-	key := base64.URLEncoding.EncodeToString(randomBytes)
-	key = key[:length]
-
-	return key, nil
 }
