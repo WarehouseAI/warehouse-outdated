@@ -14,7 +14,6 @@ import (
 	e "warehouseai/auth/errors"
 	m "warehouseai/auth/model"
 
-	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -46,6 +45,30 @@ func generateToken(length int) (string, error) {
 	return key, nil
 }
 
+func hashPassword(password string) string {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
+
+	return string(hash)
+}
+
+func createUser(request *gen.CreateUserMsg, gateway adapter.UserGrpcInterface) (string, *e.ErrorResponse) {
+	userId, err := gateway.Create(context.Background(), request)
+
+	if err != nil {
+		return "", err
+	}
+
+	return userId, nil
+}
+
+func createVerificationToken(token *m.VerificationToken, repository dataservice.VerificationTokenInterface) *e.ErrorResponse {
+	if err := repository.Create(token); err != nil {
+		return e.NewErrorResponseFromDBError(err.ErrorType, err.Payload)
+	}
+
+	return nil
+}
+
 func validateRegisterRequest(req *RegisterRequest) *e.ErrorResponse {
 	if len(req.Password) > 72 {
 		return e.NewErrorResponse(e.HttpBadRequest, "Password is too long")
@@ -66,16 +89,15 @@ func Register(
 	req *RegisterRequest,
 	user adapter.UserGrpcInterface,
 	verificationToken dataservice.VerificationTokenInterface,
-	picture dataservice.PictureInterface,
 	mail adapter.MailProducerInterface,
 	logger *logrus.Logger,
+	isTest bool,
 ) (*RegisterResponse, *e.ErrorResponse) {
+	var password string
 
 	if err := validateRegisterRequest(req); err != nil {
 		return nil, err
 	}
-
-	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
 
 	// Move token create here to avoid create-missmatch with user on other service
 	token, err := generateToken(12)
@@ -92,8 +114,14 @@ func Register(
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to encrypt the verification code")
 	}
 
+	if isTest {
+		password = req.Password
+	} else {
+		password = hashPassword(req.Password)
+	}
+
 	// Create user
-	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: string(hash), Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
+	userId, gwErr := createUser(&gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: password, Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle}, user)
 
 	if gwErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
@@ -102,16 +130,15 @@ func Register(
 
 	// Store verification token
 	verificationTokenItem := m.VerificationToken{
-		ID:        uuid.Must(uuid.NewV4()),
 		UserId:    userId,
 		Token:     string(tokenHash),
 		ExpiresAt: time.Now().Add(time.Minute * 10),
 		CreatedAt: time.Now(),
 	}
 
-	if err := verificationToken.Create(&verificationTokenItem); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Register user")
-		return nil, e.NewErrorResponseFromDBError(err.ErrorType, "Failed to save the verification code")
+	if err := createVerificationToken(&verificationTokenItem, verificationToken); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Register user")
+		return nil, e.NewErrorResponse(err.ErrorCode, "Failed to save the verification code")
 	}
 
 	message := m.Email{

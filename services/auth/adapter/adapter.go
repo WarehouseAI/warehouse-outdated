@@ -4,6 +4,7 @@ import (
 	"context"
 	"warehouseai/auth/adapter/grpc/gen"
 	e "warehouseai/auth/errors"
+	"warehouseai/auth/model"
 )
 
 type UserGrpcInterface interface {
@@ -12,4 +13,8 @@ type UserGrpcInterface interface {
 	GetByEmail(ctx context.Context, email string) (*gen.User, *e.ErrorResponse)
 	GetById(ctx context.Context, userId string) (*gen.User, *e.ErrorResponse)
 	UpdateVerificationStatus(ctx context.Context, userId string) (bool, *e.ErrorResponse)
+}
+
+type MailProducerInterface interface {
+	SendEmail(email model.Email) error
 }

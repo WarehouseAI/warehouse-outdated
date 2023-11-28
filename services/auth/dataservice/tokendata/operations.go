@@ -18,7 +18,7 @@ type Database[T m.Tokens] struct {
 func (d *Database[T]) Create(token *T) *e.DBError {
 	if err := d.DB.Create(token).Error; err != nil {
 		if isDuplicateKeyError(err) {
-			return e.NewDBError(e.DbExist, "Entity with this key/keys already exists.", err.Error())
+			return e.NewDBError(e.DbExist, "Token with this key/keys already exists.", err.Error())
 		} else {
 			return e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 		}

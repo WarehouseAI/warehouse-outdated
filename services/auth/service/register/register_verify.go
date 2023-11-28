@@ -20,12 +20,24 @@ type RegisterVerifyResponse struct {
 	Verified bool `json:"verified"`
 }
 
+func validateVerifyRequest(request RegisterVerifyRequest) *e.ErrorResponse {
+	if request.Token == "" || request.UserId == "" {
+		return e.NewErrorResponse(e.HttpBadRequest, "One of the parameters is empty.")
+	}
+
+	return nil
+}
+
 func RegisterVerify(
 	request RegisterVerifyRequest,
 	user adapter.UserGrpcInterface,
 	verificationToken dataservice.VerificationTokenInterface,
 	logger *logrus.Logger,
 ) (*RegisterVerifyResponse, *e.ErrorResponse) {
+	if err := validateVerifyRequest(request); err != nil {
+		return nil, err
+	}
+
 	existVerificationToken, dbErr := verificationToken.Get(map[string]interface{}{"user_id": request.UserId})
 
 	if dbErr != nil {

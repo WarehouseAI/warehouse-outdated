@@ -9,6 +9,7 @@ import (
 	e "warehouseai/auth/errors"
 	"warehouseai/auth/model"
 	"warehouseai/auth/service"
+	"warehouseai/auth/service/register"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ type Handler struct {
 }
 
 func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
-	var req service.RegisterRequest
+	var req register.RegisterRequest
 	form, err := c.MultipartForm()
 
 	if err != nil {
@@ -48,7 +49,7 @@ func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 	req.Email = form.Value["email"][0]
 	req.ViaGoogle = false
 
-	userId, svcErr := service.Register(&req, h.UserClient, h.VerificationTokenDB, h.PictureStorage, h.MailProducer, h.Logger)
+	userId, svcErr := register.Register(&req, h.UserClient, h.VerificationTokenDB, h.MailProducer, h.Logger, false)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
@@ -85,12 +86,12 @@ func (h *Handler) RegisterVerifyHandler(c *fiber.Ctx) error {
 	token := c.Query("token")
 	user := c.Query("user")
 
-	request := service.RegisterVerifyRequest{
+	request := register.RegisterVerifyRequest{
 		UserId: user,
 		Token:  token,
 	}
 
-	response, err := service.RegisterVerify(request, h.UserClient, h.VerificationTokenDB, h.Logger)
+	response, err := register.RegisterVerify(request, h.UserClient, h.VerificationTokenDB, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err.ErrorMessage)
