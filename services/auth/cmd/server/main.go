@@ -1,7 +1,7 @@
 package server
 
 import (
-	"warehouseai/auth/adapter/broker/mail"
+	"warehouseai/auth/adapter/broker"
 	"warehouseai/auth/adapter/grpc/client/user"
 	"warehouseai/auth/dataservice/picturedata"
 	"warehouseai/auth/dataservice/sessiondata"
@@ -21,7 +21,7 @@ func StartServer(
 	verificationTokenDB *tokendata.Database[m.VerificationToken],
 	sessionDB *sessiondata.Database,
 	pictureStorage *picturedata.Storage,
-	mailProducer *mail.MailProducer,
+	mailProducer *broker.Broker,
 	logger *logrus.Logger,
 ) error {
 
@@ -50,7 +50,7 @@ func newHttpHandler(
 	verificationTokenDB *tokendata.Database[m.VerificationToken],
 	sessionDB *sessiondata.Database,
 	pictureStorage *picturedata.Storage,
-	mailProducer *mail.MailProducer,
+	mailProducer *broker.Broker,
 	logger *logrus.Logger,
 ) *h.Handler {
 
@@ -61,7 +61,7 @@ func newHttpHandler(
 		VerificationTokenDB: verificationTokenDB,
 		SessionDB:           sessionDB,
 		PictureStorage:      pictureStorage,
-		MailProducer:        mailProducer,
+		Broker:              mailProducer,
 		Logger:              logger,
 		UserClient:          userClient,
 	}

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"warehouseai/auth/adapter/broker/mail"
+	"warehouseai/auth/adapter/broker"
 	"warehouseai/auth/adapter/grpc/client/user"
 	"warehouseai/auth/dataservice/picturedata"
 	"warehouseai/auth/dataservice/sessiondata"
@@ -21,7 +21,7 @@ type Handler struct {
 	VerificationTokenDB *tokendata.Database[model.VerificationToken]
 	SessionDB           *sessiondata.Database
 	PictureStorage      *picturedata.Storage
-	MailProducer        *mail.MailProducer
+	Broker              *broker.Broker
 	Logger              *logrus.Logger
 	UserClient          *user.UserGrpcClient
 }
@@ -50,7 +50,7 @@ func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 	req.Email = form.Value["email"][0]
 	req.ViaGoogle = false
 
-	userId, svcErr := register.Register(&req, h.UserClient, h.VerificationTokenDB, h.MailProducer, h.Logger)
+	userId, svcErr := register.Register(&req, h.UserClient, h.VerificationTokenDB, h.Broker, h.Logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
@@ -140,7 +140,7 @@ func (h *Handler) SendResetHandler(c *fiber.Ctx) error {
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	resetToken, err := service.SendResetEmail(request, h.ResetTokenDB, h.UserClient, h.MailProducer, h.Logger)
+	resetToken, err := service.SendResetEmail(request, h.ResetTokenDB, h.UserClient, h.Broker, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)

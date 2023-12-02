@@ -1,7 +1,7 @@
 package server
 
 import (
-	"warehouseai/user/adapter/broker/mail"
+	"warehouseai/user/adapter/broker"
 	"warehouseai/user/adapter/grpc/client/ai"
 	"warehouseai/user/adapter/grpc/client/auth"
 	"warehouseai/user/dataservice/favoritesdata"
@@ -14,8 +14,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StartServer(port string, userDb *userdata.Database, favoritesDb *favoritesdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) error {
-	handler := newHttpHandler(userDb, favoritesDb, mailProducer, logger)
+func StartServer(port string, userDb *userdata.Database, favoritesDb *favoritesdata.Database, brk *broker.Broker, logger *logrus.Logger) error {
+	handler := newHttpHandler(userDb, favoritesDb, brk, logger)
 	app := fiber.New()
 	app.Use(setupCORS())
 
@@ -34,17 +34,17 @@ func StartServer(port string, userDb *userdata.Database, favoritesDb *favoritesd
 	return app.Listen(port)
 }
 
-func newHttpHandler(userDb *userdata.Database, favoritesDB *favoritesdata.Database, mailProducer *mail.MailProducer, logger *logrus.Logger) *h.Handler {
+func newHttpHandler(userDb *userdata.Database, favoritesDB *favoritesdata.Database, brk *broker.Broker, logger *logrus.Logger) *h.Handler {
 	authClient := auth.NewAuthGrpcClient("auth:8041")
 	aiClient := ai.NewAiGrpcClient("ai:8021")
 
 	return &h.Handler{
-		UserDB:       userDb,
-		FavoritesDB:  favoritesDB,
-		Logger:       logger,
-		MailProducer: mailProducer,
-		AiClient:     aiClient,
-		AuthClient:   authClient,
+		UserDB:      userDb,
+		FavoritesDB: favoritesDB,
+		Logger:      logger,
+		Broker:      brk,
+		AiClient:    aiClient,
+		AuthClient:  authClient,
 	}
 }
 

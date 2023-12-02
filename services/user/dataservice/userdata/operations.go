@@ -55,7 +55,7 @@ func (pvd *Database) GetOneByPreload(conditions map[string]interface{}, preload 
 	return &user, nil
 }
 
-func (pvd *Database) RawUpdate(userId string, updatedFields interface{}) (*m.User, *e.DBError) {
+func (d *Database) RawUpdate(userId string, updatedFields interface{}) (*m.User, *e.DBError) {
 	var item m.User
 
 	updatedFieldsReflect := reflect.ValueOf(updatedFields)
@@ -79,9 +79,23 @@ func (pvd *Database) RawUpdate(userId string, updatedFields interface{}) (*m.Use
 		return nil, e.NewDBError(e.DbUpdate, "Nothing to update.", gorm.ErrEmptySlice.Error())
 	}
 
-	pvd.DB.Model(&item).Clauses(clause.Returning{}).Where(map[string]interface{}{"id": userId}).Updates(finalFieldsMap)
+	d.DB.Model(&item).Clauses(clause.Returning{}).Where(map[string]interface{}{"id": userId}).Updates(finalFieldsMap)
 
 	return &item, nil
+}
+
+func (d *Database) Delete(condition map[string]interface{}) *e.DBError {
+	var user m.User
+
+	if err := d.DB.Where(condition).Delete(&user).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return e.NewDBError(e.DbSystem, "Something went wrong", err.Error())
+		}
+
+		return e.NewDBError(e.DbNotFound, "User not found.", err.Error())
+	}
+
+	return nil
 }
 
 func isDuplicateKeyError(err error) bool {

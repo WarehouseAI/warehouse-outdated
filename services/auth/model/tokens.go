@@ -10,6 +10,10 @@ type Tokens interface {
 	ResetToken | VerificationToken
 }
 
+type VerificationTokenRequest struct {
+	UserId string
+}
+
 type ResetToken struct {
 	ID        uuid.UUID `json:"id" gorm:"type:uuid;primarykey;default:uuid_generate_v4()"`
 	UserId    uuid.UUID `json:"-" gorm:"type:uuid;not null;unique"`

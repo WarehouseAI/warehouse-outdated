@@ -70,8 +70,8 @@ func validateRegisterRequest(req *RegisterRequest) *e.ErrorResponse {
 func Register(
 	req *RegisterRequest,
 	user adapter.UserGrpcInterface,
-	verificationToken dataservice.VerificationTokenInterface,
-	mail adapter.MailProducerInterface,
+	tokenRepository dataservice.VerificationTokenInterface,
+	broker adapter.BrokerInterface,
 	logger *logrus.Logger,
 ) (*RegisterResponse, *e.ErrorResponse) {
 	var password string
@@ -111,7 +111,13 @@ func Register(
 		CreatedAt: time.Now(),
 	}
 
-	if err := verificationToken.Create(&verificationTokenItem); err != nil {
+	if err := tokenRepository.Create(&verificationTokenItem); err != nil {
+		if err := broker.SendTokenReject(userId); err != nil {
+			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
+			return nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
+		}
+
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Register user")
 		return nil, e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
 	}
 
@@ -130,7 +136,7 @@ func Register(
       `, req.Firstname, fmt.Sprintf("%s/register/confirm?user=%s&token=%s", os.Getenv("DOMAIN"), userId, token)),
 	}
 
-	if err := mail.SendEmail(message); err != nil {
+	if err := broker.SendEmail(message); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Send email")
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to send email.")
 	}

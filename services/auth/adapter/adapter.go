@@ -15,6 +15,7 @@ type UserGrpcInterface interface {
 	UpdateVerificationStatus(ctx context.Context, userId string) (bool, *e.ErrorResponse)
 }
 
-type MailProducerInterface interface {
+type BrokerInterface interface {
 	SendEmail(email model.Email) error
+	SendTokenReject(userId string) error
 }

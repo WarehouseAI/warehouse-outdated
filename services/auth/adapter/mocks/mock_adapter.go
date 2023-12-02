@@ -116,31 +116,31 @@ func (mr *MockUserGrpcInterfaceMockRecorder) UpdateVerificationStatus(ctx, userI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVerificationStatus", reflect.TypeOf((*MockUserGrpcInterface)(nil).UpdateVerificationStatus), ctx, userId)
 }
 
-// MockMailProducerInterface is a mock of MailProducerInterface interface.
-type MockMailProducerInterface struct {
+// MockBrokerInterface is a mock of BrokerInterface interface.
+type MockBrokerInterface struct {
 	ctrl     *gomock.Controller
-	recorder *MockMailProducerInterfaceMockRecorder
+	recorder *MockBrokerInterfaceMockRecorder
 }
 
-// MockMailProducerInterfaceMockRecorder is the mock recorder for MockMailProducerInterface.
-type MockMailProducerInterfaceMockRecorder struct {
-	mock *MockMailProducerInterface
+// MockBrokerInterfaceMockRecorder is the mock recorder for MockBrokerInterface.
+type MockBrokerInterfaceMockRecorder struct {
+	mock *MockBrokerInterface
 }
 
-// NewMockMailProducerInterface creates a new mock instance.
-func NewMockMailProducerInterface(ctrl *gomock.Controller) *MockMailProducerInterface {
-	mock := &MockMailProducerInterface{ctrl: ctrl}
-	mock.recorder = &MockMailProducerInterfaceMockRecorder{mock}
+// NewMockBrokerInterface creates a new mock instance.
+func NewMockBrokerInterface(ctrl *gomock.Controller) *MockBrokerInterface {
+	mock := &MockBrokerInterface{ctrl: ctrl}
+	mock.recorder = &MockBrokerInterfaceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockMailProducerInterface) EXPECT() *MockMailProducerInterfaceMockRecorder {
+func (m *MockBrokerInterface) EXPECT() *MockBrokerInterfaceMockRecorder {
 	return m.recorder
 }
 
 // SendEmail mocks base method.
-func (m *MockMailProducerInterface) SendEmail(email model.Email) error {
+func (m *MockBrokerInterface) SendEmail(email model.Email) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendEmail", email)
 	ret0, _ := ret[0].(error)
@@ -148,7 +148,21 @@ func (m *MockMailProducerInterface) SendEmail(email model.Email) error {
 }
 
 // SendEmail indicates an expected call of SendEmail.
-func (mr *MockMailProducerInterfaceMockRecorder) SendEmail(email any) *gomock.Call {
+func (mr *MockBrokerInterfaceMockRecorder) SendEmail(email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmail", reflect.TypeOf((*MockMailProducerInterface)(nil).SendEmail), email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmail", reflect.TypeOf((*MockBrokerInterface)(nil).SendEmail), email)
+}
+
+// SendTokenReject mocks base method.
+func (m *MockBrokerInterface) SendTokenReject(userId string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendTokenReject", userId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendTokenReject indicates an expected call of SendTokenReject.
+func (mr *MockBrokerInterfaceMockRecorder) SendTokenReject(userId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTokenReject", reflect.TypeOf((*MockBrokerInterface)(nil).SendTokenReject), userId)
 }

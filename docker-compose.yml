@@ -123,6 +123,7 @@ services:
       DB_PASS: '${AUTH_DB_PASS}'
       DB_USER: '${AUTH_DB_USER}'
       DB_PORT: '${AUTH_DB_PORT}'
+      TOKEN_REJECTED_QUEUE: 'verification_rejected'
     ports:
       - 8040:8040
       - 8041:8041
@@ -145,6 +146,7 @@ services:
       DB_PASS: '${USERS_DB_PASS}'
       DB_USER: '${USERS_DB_USER}'
       DB_PORT: '${USERS_DB_PORT}'
+      TOKEN_REJECTED_QUEUE: 'verification_rejected'
     ports:
       - 8000:8000
       - 8001:8001

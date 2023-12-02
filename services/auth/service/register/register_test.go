@@ -93,7 +93,7 @@ func TestRegister(t *testing.T) {
 
 	grpcMock := aMock.NewMockUserGrpcInterface(ctl)
 	dbMock := dMock.NewMockVerificationTokenInterface(ctl)
-	mailMock := aMock.NewMockMailProducerInterface(ctl)
+	brokerMock := aMock.NewMockBrokerInterface(ctl)
 	logger := logrus.New()
 
 	request := &RegisterRequest{
@@ -110,9 +110,9 @@ func TestRegister(t *testing.T) {
 
 	grpcMock.EXPECT().Create(context.Background(), gomock.AssignableToTypeOf(&gen.CreateUserMsg{})).Return(userId, nil).Times(1)
 	dbMock.EXPECT().Create(gomock.AssignableToTypeOf(&m.VerificationToken{})).Return(nil).Times(1)
-	mailMock.EXPECT().SendEmail(gomock.AssignableToTypeOf(m.Email{})).Return(nil).Times(1)
+	brokerMock.EXPECT().SendEmail(gomock.AssignableToTypeOf(m.Email{})).Return(nil).Times(1)
 
-	resp, err := Register(request, grpcMock, dbMock, mailMock, logger)
+	resp, err := Register(request, grpcMock, dbMock, brokerMock, logger)
 
 	require.Nil(t, err)
 	require.Equal(t, &RegisterResponse{UserId: userId}, resp)
@@ -162,14 +162,14 @@ func TestRegisterGrpcError(t *testing.T) {
 
 	grpcMock := aMock.NewMockUserGrpcInterface(ctl)
 	dbMock := dMock.NewMockVerificationTokenInterface(ctl)
-	mailMock := aMock.NewMockMailProducerInterface(ctl)
+	brokerMock := aMock.NewMockBrokerInterface(ctl)
 	logger := logrus.New()
 
 	for _, tCase := range cases {
 		t.Run(tCase.name, func(t *testing.T) {
 			grpcMock.EXPECT().Create(context.Background(), gomock.AssignableToTypeOf(&gen.CreateUserMsg{})).Return("", tCase.expErr).Times(1)
 
-			resp, err := Register(tCase.req, grpcMock, dbMock, mailMock, logger)
+			resp, err := Register(tCase.req, grpcMock, dbMock, brokerMock, logger)
 
 			require.NotNil(t, err)
 			require.Equal(t, tCase.expErr, err)
@@ -224,7 +224,7 @@ func TestRegisterDbError(t *testing.T) {
 
 	grpcMock := aMock.NewMockUserGrpcInterface(ctl)
 	dbMock := dMock.NewMockVerificationTokenInterface(ctl)
-	mailMock := aMock.NewMockMailProducerInterface(ctl)
+	brokerMock := aMock.NewMockBrokerInterface(ctl)
 	logger := logrus.New()
 
 	for _, tCase := range cases {
@@ -232,7 +232,7 @@ func TestRegisterDbError(t *testing.T) {
 			grpcMock.EXPECT().Create(context.Background(), gomock.AssignableToTypeOf(&gen.CreateUserMsg{})).Return("id", nil).Times(1)
 			dbMock.EXPECT().Create(gomock.AssignableToTypeOf(&m.VerificationToken{})).Return(tCase.expErr).Times(1)
 
-			resp, err := Register(tCase.req, grpcMock, dbMock, mailMock, logger)
+			resp, err := Register(tCase.req, grpcMock, dbMock, brokerMock, logger)
 
 			require.NotNil(t, err)
 			require.Equal(t, e.NewErrorResponseFromDBError(tCase.expErr.ErrorType, tCase.expErr.Message), err)

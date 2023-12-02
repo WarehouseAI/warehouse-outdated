@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"warehouseai/user/cmd/adapter/broker/mail"
+	"warehouseai/user/cmd/adapter/broker"
 	"warehouseai/user/cmd/adapter/grpc"
 	"warehouseai/user/cmd/dataservice"
 	"warehouseai/user/cmd/server"
@@ -26,13 +26,14 @@ func main() {
 
 	userDB := dataservice.NewUserDatabase()
 	favoritesDB := dataservice.NewFavoritesDatabase()
-	mailProducer := mail.NewMailProducer()
+	broker := broker.NewBroker()
 	fmt.Println("✅Database successfully connected.")
 
 	grpcServer := grpc.Start("user:8001", userDB, favoritesDB, log)
 	go grpcServer()
+	go broker.ReceiveTokenReject(userDB, log)
 
-	if err := server.StartServer(":8000", userDB, favoritesDB, mailProducer, log); err != nil {
+	if err := server.StartServer(":8000", userDB, favoritesDB, broker, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)

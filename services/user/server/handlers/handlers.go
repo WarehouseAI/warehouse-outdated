@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"warehouseai/user/adapter/broker/mail"
+	"warehouseai/user/adapter/broker"
 	"warehouseai/user/adapter/grpc/client/ai"
 	"warehouseai/user/adapter/grpc/client/auth"
 	"warehouseai/user/dataservice/favoritesdata"
@@ -15,12 +15,12 @@ import (
 )
 
 type Handler struct {
-	UserDB       *userdata.Database
-	FavoritesDB  *favoritesdata.Database
-	Logger       *logrus.Logger
-	MailProducer *mail.MailProducer
-	AiClient     *ai.AiGrpcClient
-	AuthClient   *auth.AuthGrpcClient
+	UserDB      *userdata.Database
+	FavoritesDB *favoritesdata.Database
+	Logger      *logrus.Logger
+	Broker      *broker.Broker
+	AiClient    *ai.AiGrpcClient
+	AuthClient  *auth.AuthGrpcClient
 }
 
 func (h *Handler) UpdatePersonalDataHandler(c *fiber.Ctx) error {
@@ -48,7 +48,7 @@ func (h *Handler) UpdateEmailHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(e.NewErrorResponse(e.HttpBadRequest, "Invalid request body."))
 	}
 
-	if err := service.UpdateUserEmail(newEmail, userId, h.UserDB, h.MailProducer, h.Logger); err != nil {
+	if err := service.UpdateUserEmail(newEmail, userId, h.UserDB, h.Broker, h.Logger); err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
 	}
 

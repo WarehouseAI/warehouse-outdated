@@ -10,6 +10,7 @@ type UserInterface interface {
 	RawUpdate(userId string, updatedFields interface{}) (*m.User, *e.DBError)
 	GetOneByPreload(conditions map[string]interface{}, preload string) (*m.User, *e.DBError)
 	GetOneBy(conditions map[string]interface{}) (*m.User, *e.DBError)
+	Delete(condition map[string]interface{}) *e.DBError
 }
 
 type FavoritesInterface interface {

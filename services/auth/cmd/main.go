@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"warehouseai/auth/cmd/adapter/broker/mail"
+	"warehouseai/auth/cmd/adapter/broker"
 	"warehouseai/auth/cmd/adapter/grpc"
 	"warehouseai/auth/cmd/dataservice"
 	"warehouseai/auth/cmd/server"
@@ -28,7 +28,7 @@ func main() {
 	resetTokenDB := dataservice.NewResetTokenDatabase()
 	verificationTokenDB := dataservice.NewVerificationTokenDatabase()
 	pictureStorage := dataservice.NewPictureStorage()
-	mailProducer := mail.NewMailProducer()
+	broker := broker.NewBroker()
 
 	fmt.Println("✅Database successfully connected.")
 
@@ -37,14 +37,14 @@ func main() {
 	go resetTokenDB.Flusher(time.Minute)
 	go verificationTokenDB.Flusher(time.Minute)
 
-	if err := server.StartServer(":8040", resetTokenDB, verificationTokenDB, sessionDB, pictureStorage, mailProducer, log); err != nil {
+	if err := server.StartServer(":8040", resetTokenDB, verificationTokenDB, sessionDB, pictureStorage, broker, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
 		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("User Microservice")
 		panic(err)
 	}
 
 	defer func() {
-		mailProducer.Channel.Close()
-		mailProducer.Connection.Close()
+		broker.Channel.Close()
+		broker.Connection.Close()
 	}()
 }

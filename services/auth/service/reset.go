@@ -82,7 +82,7 @@ func VerifyResetCode(verificationCode string, resetTokenId string, resetToken da
 	return &ResetVerifyResponse{UserId: existResetToken.UserId.String()}, nil
 }
 
-func SendResetEmail(req ResetAttemptRequest, resetToken dataservice.ResetTokenInterface, user adapter.UserGrpcInterface, mail adapter.MailProducerInterface, logger *logrus.Logger) (*ResetAttemptResponse, *e.ErrorResponse) {
+func SendResetEmail(req ResetAttemptRequest, resetToken dataservice.ResetTokenInterface, user adapter.UserGrpcInterface, mail adapter.BrokerInterface, logger *logrus.Logger) (*ResetAttemptResponse, *e.ErrorResponse) {
 	existUser, gwErr := user.GetByEmail(context.Background(), req.Email)
 
 	if gwErr != nil {
