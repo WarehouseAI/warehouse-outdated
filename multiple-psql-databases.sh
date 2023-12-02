@@ -19,6 +19,7 @@ function create_ai_enums() {
 	echo "Creating types in '$database'"
 
 	psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$database" <<-EOSQL
+			CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 	    CREATE TYPE authscheme AS ENUM ('Bearer', 'Basic','ApiKey');
 			CREATE TYPE payloadtype AS ENUM ('JSON', 'FormData');
 			CREATE TYPE iotype AS ENUM ('Image', 'Text');

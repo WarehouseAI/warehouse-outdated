@@ -9,6 +9,7 @@ import (
 	e "warehouseai/auth/errors"
 	"warehouseai/auth/model"
 	"warehouseai/auth/service"
+	"warehouseai/auth/service/login"
 	"warehouseai/auth/service/register"
 
 	"github.com/gofiber/fiber/v2"
@@ -49,7 +50,7 @@ func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 	req.Email = form.Value["email"][0]
 	req.ViaGoogle = false
 
-	userId, svcErr := register.Register(&req, h.UserClient, h.VerificationTokenDB, h.MailProducer, h.Logger, false)
+	userId, svcErr := register.Register(&req, h.UserClient, h.VerificationTokenDB, h.MailProducer, h.Logger)
 
 	if svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
@@ -59,14 +60,14 @@ func (h *Handler) RegisterHandler(c *fiber.Ctx) error {
 }
 
 func (h *Handler) LoginHandler(c *fiber.Ctx) error {
-	var request service.LoginRequest
+	var request login.LoginRequest
 
 	if err := c.BodyParser(&request); err != nil {
 		response := e.NewErrorResponse(e.HttpBadRequest, "Invalid request body")
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	response, session, err := service.Login(&request, h.UserClient, h.SessionDB, h.Logger)
+	response, session, err := login.Login(&request, h.UserClient, h.SessionDB, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)

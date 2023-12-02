@@ -13,7 +13,7 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func (d *Database) Add(favorite *m.UserFavorites) *e.DBError {
+func (d *Database) Add(favorite *m.UserFavorite) *e.DBError {
 	if err := d.DB.Create(favorite).Error; err != nil {
 		if isDuplicateKeyError(err) {
 			return e.NewDBError(e.DbExist, "Entity with this key/keys already exists.", err.Error())
@@ -25,8 +25,8 @@ func (d *Database) Add(favorite *m.UserFavorites) *e.DBError {
 	return nil
 }
 
-func (d *Database) GetUserFavorites(userId string) (*[]m.UserFavorites, *e.DBError) {
-	var favorites []m.UserFavorites
+func (d *Database) GetUserFavorites(userId string) (*[]m.UserFavorite, *e.DBError) {
+	var favorites []m.UserFavorite
 
 	if err := d.DB.Where(map[string]interface{}{"user_id": userId}).Find(&favorites).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -39,8 +39,8 @@ func (d *Database) GetUserFavorites(userId string) (*[]m.UserFavorites, *e.DBErr
 	return &favorites, nil
 }
 
-func (d *Database) GetFavorite(userId string, aiId string) (*m.UserFavorites, *e.DBError) {
-	var favorite m.UserFavorites
+func (d *Database) GetFavorite(userId string, aiId string) (*m.UserFavorite, *e.DBError) {
+	var favorite m.UserFavorite
 
 	if err := d.DB.Where(map[string]interface{}{"user_id": userId, "ai_id": aiId}).First(&favorite).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -54,7 +54,7 @@ func (d *Database) GetFavorite(userId string, aiId string) (*m.UserFavorites, *e
 }
 
 func (d *Database) Delete(userId string, aiId string) *e.DBError {
-	var favorite m.UserFavorites
+	var favorite m.UserFavorite
 
 	if err := d.DB.Where(map[string]interface{}{"user_id": userId, "ai_id": aiId}).Delete(&favorite).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {

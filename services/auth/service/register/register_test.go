@@ -3,13 +3,14 @@ package register
 import (
 	"context"
 	"testing"
-	"time"
 	"warehouseai/auth/adapter/grpc/gen"
 	aMock "warehouseai/auth/adapter/mocks"
 	dMock "warehouseai/auth/dataservice/mocks"
 	e "warehouseai/auth/errors"
 	m "warehouseai/auth/model"
 
+	"github.com/gofrs/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -87,128 +88,155 @@ func TestValidateError(t *testing.T) {
 	}
 }
 
-func TestCreateUser(t *testing.T) {
+func TestRegister(t *testing.T) {
 	ctl := gomock.NewController(t)
-	userGatewayMock := aMock.NewMockUserGrpcInterface(ctl)
 
-	user := &gen.CreateUserMsg{
+	grpcMock := aMock.NewMockUserGrpcInterface(ctl)
+	dbMock := dMock.NewMockVerificationTokenInterface(ctl)
+	mailMock := aMock.NewMockMailProducerInterface(ctl)
+	logger := logrus.New()
+
+	request := &RegisterRequest{
 		Firstname: "Firstname",
 		Lastname:  "Lastname",
-		Username:  "username",
-		Password:  hashPassword("password"),
-		Picture:   "",
-		Email:     "validemail@mail.com",
+		Username:  "Username",
+		Password:  "12345678",
+		Image:     "",
+		Email:     "validmail@mail.com",
 		ViaGoogle: false,
 	}
 
-	userGatewayMock.EXPECT().Create(context.Background(), user).Return("id", nil).Times(1)
-	resp, err := createUser(user, userGatewayMock)
+	userId := uuid.Must(uuid.NewV4()).String()
 
-	require.NotEqual(t, "", resp)
+	grpcMock.EXPECT().Create(context.Background(), gomock.AssignableToTypeOf(&gen.CreateUserMsg{})).Return(userId, nil).Times(1)
+	dbMock.EXPECT().Create(gomock.AssignableToTypeOf(&m.VerificationToken{})).Return(nil).Times(1)
+	mailMock.EXPECT().SendEmail(gomock.AssignableToTypeOf(m.Email{})).Return(nil).Times(1)
+
+	resp, err := Register(request, grpcMock, dbMock, mailMock, logger)
+
 	require.Nil(t, err)
+	require.Equal(t, &RegisterResponse{UserId: userId}, resp)
 }
 
-func TestCreateUserError(t *testing.T) {
-	ctl := gomock.NewController(t)
-	userGatewayMock := aMock.NewMockUserGrpcInterface(ctl)
-
-	user := &gen.CreateUserMsg{
-		Firstname: "Firstname",
-		Lastname:  "Lastname",
-		Username:  "username",
-		Password:  hashPassword("password"),
-		Picture:   "",
-		Email:     "validemail@mail.com",
-		ViaGoogle: false,
-	}
-
+func TestRegisterGrpcError(t *testing.T) {
 	cases := []struct {
 		name   string
+		req    *RegisterRequest
 		expErr *e.ErrorResponse
 	}{
 		{
-			name: "already_exists",
+			name: "already_exist",
+			req: &RegisterRequest{
+				Firstname: "Firstname",
+				Lastname:  "Lastname",
+				Username:  "Username",
+				Password:  "12345678",
+				Image:     "",
+				Email:     "validmail@mail.com",
+				ViaGoogle: false,
+			},
 			expErr: &e.ErrorResponse{
 				ErrorCode:    e.HttpAlreadyExist,
-				ErrorMessage: "User already exists.",
+				ErrorMessage: "User already exists",
 			},
 		},
 		{
 			name: "internal_error",
+			req: &RegisterRequest{
+				Firstname: "Firstname",
+				Lastname:  "Lastname",
+				Username:  "Username",
+				Password:  "12345678",
+				Image:     "",
+				Email:     "validmail@mail.com",
+				ViaGoogle: false,
+			},
 			expErr: &e.ErrorResponse{
 				ErrorCode:    e.HttpInternalError,
-				ErrorMessage: "Something went wrong.",
+				ErrorMessage: "Something went wrong",
 			},
 		},
 	}
 
+	ctl := gomock.NewController(t)
+
+	grpcMock := aMock.NewMockUserGrpcInterface(ctl)
+	dbMock := dMock.NewMockVerificationTokenInterface(ctl)
+	mailMock := aMock.NewMockMailProducerInterface(ctl)
+	logger := logrus.New()
+
 	for _, tCase := range cases {
 		t.Run(tCase.name, func(t *testing.T) {
-			userGatewayMock.EXPECT().Create(context.Background(), user).Return("", tCase.expErr).Times(1)
-			resp, err := createUser(user, userGatewayMock)
+			grpcMock.EXPECT().Create(context.Background(), gomock.AssignableToTypeOf(&gen.CreateUserMsg{})).Return("", tCase.expErr).Times(1)
 
-			require.Equal(t, "", resp)
+			resp, err := Register(tCase.req, grpcMock, dbMock, mailMock, logger)
+
 			require.NotNil(t, err)
+			require.Equal(t, tCase.expErr, err)
+			require.Nil(t, resp)
 		})
 	}
 }
 
-func TestCreateVerificationToken(t *testing.T) {
-	ctl := gomock.NewController(t)
-	repositoryMock := dMock.NewMockVerificationTokenInterface(ctl)
-
-	validationToken := &m.VerificationToken{
-		UserId:    "userID",
-		Token:     "newToken",
-		ExpiresAt: time.Now().Add(time.Minute * 10),
-		CreatedAt: time.Now(),
-	}
-
-	repositoryMock.EXPECT().Create(validationToken).Return(nil).Times(1)
-	err := createVerificationToken(validationToken, repositoryMock)
-
-	require.Nil(t, err)
-}
-
-func TestCreateVerificationTokenError(t *testing.T) {
-	ctl := gomock.NewController(t)
-	repositoryMock := dMock.NewMockVerificationTokenInterface(ctl)
-
-	validationToken := &m.VerificationToken{
-		UserId:    "userID",
-		Token:     "newToken",
-		ExpiresAt: time.Now().Add(time.Minute * 10),
-		CreatedAt: time.Now(),
-	}
-
+func TestRegisterDbError(t *testing.T) {
 	cases := []struct {
 		name   string
+		req    *RegisterRequest
 		expErr *e.DBError
 	}{
 		{
-			name: "already_exists",
+			name: "already_exist",
+			req: &RegisterRequest{
+				Firstname: "Firstname",
+				Lastname:  "Lastname",
+				Username:  "Username",
+				Password:  "12345678",
+				Image:     "",
+				Email:     "validmail@mail.com",
+				ViaGoogle: false,
+			},
 			expErr: &e.DBError{
 				ErrorType: e.DbExist,
 				Message:   "Token with this key/keys already exists.",
-				Payload:   "some payload",
+				Payload:   "token already exists payload",
 			},
 		},
 		{
 			name: "internal_error",
+			req: &RegisterRequest{
+				Firstname: "Firstname",
+				Lastname:  "Lastname",
+				Username:  "Username",
+				Password:  "12345678",
+				Image:     "",
+				Email:     "validmail@mail.com",
+				ViaGoogle: false,
+			},
 			expErr: &e.DBError{
 				ErrorType: e.DbSystem,
 				Message:   "Something went wrong.",
-				Payload:   "some payload",
+				Payload:   "internal error payload",
 			},
 		},
 	}
 
+	ctl := gomock.NewController(t)
+
+	grpcMock := aMock.NewMockUserGrpcInterface(ctl)
+	dbMock := dMock.NewMockVerificationTokenInterface(ctl)
+	mailMock := aMock.NewMockMailProducerInterface(ctl)
+	logger := logrus.New()
+
 	for _, tCase := range cases {
 		t.Run(tCase.name, func(t *testing.T) {
-			repositoryMock.EXPECT().Create(validationToken).Return(tCase.expErr).Times(1)
-			err := createVerificationToken(validationToken, repositoryMock)
+			grpcMock.EXPECT().Create(context.Background(), gomock.AssignableToTypeOf(&gen.CreateUserMsg{})).Return("id", nil).Times(1)
+			dbMock.EXPECT().Create(gomock.AssignableToTypeOf(&m.VerificationToken{})).Return(tCase.expErr).Times(1)
+
+			resp, err := Register(tCase.req, grpcMock, dbMock, mailMock, logger)
 
 			require.NotNil(t, err)
+			require.Equal(t, e.NewErrorResponseFromDBError(tCase.expErr.ErrorType, tCase.expErr.Message), err)
+			require.Nil(t, resp)
 		})
 	}
 }

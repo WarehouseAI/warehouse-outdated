@@ -36,7 +36,7 @@ func NewFavoritesDatabase() *favoritesdata.Database {
 		panic(err)
 	}
 
-	db.AutoMigrate(&model.UserFavorites{})
+	db.AutoMigrate(&model.UserFavorite{})
 
 	return &favoritesdata.Database{DB: db}
 }

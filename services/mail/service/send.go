@@ -8,7 +8,12 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func SendEmail(from string, email model.Email, dialer *gomail.Dialer, logger *logrus.Logger) error {
+func SendEmail(
+	from string,
+	email model.Email,
+	dialer *gomail.Dialer,
+	logger *logrus.Logger,
+) error {
 	m := gomail.NewMessage()
 
 	m.SetHeader("From", from)

@@ -13,8 +13,8 @@ type UserInterface interface {
 }
 
 type FavoritesInterface interface {
-	Add(favorite *m.UserFavorites) *e.DBError
-	GetUserFavorites(userId string) (*[]m.UserFavorites, *e.DBError)
-	GetFavorite(userId string, aiId string) (*m.UserFavorites, *e.DBError)
+	Add(favorite *m.UserFavorite) *e.DBError
+	GetUserFavorites(userId string) (*[]m.UserFavorite, *e.DBError)
+	GetFavorite(userId string, aiId string) (*m.UserFavorite, *e.DBError)
 	Delete(userId string, aiId string) *e.DBError
 }

@@ -1,7 +1,8 @@
-package service
+package login
 
 import (
 	"context"
+	"net/mail"
 	"time"
 	"warehouseai/auth/adapter"
 	"warehouseai/auth/dataservice"
@@ -21,7 +22,19 @@ type LoginResponse struct {
 	UserId string `json:"user_id"`
 }
 
+func validateLoginRequest(req *LoginRequest) *e.ErrorResponse {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return e.NewErrorResponse(e.HttpBadRequest, "Invalid email address")
+	}
+
+	return nil
+}
+
 func Login(req *LoginRequest, user adapter.UserGrpcInterface, session dataservice.SessionInterface, logger *logrus.Logger) (*LoginResponse, *model.Session, *e.ErrorResponse) {
+	if err := validateLoginRequest(req); err != nil {
+		return nil, nil, err
+	}
+
 	existUser, gwErr := user.GetByEmail(context.Background(), req.Email)
 
 	if gwErr != nil {

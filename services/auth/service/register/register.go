@@ -51,24 +51,6 @@ func hashPassword(password string) string {
 	return string(hash)
 }
 
-func createUser(request *gen.CreateUserMsg, gateway adapter.UserGrpcInterface) (string, *e.ErrorResponse) {
-	userId, err := gateway.Create(context.Background(), request)
-
-	if err != nil {
-		return "", err
-	}
-
-	return userId, nil
-}
-
-func createVerificationToken(token *m.VerificationToken, repository dataservice.VerificationTokenInterface) *e.ErrorResponse {
-	if err := repository.Create(token); err != nil {
-		return e.NewErrorResponseFromDBError(err.ErrorType, err.Payload)
-	}
-
-	return nil
-}
-
 func validateRegisterRequest(req *RegisterRequest) *e.ErrorResponse {
 	if len(req.Password) > 72 {
 		return e.NewErrorResponse(e.HttpBadRequest, "Password is too long")
@@ -91,7 +73,6 @@ func Register(
 	verificationToken dataservice.VerificationTokenInterface,
 	mail adapter.MailProducerInterface,
 	logger *logrus.Logger,
-	isTest bool,
 ) (*RegisterResponse, *e.ErrorResponse) {
 	var password string
 
@@ -114,14 +95,8 @@ func Register(
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to encrypt the verification code")
 	}
 
-	if isTest {
-		password = req.Password
-	} else {
-		password = hashPassword(req.Password)
-	}
-
 	// Create user
-	userId, gwErr := createUser(&gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: password, Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle}, user)
+	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: password, Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
 
 	if gwErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
@@ -136,9 +111,8 @@ func Register(
 		CreatedAt: time.Now(),
 	}
 
-	if err := createVerificationToken(&verificationTokenItem, verificationToken); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Register user")
-		return nil, e.NewErrorResponse(err.ErrorCode, "Failed to save the verification code")
+	if err := verificationToken.Create(&verificationTokenItem); err != nil {
+		return nil, e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
 	}
 
 	message := m.Email{
@@ -157,7 +131,6 @@ func Register(
 	}
 
 	if err := mail.SendEmail(message); err != nil {
-		fmt.Println(err)
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Send email")
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to send email.")
 	}

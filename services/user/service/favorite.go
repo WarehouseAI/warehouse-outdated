@@ -31,7 +31,7 @@ func AddFavorite(userId string, request *AddFavoriteRequest, favorites dataservi
 		return gwErr
 	}
 
-	newFavorite := m.UserFavorites{
+	newFavorite := m.UserFavorite{
 		AiId:   uuid.FromStringOrNil(existAi),
 		UserId: uuid.FromStringOrNil(userId),
 	}
@@ -44,7 +44,7 @@ func AddFavorite(userId string, request *AddFavoriteRequest, favorites dataservi
 	return nil
 }
 
-func GetFavorites(request *GetFavoritesRequest, favorites dataservice.FavoritesInterface, logger *logrus.Logger) (*[]m.UserFavorites, *e.ErrorResponse) {
+func GetFavorites(request *GetFavoritesRequest, favorites dataservice.FavoritesInterface, logger *logrus.Logger) (*[]m.UserFavorite, *e.ErrorResponse) {
 	userFavorites, err := favorites.GetUserFavorites(request.UserId)
 
 	if err != nil {
@@ -55,7 +55,7 @@ func GetFavorites(request *GetFavoritesRequest, favorites dataservice.FavoritesI
 	return userFavorites, nil
 }
 
-func GetFavorite(userId string, aiId string, favorites dataservice.FavoritesInterface, logger *logrus.Logger) (*m.UserFavorites, *e.ErrorResponse) {
+func GetFavorite(userId string, aiId string, favorites dataservice.FavoritesInterface, logger *logrus.Logger) (*m.UserFavorite, *e.ErrorResponse) {
 	existFavorite, dbErr := favorites.GetFavorite(userId, aiId)
 
 	if dbErr != nil {
