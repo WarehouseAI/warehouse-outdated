@@ -36,8 +36,8 @@ jobs:
       - name: Build and push AI Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: .
-          file: ./dockerfiles/ai.Dockerfile
+          context: ./dockerfiles
+          file: ai.Dockerfile
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
@@ -60,11 +60,11 @@ jobs:
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
 
-      - name: Build and push User Docker Image
+      - name: Build and push Mail Docker Image
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./dockerfiles/user.Dockerfile
+          file: ./dockerfiles/mail.Dockerfile
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
