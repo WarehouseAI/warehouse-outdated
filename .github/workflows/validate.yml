@@ -25,9 +25,9 @@ jobs:
 
       - name: Run unit tests
         run: |
-          mods=$(go list -f '{{.Dir}}/service/...' -m)                                                                                                                                                             
+          mods=$(go list -f '{{.Dir}}' -m)                                                                                                                                                             
           for mod in $mods; do
-          go test -C "$mod"
+          go test -C "$mod" ./service/...
           done
 
       - name: Install golint
