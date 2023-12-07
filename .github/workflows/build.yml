@@ -4,6 +4,7 @@ on:
     workflows: ['Validate pull request']
     types:
       - completed
+  workflow_dispatch:
 
 jobs:
   build:
