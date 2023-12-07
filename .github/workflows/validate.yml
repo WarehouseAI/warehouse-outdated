@@ -1,5 +1,5 @@
 name: Validate pull request
-run-name: ${{ github.actor }} отправил коммит на валидацию 🚀
+
 on:
   push:
     branches: [$default-branch]
@@ -25,9 +25,9 @@ jobs:
 
       - name: Run unit tests
         run: |
-          mods=$(go list -f '{{.Dir}}' -m)                                                                                                                                                              git:main
+          mods=$(go list -f '{{.Dir}}/service/...' -m)                                                                                                                                                              git:main
           for mod in $mods; do
-          go test -C "$mod" ./service/...
+          go test -C "$mod"
           done
 
       - name: Install golint
