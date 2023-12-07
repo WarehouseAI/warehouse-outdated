@@ -231,6 +231,7 @@ func TestRegisterDbError(t *testing.T) {
 		t.Run(tCase.name, func(t *testing.T) {
 			grpcMock.EXPECT().Create(context.Background(), gomock.AssignableToTypeOf(&gen.CreateUserMsg{})).Return("id", nil).Times(1)
 			dbMock.EXPECT().Create(gomock.AssignableToTypeOf(&m.VerificationToken{})).Return(tCase.expErr).Times(1)
+			brokerMock.EXPECT().SendTokenReject("id").Return(nil).Times(1)
 
 			resp, err := Register(tCase.req, grpcMock, dbMock, brokerMock, logger)
 
