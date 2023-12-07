@@ -17,7 +17,11 @@ jobs:
           go-version: '1.21.4'
 
       - name: Clean up & verify dependencies
-        run: ./scripts/ci/tidy.sh
+        run:
+          mods=$(go list -f '{{.Dir}}' -m)                                                                                                                                                             git:main*
+          for mod in $mods; do
+          go mod tidy -C "$mod"
+          done
 
       - name: Run unit tests
         run: go list -f '{{.Dir}}/service/...' -m | xargs go test
