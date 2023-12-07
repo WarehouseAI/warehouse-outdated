@@ -36,8 +36,8 @@ jobs:
       - name: Build and push AI Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: ./dockerfiles
-          file: ai.Dockerfile
+          context: .
+          file: ../dockerfiles/ai.Dockerfile
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
