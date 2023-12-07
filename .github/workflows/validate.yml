@@ -25,7 +25,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          mods=$(go list -f '{{.Dir}}/service/...' -m)                                                                                                                                                              git:main
+          mods=$(go list -f '{{.Dir}}/service/...' -m)                                                                                                                                                             
           for mod in $mods; do
           go test -C "$mod"
           done
@@ -35,7 +35,7 @@ jobs:
 
       - name: Run golint
         run: |
-          mods=$(go list -f '{{.Dir}}' -m)                                                                                                                                                              git:main
+          mods=$(go list -f '{{.Dir}}' -m)                                                                                                                                                              
           for mod in $mods; do
           golint ${mod}/... 
           done
