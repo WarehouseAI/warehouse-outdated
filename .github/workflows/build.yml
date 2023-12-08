@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       IMG_NAME: '${{github.repository}}-mail'
+      IMG_PROJECT: 'warehouse-backend'
+      IMG_REGISTRY: 'registry.warehousai.com'
     steps:
       - name: Debug
         run: |
@@ -34,18 +36,21 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Mail Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: '{{defaultContext}}'
+
           file: ./dockerfiles/mail.Dockerfile
           push: true
-          tags: '${{ env.IMG_NAME }}:latest'
+          tags: '${{env.IMG_REGISTRY}}/${{env.IMG_PROJECT}}/${{ env.IMG_NAME }}:latest'
           labels: ${{ steps.metadata.outputs.labels }}
 
   build-user:
     runs-on: ubuntu-22.04
     env:
       IMG_NAME: '${{github.repository}}-user'
+      IMG_PROJECT: 'warehouse-backend'
+      IMG_REGISTRY: 'registry.warehousai.com'
     steps:
       - name: Debug
         run: |
@@ -69,18 +74,20 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push User Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: '{{defaultContext}}'
           file: ./dockerfiles/user.Dockerfile
           push: true
-          tags: '${{ env.IMG_NAME }}:latest'
+          tags: '${{env.IMG_REGISTRY}}/${{env.IMG_PROJECT}}/${{ env.IMG_NAME }}:latest'
           labels: ${{ steps.metadata.outputs.labels }}
 
   build-ai:
     runs-on: ubuntu-22.04
     env:
       IMG_NAME: '${{github.repository}}-ai'
+      IMG_PROJECT: 'warehouse-backend'
+      IMG_REGISTRY: 'registry.warehousai.com'
     steps:
       - name: Debug
         run: |
@@ -104,18 +111,20 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push AI Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: '{{defaultContext}}'
           file: ./dockerfiles/ai.Dockerfile
           push: true
-          tags: '${{ env.IMG_NAME }}:latest'
+          tags: '${{env.IMG_REGISTRY}}/${{env.IMG_PROJECT}}/${{ env.IMG_NAME }}:latest'
           labels: ${{ steps.metadata.outputs.labels }}
 
   build-auth:
     runs-on: ubuntu-22.04
     env:
       IMG_NAME: '${{github.repository}}-auth'
+      IMG_PROJECT: 'warehouse-backend'
+      IMG_REGISTRY: 'registry.warehousai.com'
     steps:
       - name: Debug
         run: |
@@ -144,5 +153,5 @@ jobs:
           context: '{{defaultContext}}'
           file: ./dockerfiles/auth.Dockerfile
           push: true
-          tags: '${{ env.IMG_NAME }}:latest'
+          tags: '${{env.IMG_REGISTRY}}/${{env.IMG_PROJECT}}/${{ env.IMG_NAME }}:latest'
           labels: ${{ steps.metadata.outputs.labels }}
