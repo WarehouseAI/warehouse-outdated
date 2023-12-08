@@ -36,7 +36,7 @@ jobs:
       - name: Build and push Mail Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: ./dockerfiles
+          context: '{{defaultContext}}'
           file: ./dockerfiles/mail.Dockerfile
           push: true
           tags: '${{ env.IMG_NAME }}:latest'
@@ -71,7 +71,7 @@ jobs:
       - name: Build and push User Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: ./dockerfiles
+          context: '{{defaultContext}}'
           file: ./dockerfiles/user.Dockerfile
           push: true
           tags: '${{ env.IMG_NAME }}:latest'
@@ -106,7 +106,7 @@ jobs:
       - name: Build and push AI Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: ./dockerfiles
+          context: '{{defaultContext}}'
           file: ./dockerfiles/ai.Dockerfile
           push: true
           tags: '${{ env.IMG_NAME }}:latest'
@@ -139,9 +139,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Auth Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
-          context: .
+          context: '{{defaultContext}}'
           file: ./dockerfiles/auth.Dockerfile
           push: true
           tags: '${{ env.IMG_NAME }}:latest'
