@@ -9,9 +9,11 @@ jobs:
   verify:
     runs-on: ubuntu-22.04
     steps:
+      — uses: actions/checkout@v2
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
+          
           go-version: '1.21.4'
 
       - name: Clean up & verify dependencies
