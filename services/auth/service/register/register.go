@@ -57,7 +57,7 @@ func validateRegisterRequest(req *RegisterRequest) *e.ErrorResponse {
 	}
 
 	if len(req.Password) < 8 {
-		return e.NewErrorResponse(e.HttpBadRequest, "Password is too shoort")
+		return e.NewErrorResponse(e.HttpBadRequest, "Password is too short")
 	}
 
 	if _, err := mail.ParseAddress(req.Email); err != nil {
