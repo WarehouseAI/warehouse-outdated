@@ -4,7 +4,6 @@ on:
     workflows: ['Validate pull request']
     types:
       - completed
-  workflow_dispatch:
 
 jobs:
   build-mail:
@@ -159,3 +158,10 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: '${{env.IMG_REGISTRY}}/${{env.IMG_PROJECT}}/${{ env.IMG_NAME }}:latest'
           labels: ${{ steps.metadata.outputs.labels }}
+
+  send-webhook:
+    name: Sending a completion notification to the backend server
+    needs: [build-auth, build-user, build-ai, build-mail]
+    uses: distributhor/workflow-webhook@v3
+    with:
+      webhook_url: ${{ secrets.WEBHOOK_URL }}

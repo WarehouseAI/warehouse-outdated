@@ -5,57 +5,6 @@ networks:
     driver: bridge
 
 services:
-  db-auth:
-    image: postgres:14.1-alpine
-    container_name: token-database
-    networks:
-      - server-network
-    restart: always
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: '${AUTH_DB_USER}'
-      POSTGRES_PASSWORD: '${AUTH_DB_PASS}'
-      POSTGRES_DB: '${AUTH_DB_NAME}'
-    ports:
-      - '${AUTH_DB_PORT}:5432'
-    volumes:
-      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
-
-  db-users:
-    image: postgres:14.1-alpine
-    container_name: users-database
-    networks:
-      - server-network
-    restart: always
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: '${USERS_DB_USER}'
-      POSTGRES_PASSWORD: '${USERS_DB_PASS}'
-      POSTGRES_DB: '${USERS_DB_NAME}'
-    ports:
-      - '${USERS_DB_PORT}:5432'
-    volumes:
-      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
-
-  db-ai:
-    image: postgres:14.1-alpine
-    container_name: ai-database
-    networks:
-      - server-network
-    restart: always
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: '${AI_DB_USER}'
-      POSTGRES_PASSWORD: '${AI_DB_PASS}'
-      POSTGRES_DB: '${AI_DB_NAME}'
-    ports:
-      - '${AI_DB_PORT}:5432'
-    volumes:
-      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
-
   session:
     image: redis:6.2-alpine
     container_name: db-session
@@ -70,9 +19,8 @@ services:
       - '${REDIS_PORT}:${REDIS_PORT}'
     command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
 
-  # Убрать версию с UI
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-alpine
     hostname: rabbitmq
     container_name: rabbitmq
     ports:
@@ -93,13 +41,10 @@ services:
     container_name: auth
     networks:
       - server-network
-    build:
-      context: .
-      dockerfile: dockerfiles/auth.Dockerfile
-    command: ./wait-4-postgres.sh db-auth ./auth
+    image: registry.warehousai.com/warehouse-backend/siyoga/warehouse-auth:latest
+    command: ./auth
     depends_on:
       - session
-      - db-auth
       - rabbitmq
     env_file: .env
     environment:
@@ -116,12 +61,9 @@ services:
     container_name: user
     networks:
       - server-network
-    build:
-      context: .
-      dockerfile: dockerfiles/user.Dockerfile
-    command: ./wait-4-postgres.sh db-users ./user
+    image: registry.warehousai.com/warehouse-backend/siyoga/warehouse-user:latest
+    command: ./user
     depends_on:
-      - db-users
       - rabbitmq
     env_file: .env
     environment:
@@ -139,9 +81,7 @@ services:
     networks:
       - server-network
     env_file: .env
-    build:
-      context: .
-      dockerfile: dockerfiles/mail.Dockerfile
+    image: registry.warehousai.com/warehouse-backend/siyoga/warehouse-mail:latest
     command: ./mail
     depends_on:
       - user
@@ -153,12 +93,8 @@ services:
     container_name: ai
     networks:
       - server-network
-    build:
-      context: .
-      dockerfile: dockerfiles/ai.Dockerfile
-    command: ./wait-4-postgres.sh db-ai ./ai
-    depends_on:
-      - db-ai
+    image: registry.warehousai.com/warehouse-backend/siyoga/warehouse-ai:latest
+    command: ./ai
     env_file: .env
     ports:
       - 8020:8020
