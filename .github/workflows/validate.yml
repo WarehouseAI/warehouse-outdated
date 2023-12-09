@@ -1,8 +1,6 @@
 name: Validate pull request
 
 on:
-  push:
-    branches: [$default-branch]
   pull_request:
     branches: [$default-branch]
 

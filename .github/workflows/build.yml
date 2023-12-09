@@ -1,9 +1,7 @@
 name: Build and publish images
 on:
-  workflow_run:
-    workflows: ['Validate pull request']
-    types:
-      - completed
+  push:
+    branches: [$default-branch]
 
 jobs:
   build-mail:
