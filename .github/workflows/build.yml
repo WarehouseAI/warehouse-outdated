@@ -160,8 +160,11 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
 
   send-webhook:
-    name: Sending a completion notification to the backend server
+    name: Notify the backend server
+    runs-on: ubuntu-22.04
     needs: [build-auth, build-user, build-ai, build-mail]
-    uses: distributhor/workflow-webhook@v3
-    with:
-      webhook_url: ${{ secrets.WEBHOOK_URL }}
+    steps:
+      - name: Send webhook
+        uses: distributhor/workflow-webhook@v3
+        with:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
