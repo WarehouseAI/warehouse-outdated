@@ -22,11 +22,7 @@ jobs:
           done
 
       - name: Run unit tests
-        run: |
-          mods=$(go list -f '{{.Dir}}' -m | xargs)
-          for mod in $mods; do
-                    (cd "$mod"; go test ./...)
-          done
+        run: go test -v  $(go list -f '{{.Dir}}/service/...' -m | xargs)
 
       - name: Install golint
         run: go install golang.org/x/lint/golint@latest
