@@ -25,7 +25,7 @@ jobs:
         run: go test -v  $(go list -f '{{.Dir}}/service/...' -m | xargs)
 
       - name: Install golint
-        run: go install golang.org/x/lint/golint@latest
+        run: ls -a && go install golang.org/x/lint/golint@latest
 
       - name: Run golint
         run: |
