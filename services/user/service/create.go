@@ -14,7 +14,7 @@ func Create(userInfo m.User, user dataservice.UserInterface, logger *logrus.Logg
 	userInfo.ID = uuid.Must(uuid.NewV4())
 
 	if err := user.Create(&userInfo); err != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Create user")
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("User create")
 		return nil, e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
 	}
 
