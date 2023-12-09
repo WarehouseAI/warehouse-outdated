@@ -12,6 +12,8 @@ jobs:
       IMG_PROJECT: 'warehouse-backend'
       IMG_REGISTRY: 'registry.warehousai.com'
     steps:
+      - uses: actions/checkout@v2
+
       - name: Debug
         run: |
           echo "github.ref -> {{ github.ref }}"
@@ -51,6 +53,8 @@ jobs:
       IMG_PROJECT: 'warehouse-backend'
       IMG_REGISTRY: 'registry.warehousai.com'
     steps:
+      - uses: actions/checkout@v2
+
       - name: Debug
         run: |
           echo "github.ref -> {{ github.ref }}"
@@ -89,6 +93,8 @@ jobs:
       IMG_PROJECT: 'warehouse-backend'
       IMG_REGISTRY: 'registry.warehousai.com'
     steps:
+      - uses: actions/checkout@v2
+
       - name: Debug
         run: |
           echo "github.ref -> {{ github.ref }}"
@@ -127,6 +133,8 @@ jobs:
       IMG_PROJECT: 'warehouse-backend'
       IMG_REGISTRY: 'registry.warehousai.com'
     steps:
+      - uses: actions/checkout@v2
+
       - name: Debug
         run: |
           echo "github.ref -> {{ github.ref }}"
@@ -162,6 +170,8 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [build-auth, build-user, build-ai, build-mail]
     steps:
+      - uses: actions/checkout@v2
+
       - name: Send webhook
         uses: distributhor/workflow-webhook@v3
         with:

@@ -38,7 +38,7 @@ type Command struct {
 	Name          string            `json:"name" gorm:"type:string"`
 	Payload       datatypes.JSONMap `json:"payload" gorm:"type:json;not null"`
 	PayloadType   PayloadType       `json:"payload_type" gorm:"type:PayloadType;not null"`
-	RequestScheme RequestScheme     `json:"request_type" gorm:"type:RequestType;not null"`
+	RequestScheme RequestScheme     `json:"request_type" gorm:"type:RequestScheme;not null"`
 	InputType     IOType            `json:"input_type" gorm:"type:IOType;not null"`
 	OutputType    IOType            `json:"output_type" gorm:"type:IOType;not null"`
 	URL           string            `json:"url" gorm:"type:string;unique;not null"`
