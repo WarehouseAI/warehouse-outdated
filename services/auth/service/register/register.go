@@ -78,7 +78,14 @@ func Register(
 		return nil, err
 	}
 
-	// Move token create here to avoid create-missmatch with user on other service
+	// Create user
+	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: hashPassword(req.Password), Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
+
+	if gwErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
+		return nil, gwErr
+	}
+
 	token, err := generateToken(12)
 
 	if err != nil {
@@ -91,14 +98,6 @@ func Register(
 	if err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to encrypt the verification code")
-	}
-
-	// Create user
-	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: req.Password, Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
-
-	if gwErr != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
-		return nil, gwErr
 	}
 
 	// Store verification token
