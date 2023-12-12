@@ -33,7 +33,7 @@ const (
 )
 
 type Command struct {
-	ID            uuid.UUID         `json:"id" gorm:"type:uuid;primarykey"`
+	ID            uuid.UUID         `json:"id" gorm:"type:uuid;primarykey;default:uuid_generate_v4()"`
 	AIID          uuid.UUID         `json:"ai_id" gorm:"type:uuid"`
 	Name          string            `json:"name" gorm:"type:string"`
 	Payload       datatypes.JSONMap `json:"payload" gorm:"type:json;not null"`

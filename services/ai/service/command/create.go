@@ -23,7 +23,6 @@ type CreateCommandRequest struct {
 
 func CreateCommand(request *CreateCommandRequest, command dataservice.CommandInterface, logger *logrus.Logger) *e.ErrorResponse {
 	newCommand := &m.Command{
-		ID:            uuid.Must(uuid.NewV4()),
 		Name:          request.Name,
 		AIID:          uuid.FromStringOrNil(request.AiID),
 		RequestScheme: request.RequestType,
