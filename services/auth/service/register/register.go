@@ -109,7 +109,7 @@ func Register(
 	}
 
 	if err := tokenRepository.Create(&verificationTokenItem); err != nil {
-		if err := broker.SendTokenReject(userId); err != nil {
+		if err := broker.SendUserReject(userId); err != nil {
 			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
 			return nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
 		}
@@ -134,6 +134,11 @@ func Register(
 	}
 
 	if err := broker.SendEmail(message); err != nil {
+		if err := broker.SendUserReject(userId); err != nil {
+			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
+			return nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
+		}
+
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Send email")
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to send email.")
 	}

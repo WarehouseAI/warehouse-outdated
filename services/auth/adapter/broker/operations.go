@@ -41,7 +41,7 @@ func (b Broker) SendEmail(email m.Email) error {
 	return nil
 }
 
-func (b Broker) SendTokenReject(userId string) error {
+func (b Broker) SendUserReject(userId string) error {
 	message := m.VerificationTokenRequest{UserId: userId}
 
 	messageStr, err := json.Marshal(message)
