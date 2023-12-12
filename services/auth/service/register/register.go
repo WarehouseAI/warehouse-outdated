@@ -74,8 +74,6 @@ func Register(
 	broker adapter.BrokerInterface,
 	logger *logrus.Logger,
 ) (*RegisterResponse, *e.ErrorResponse) {
-	var password string
-
 	if err := validateRegisterRequest(req); err != nil {
 		return nil, err
 	}
@@ -96,7 +94,7 @@ func Register(
 	}
 
 	// Create user
-	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: password, Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
+	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: req.Password, Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
 
 	if gwErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
