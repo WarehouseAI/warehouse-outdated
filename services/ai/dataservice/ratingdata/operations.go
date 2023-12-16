@@ -39,7 +39,19 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.
 	return &rate, nil
 }
 
-func (d *Database) GetAiRating(id string)
+func (d *Database) GetAiRating(aiId string) (*[]m.RatingPerUser, *e.DBError) {
+	var ratings []m.RatingPerUser
+
+	if err := d.DB.Select("AVG(rate) as avgrate").Where(map[string]interface{}{"id": aiId}).Find(&ratings).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
+		}
+
+		return nil, e.NewDBError(e.DbNotFound, "Rate not found.", err.Error())
+	}
+
+	return &ratings, nil
+}
 
 func (d *Database) Update(existRate *m.RatingPerUser, newRate int16) *e.DBError {
 	if err := d.DB.Model(existRate).Updates(map[string]interface{}{"rate": newRate}).Error; err != nil {

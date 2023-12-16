@@ -6,6 +6,7 @@ import (
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/commanddata"
 	"warehouseai/ai/dataservice/picturedata"
+	"warehouseai/ai/dataservice/ratingdata"
 	"warehouseai/ai/model"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -44,6 +45,21 @@ func NewCommandDatabase() *commanddata.Database {
 	db.AutoMigrate(&model.Command{})
 
 	return &commanddata.Database{DB: db}
+}
+
+func NewRatingDatabase() *ratingdata.Database {
+	cfg := config.NewAiDatabaseCfg()
+	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port)
+
+	db, err := gorm.Open(postgres.Open(DSN), &gorm.Config{})
+	if err != nil {
+		fmt.Println("❌Failed to connect to the database.")
+		panic(err)
+	}
+
+	db.AutoMigrate(&model.RatingPerUser{})
+
+	return &ratingdata.Database{DB: db}
 }
 
 func NewPictureStorage() *picturedata.Storage {

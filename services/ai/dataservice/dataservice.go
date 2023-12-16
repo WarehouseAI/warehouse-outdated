@@ -25,3 +25,10 @@ type PictureInterface interface {
 	UploadFile(file multipart.File, fileName string) (string, error)
 	DeleteImage(fileName string) error
 }
+
+type RatingInterface interface {
+	Update(existRate *m.RatingPerUser, newRate int16) *e.DBError
+	GetAiRating(aiId string) (*[]m.RatingPerUser, *e.DBError)
+	Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.DBError)
+	Add(rate m.RatingPerUser) *e.DBError
+}

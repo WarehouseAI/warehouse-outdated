@@ -37,10 +37,10 @@ function create_enums() {
 	    CREATE TYPE authscheme AS ENUM ('Bearer', 'Basic','ApiKey');
 			CREATE TYPE payloadtype AS ENUM ('JSON', 'FormData');
 			CREATE TYPE iotype AS ENUM ('Image', 'Text');
-			CREATE TYPE requesttype AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');
+			CREATE TYPE requestscheme AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');
 			CREATE TYPE userrole AS ENUM ('Developer', 'Base');
 EOSQL
-}
+}3
 
 if [ -n "$POSTGRES_DB" ]; then
 	create_enums $POSTGRES_DB;

@@ -6,8 +6,10 @@ import (
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/commanddata"
 	"warehouseai/ai/dataservice/picturedata"
+	"warehouseai/ai/dataservice/ratingdata"
 	"warehouseai/ai/server/handlers/ai"
 	"warehouseai/ai/server/handlers/commands"
+	"warehouseai/ai/server/handlers/rating"
 	"warehouseai/ai/server/middleware"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,9 +17,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StartServer(port string, aiDB *aidata.Database, commandDB *commanddata.Database, pictureStorage *picturedata.Storage, logger *logrus.Logger) error {
+func StartServer(port string, ratingDB *ratingdata.Database, aiDB *aidata.Database, commandDB *commanddata.Database, pictureStorage *picturedata.Storage, logger *logrus.Logger) error {
 	aiHandler := newHttpAiHandler(aiDB, pictureStorage, logger)
 	commandHandler := newHttpCommandHandler(commandDB, aiDB, logger)
+	ratingHandler := newRatingHandler(ratingDB, logger)
 	app := fiber.New()
 	app.Use(setupCORS())
 
@@ -33,6 +36,8 @@ func StartServer(port string, aiDB *aidata.Database, commandDB *commanddata.Data
 	route.Get("/search", aiHandler.SearchHandler)
 	route.Post("/command/create", sessionStrictMw, commandHandler.CreateCommandHandler)
 	route.Post("/command/execute", sessionStrictMw, commandHandler.ExecuteCommandHandler)
+	route.Get("/rating/get", ratingHandler.GetAiRatingHandler)
+	route.Post("/rating/set", sessionStrictMw, ratingHandler.SetRatingForAiHandler)
 
 	return app.Listen(port)
 }
@@ -58,6 +63,13 @@ func newHttpCommandHandler(commandDB *commanddata.Database, aiDB *aidata.Databas
 		AiDB:       aiDB,
 		Logger:     logger,
 		AuthClient: authClient,
+	}
+}
+
+func newRatingHandler(ratingDB *ratingdata.Database, logger *logrus.Logger) *rating.Handler {
+	return &rating.Handler{
+		RatingRepository: ratingDB,
+		Logger:           logger,
 	}
 }
 
