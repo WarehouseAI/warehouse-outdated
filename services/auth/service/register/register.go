@@ -74,13 +74,18 @@ func Register(
 	broker adapter.BrokerInterface,
 	logger *logrus.Logger,
 ) (*RegisterResponse, *e.ErrorResponse) {
-	var password string
-
 	if err := validateRegisterRequest(req); err != nil {
 		return nil, err
 	}
 
-	// Move token create here to avoid create-missmatch with user on other service
+	// Create user
+	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: hashPassword(req.Password), Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
+
+	if gwErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
+		return nil, gwErr
+	}
+
 	token, err := generateToken(12)
 
 	if err != nil {
@@ -95,14 +100,6 @@ func Register(
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to encrypt the verification code")
 	}
 
-	// Create user
-	userId, gwErr := user.Create(context.Background(), &gen.CreateUserMsg{Firstname: req.Firstname, Lastname: req.Lastname, Username: req.Username, Password: password, Picture: req.Image, Email: req.Email, ViaGoogle: req.ViaGoogle})
-
-	if gwErr != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": gwErr.ErrorMessage}).Info("Register user")
-		return nil, gwErr
-	}
-
 	// Store verification token
 	verificationTokenItem := m.VerificationToken{
 		UserId:    userId,
@@ -112,7 +109,7 @@ func Register(
 	}
 
 	if err := tokenRepository.Create(&verificationTokenItem); err != nil {
-		if err := broker.SendTokenReject(userId); err != nil {
+		if err := broker.SendUserReject(userId); err != nil {
 			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
 			return nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
 		}
@@ -137,6 +134,11 @@ func Register(
 	}
 
 	if err := broker.SendEmail(message); err != nil {
+		if err := broker.SendUserReject(userId); err != nil {
+			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Register user")
+			return nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
+		}
+
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Send email")
 		return nil, e.NewErrorResponse(e.HttpInternalError, "Failed to send email.")
 	}

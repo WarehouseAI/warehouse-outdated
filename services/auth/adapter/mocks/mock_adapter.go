@@ -153,16 +153,16 @@ func (mr *MockBrokerInterfaceMockRecorder) SendEmail(email any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmail", reflect.TypeOf((*MockBrokerInterface)(nil).SendEmail), email)
 }
 
-// SendTokenReject mocks base method.
-func (m *MockBrokerInterface) SendTokenReject(userId string) error {
+// SendUserReject mocks base method.
+func (m *MockBrokerInterface) SendUserReject(userId string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendTokenReject", userId)
+	ret := m.ctrl.Call(m, "SendUserReject", userId)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SendTokenReject indicates an expected call of SendTokenReject.
-func (mr *MockBrokerInterfaceMockRecorder) SendTokenReject(userId any) *gomock.Call {
+// SendUserReject indicates an expected call of SendUserReject.
+func (mr *MockBrokerInterfaceMockRecorder) SendUserReject(userId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTokenReject", reflect.TypeOf((*MockBrokerInterface)(nil).SendTokenReject), userId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendUserReject", reflect.TypeOf((*MockBrokerInterface)(nil).SendUserReject), userId)
 }

@@ -17,5 +17,5 @@ type UserGrpcInterface interface {
 
 type BrokerInterface interface {
 	SendEmail(email model.Email) error
-	SendTokenReject(userId string) error
+	SendUserReject(userId string) error
 }
