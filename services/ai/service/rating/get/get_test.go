@@ -1,6 +1,7 @@
 package get
 
 import (
+	"math"
 	"testing"
 	dMock "warehouseai/ai/dataservice/mocks"
 	e "warehouseai/ai/errors"
@@ -27,7 +28,7 @@ func TestRatingGet(t *testing.T) {
 	response, err := GetAIRating(request, ratingMock, logger)
 
 	require.Nil(t, err)
-	require.Equal(t, &GetAIRatingResponse{AverageRating: expectRating, RatingCount: expectCount}, response)
+	require.Equal(t, &GetAIRatingResponse{AverageRating: math.Round(expectRating*100) / 100, RatingCount: expectCount}, response)
 }
 
 func TestRatingGetError(t *testing.T) {
