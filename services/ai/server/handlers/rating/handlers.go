@@ -3,7 +3,8 @@ package rating
 import (
 	"warehouseai/ai/dataservice/ratingdata"
 	e "warehouseai/ai/errors"
-	"warehouseai/ai/service/rating"
+	"warehouseai/ai/service/rating/get"
+	"warehouseai/ai/service/rating/set"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -17,7 +18,7 @@ type Handler struct {
 func (h *Handler) GetAiRatingHandler(c *fiber.Ctx) error {
 	aiId := c.Query("ai_id")
 
-	rating, err := rating.GetAIRating(rating.GetAIRatingRequest{AiId: aiId}, h.RatingRepository, h.Logger)
+	rating, err := get.GetAIRating(get.GetAIRatingRequest{AiId: aiId}, h.RatingRepository, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -28,14 +29,14 @@ func (h *Handler) GetAiRatingHandler(c *fiber.Ctx) error {
 
 func (h *Handler) SetRatingForAiHandler(c *fiber.Ctx) error {
 	userId := c.Locals("userId").(string)
-	var rate rating.SetAiRatingRequest
+	var rate set.SetAiRatingRequest
 
 	if err := c.BodyParser(&rate); err != nil {
 		response := e.NewErrorResponse(e.HttpBadRequest, "Invalid request body.")
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	if err := rating.SetAiRating(userId, rate, h.RatingRepository, h.Logger); err != nil {
+	if err := set.SetAiRating(userId, rate, h.RatingRepository, h.Logger); err != nil {
 		return c.Status(err.ErrorCode).JSON(err.ErrorMessage)
 	}
 

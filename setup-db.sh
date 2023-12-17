@@ -40,7 +40,7 @@ function create_enums() {
 			CREATE TYPE requestscheme AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');
 			CREATE TYPE userrole AS ENUM ('Developer', 'Base');
 EOSQL
-}3
+}
 
 if [ -n "$POSTGRES_DB" ]; then
 	create_enums $POSTGRES_DB;

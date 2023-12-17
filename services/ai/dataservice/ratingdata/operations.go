@@ -13,7 +13,7 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func (d *Database) Add(rate m.RatingPerUser) *e.DBError {
+func (d *Database) Add(rate *m.RatingPerUser) *e.DBError {
 	if err := d.DB.Create(rate).Error; err != nil {
 		if isDuplicateKeyError(err) {
 			return e.NewDBError(e.DbExist, "AI with this key/keys already exists.", err.Error())
@@ -33,24 +33,38 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.
 			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 		}
 
-		return nil, e.NewDBError(e.DbNotFound, "AI not found.", err.Error())
+		return nil, e.NewDBError(e.DbNotFound, "Rating not found.", err.Error())
 	}
 
 	return &rate, nil
 }
 
-func (d *Database) GetAiRating(aiId string) (*[]m.RatingPerUser, *e.DBError) {
-	var ratings []m.RatingPerUser
+func (d *Database) GetAverageAiRating(aiId string) (*float64, *e.DBError) {
+	var result float64
 
-	if err := d.DB.Select("AVG(rate) as avgrate").Where(map[string]interface{}{"id": aiId}).Find(&ratings).Error; err != nil {
+	if err := d.DB.Model(&m.RatingPerUser{}).Select("AVG(rate) as avgrate").Group("ai_id").Where("ai_id = ?", aiId).Scan(&result).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 		}
 
-		return nil, e.NewDBError(e.DbNotFound, "Rate not found.", err.Error())
+		return nil, e.NewDBError(e.DbNotFound, "Rating not found.", err.Error())
 	}
 
-	return &ratings, nil
+	return &result, nil
+}
+
+func (d *Database) GetCountAiRating(aiId string) (*int64, *e.DBError) {
+	var result int64
+
+	if err := d.DB.Model(&m.RatingPerUser{}).Group("ai_id").Where("ai_id = ?", aiId).Count(&result).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
+		}
+
+		return nil, e.NewDBError(e.DbNotFound, "Rating not found.", err.Error())
+	}
+
+	return &result, nil
 }
 
 func (d *Database) Update(existRate *m.RatingPerUser, newRate int16) *e.DBError {
