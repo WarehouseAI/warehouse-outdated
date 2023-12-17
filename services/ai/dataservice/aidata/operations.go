@@ -15,8 +15,8 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func (d *Database) Create(token *m.AI) *e.DBError {
-	if err := d.DB.Create(token).Error; err != nil {
+func (d *Database) Create(ai *m.AI) *e.DBError {
+	if err := d.DB.Create(ai).Error; err != nil {
 		if isDuplicateKeyError(err) {
 			return e.NewDBError(e.DbExist, "AI with this key/keys already exists.", err.Error())
 		} else {
