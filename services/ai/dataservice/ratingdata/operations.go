@@ -42,12 +42,8 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.
 func (d *Database) GetAverageAiRating(aiId string) (*float64, *e.DBError) {
 	var result float64
 
-	if err := d.DB.Model(&m.RatingPerUser{}).Select("AVG(rate) as avgrate").Where("ai_id = ?", aiId).Scan(&result).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
-		}
-
-		return nil, e.NewDBError(e.DbNotFound, "Rating not found.", err.Error())
+	if err := d.DB.Model(&m.RatingPerUser{}).Select("COALESCE(AVG(rate), 0)").Where("ai_id = ?", aiId).Scan(&result).Error; err != nil {
+		return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 	}
 
 	return &result, nil

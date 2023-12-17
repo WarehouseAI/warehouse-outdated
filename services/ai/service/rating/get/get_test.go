@@ -42,11 +42,6 @@ func TestRatingGetError(t *testing.T) {
 			request:       GetAIRatingRequest{AiId: uuid.Must(uuid.NewV4()).String()},
 			expectedError: e.NewDBError(e.DbSystem, "Something went wrong.", "internal error"),
 		},
-		{
-			name:          "Rating not found",
-			request:       GetAIRatingRequest{AiId: uuid.Must(uuid.NewV4()).String()},
-			expectedError: e.NewDBError(e.DbNotFound, "Rating not found", "not found error"),
-		},
 	}
 
 	for _, tCase := range cases {
