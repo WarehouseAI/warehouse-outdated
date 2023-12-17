@@ -38,7 +38,7 @@ func GetAIRating(
 	}
 
 	return &GetAIRatingResponse{
-		AverageRating: math.Round(*rating*100) / 100,
+		AverageRating: math.Round(float64(*rating)*100) / 100,
 		RatingCount:   *count,
 	}, nil
 }
