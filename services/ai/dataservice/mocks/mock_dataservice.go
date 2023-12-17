@@ -300,10 +300,10 @@ func (mr *MockRatingInterfaceMockRecorder) Get(conditions any) *gomock.Call {
 }
 
 // GetAverageAiRating mocks base method.
-func (m *MockRatingInterface) GetAverageAiRating(aiId string) (*float32, *errors.DBError) {
+func (m *MockRatingInterface) GetAverageAiRating(aiId string) (*float64, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAverageAiRating", aiId)
-	ret0, _ := ret[0].(*float32)
+	ret0, _ := ret[0].(*float64)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }

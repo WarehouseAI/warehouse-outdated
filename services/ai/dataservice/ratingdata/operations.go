@@ -39,8 +39,8 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.
 	return &rate, nil
 }
 
-func (d *Database) GetAverageAiRating(aiId string) (*float32, *e.DBError) {
-	var result float32
+func (d *Database) GetAverageAiRating(aiId string) (*float64, *e.DBError) {
+	var result float64
 
 	if err := d.DB.Model(&m.RatingPerUser{}).Select("COALESCE(AVG(rate), 0)").Where("ai_id = ?", aiId).Scan(&result).Error; err != nil {
 		return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())

@@ -19,7 +19,7 @@ func TestRatingGet(t *testing.T) {
 	logger := logrus.New()
 
 	request := GetAIRatingRequest{AiId: uuid.Must(uuid.NewV4()).String()}
-	expectRating := float32(4.55555)
+	expectRating := float64(4.55555)
 	expectCount := int64(123)
 
 	ratingMock.EXPECT().GetAverageAiRating(request.AiId).Return(&expectRating, nil).Times(1)
@@ -28,7 +28,7 @@ func TestRatingGet(t *testing.T) {
 	response, err := GetAIRating(request, ratingMock, logger)
 
 	require.Nil(t, err)
-	require.Equal(t, &GetAIRatingResponse{AverageRating: math.Round(float64(expectRating)*100) / 100, RatingCount: expectCount}, response)
+	require.Equal(t, &GetAIRatingResponse{AverageRating: math.Round(expectRating*100) / 100, RatingCount: expectCount}, response)
 }
 
 func TestRatingGetError(t *testing.T) {

@@ -28,7 +28,7 @@ type PictureInterface interface {
 
 type RatingInterface interface {
 	Update(existRate *m.RatingPerUser, newRate int16) *e.DBError
-	GetAverageAiRating(aiId string) (*float32, *e.DBError)
+	GetAverageAiRating(aiId string) (*float64, *e.DBError)
 	GetCountAiRating(aiId string) (*int64, *e.DBError)
 	Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.DBError)
 	Add(rate *m.RatingPerUser) *e.DBError
