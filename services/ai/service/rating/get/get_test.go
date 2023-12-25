@@ -15,6 +15,7 @@ import (
 func TestRatingGet(t *testing.T) {
 	ctl := gomock.NewController(t)
 
+	aiMock := dMock.NewMockAiInterface(ctl)
 	ratingMock := dMock.NewMockRatingInterface(ctl)
 	logger := logrus.New()
 
@@ -25,13 +26,14 @@ func TestRatingGet(t *testing.T) {
 	ratingMock.EXPECT().GetAverageAiRating(request.AiId).Return(&expectRating, nil).Times(1)
 	ratingMock.EXPECT().GetCountAiRating(request.AiId).Return(&expectCount, nil).Times(1)
 
-	response, err := GetAIRating(request, ratingMock, logger)
+	response, err := GetAIRating(request, aiMock, ratingMock, logger)
 
 	require.Nil(t, err)
 	require.Equal(t, &GetAIRatingResponse{AverageRating: math.Round(expectRating*100) / 100, RatingCount: expectCount}, response)
 }
 
 func TestRatingGetError(t *testing.T) {
+	// TODO: Add ai not exist case
 	cases := []struct {
 		name          string
 		request       GetAIRatingRequest
@@ -48,11 +50,12 @@ func TestRatingGetError(t *testing.T) {
 		ctl := gomock.NewController(t)
 
 		ratingMock := dMock.NewMockRatingInterface(ctl)
+		aiMock := dMock.NewMockAiInterface(ctl)
 		logger := logrus.New()
 
 		t.Run(tCase.name, func(t *testing.T) {
 			ratingMock.EXPECT().GetAverageAiRating(tCase.request.AiId).Return(nil, tCase.expectedError).Times(1)
-			rating, err := GetAIRating(tCase.request, ratingMock, logger)
+			rating, err := GetAIRating(tCase.request, aiMock, ratingMock, logger)
 
 			require.Nil(t, rating)
 			require.NotNil(t, err)

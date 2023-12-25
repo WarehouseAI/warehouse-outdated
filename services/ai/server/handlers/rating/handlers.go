@@ -1,6 +1,7 @@
 package rating
 
 import (
+	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/ratingdata"
 	e "warehouseai/ai/errors"
 	"warehouseai/ai/service/rating/get"
@@ -11,6 +12,7 @@ import (
 )
 
 type Handler struct {
+	AiRepository     *aidata.Database
 	RatingRepository *ratingdata.Database
 	Logger           *logrus.Logger
 }
@@ -18,7 +20,7 @@ type Handler struct {
 func (h *Handler) GetAiRatingHandler(c *fiber.Ctx) error {
 	aiId := c.Query("ai_id")
 
-	rating, err := get.GetAIRating(get.GetAIRatingRequest{AiId: aiId}, h.RatingRepository, h.Logger)
+	rating, err := get.GetAIRating(get.GetAIRatingRequest{AiId: aiId}, h.AiRepository, h.RatingRepository, h.Logger)
 
 	if err != nil {
 		return c.Status(err.ErrorCode).JSON(err)
@@ -36,7 +38,7 @@ func (h *Handler) SetRatingForAiHandler(c *fiber.Ctx) error {
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	if err := set.SetAiRating(userId, rate, h.RatingRepository, h.Logger); err != nil {
+	if err := set.SetAiRating(userId, rate, h.AiRepository, h.RatingRepository, h.Logger); err != nil {
 		return c.Status(err.ErrorCode).JSON(err.ErrorMessage)
 	}
 

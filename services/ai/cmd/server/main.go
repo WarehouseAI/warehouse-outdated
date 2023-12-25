@@ -20,7 +20,7 @@ import (
 func StartServer(port string, ratingDB *ratingdata.Database, aiDB *aidata.Database, commandDB *commanddata.Database, pictureStorage *picturedata.Storage, logger *logrus.Logger) error {
 	aiHandler := newHttpAiHandler(aiDB, pictureStorage, logger)
 	commandHandler := newHttpCommandHandler(commandDB, aiDB, logger)
-	ratingHandler := newRatingHandler(ratingDB, logger)
+	ratingHandler := newRatingHandler(ratingDB, aiDB, logger)
 	app := fiber.New()
 	app.Use(setupCORS())
 
@@ -66,9 +66,10 @@ func newHttpCommandHandler(commandDB *commanddata.Database, aiDB *aidata.Databas
 	}
 }
 
-func newRatingHandler(ratingDB *ratingdata.Database, logger *logrus.Logger) *rating.Handler {
+func newRatingHandler(ratingDB *ratingdata.Database, aiDB *aidata.Database, logger *logrus.Logger) *rating.Handler {
 	return &rating.Handler{
 		RatingRepository: ratingDB,
+		AiRepository:     aiDB,
 		Logger:           logger,
 	}
 }

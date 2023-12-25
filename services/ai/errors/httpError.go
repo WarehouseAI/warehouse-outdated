@@ -5,13 +5,14 @@ import (
 )
 
 const (
-	HttpInternalError int = fiber.StatusInternalServerError
-	HttpAlreadyExist  int = fiber.StatusConflict
-	HttpNotFound      int = fiber.StatusNotFound
-	HttpBadRequest    int = fiber.StatusBadRequest
-	HttpForbidden     int = fiber.StatusForbidden
-	HttpUnauthorized  int = fiber.StatusUnauthorized
-	HttpTimeout       int = fiber.StatusGatewayTimeout
+	HttpInternalError       int = fiber.StatusInternalServerError
+	HttpAlreadyExist        int = fiber.StatusConflict
+	HttpNotFound            int = fiber.StatusNotFound
+	HttpBadRequest          int = fiber.StatusBadRequest
+	HttpForbidden           int = fiber.StatusForbidden
+	HttpUnauthorized        int = fiber.StatusUnauthorized
+	HttpTimeout             int = fiber.StatusGatewayTimeout
+	HttpUnprocessableEntity int = fiber.StatusUnprocessableEntity
 )
 
 type (

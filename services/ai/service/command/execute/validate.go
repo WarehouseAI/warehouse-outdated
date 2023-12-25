@@ -34,7 +34,11 @@ func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, origi
 				break
 			}
 
-			return e.NewErrorResponse(e.HttpInternalError, "Internal")
+			return e.NewErrorResponse(e.HttpInternalError, err.Error())
+		}
+
+		if err != nil {
+			return e.NewErrorResponse(e.HttpInternalError, err.Error())
 		}
 
 		if _, found := originPayload[part.FormName()]; !found {

@@ -1,4 +1,4 @@
-package command
+package create
 
 import (
 	"time"
@@ -21,7 +21,29 @@ type CreateCommandRequest struct {
 	URL         string                 `json:"url"`
 }
 
+func isValidDataType(value string) bool {
+	switch m.DataType(value) {
+	case m.String, m.Bool, m.File, m.Number, m.Object:
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidFieldClass(value string) bool {
+	switch m.FieldClass(value) {
+	case m.Permanent, m.Optional, m.Free:
+		return true
+	default:
+		return false
+	}
+}
+
 func CreateCommand(request *CreateCommandRequest, command dataservice.CommandInterface, logger *logrus.Logger) *e.ErrorResponse {
+	if err := validateCreateRequest(request); err != nil {
+		return err
+	}
+
 	newCommand := &m.Command{
 		Name:          request.Name,
 		AIID:          uuid.FromStringOrNil(request.AiID),

@@ -51,6 +51,7 @@ func TestRatingValidateError(t *testing.T) {
 func TestRatingSet(t *testing.T) {
 	ctl := gomock.NewController(t)
 
+	aiMock := dMock.NewMockAiInterface(ctl)
 	ratingMock := dMock.NewMockRatingInterface(ctl)
 	logger := logrus.New()
 
@@ -64,7 +65,7 @@ func TestRatingSet(t *testing.T) {
 		Rate:   request.Rate,
 	}).Return(nil).Times(1)
 
-	err := SetAiRating(userId, request, ratingMock, logger)
+	err := SetAiRating(userId, request, aiMock, ratingMock, logger)
 
 	require.Nil(t, err)
 }
@@ -72,6 +73,7 @@ func TestRatingSet(t *testing.T) {
 func TestRatingUpdate(t *testing.T) {
 	ctl := gomock.NewController(t)
 
+	aiMock := dMock.NewMockAiInterface(ctl)
 	ratingMock := dMock.NewMockRatingInterface(ctl)
 	logger := logrus.New()
 
@@ -88,7 +90,7 @@ func TestRatingUpdate(t *testing.T) {
 	ratingMock.EXPECT().Get(map[string]interface{}{"ai_id": request.AiId, "user_id": userId.String()}).Return(existRating, nil).Times(1)
 	ratingMock.EXPECT().Update(existRating, request.Rate).Return(nil).Times(1)
 
-	err := SetAiRating(userId.String(), request, ratingMock, logger)
+	err := SetAiRating(userId.String(), request, aiMock, ratingMock, logger)
 
 	require.Nil(t, err)
 }

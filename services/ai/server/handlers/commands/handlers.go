@@ -5,7 +5,7 @@ import (
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/commanddata"
 	e "warehouseai/ai/errors"
-	"warehouseai/ai/service/command"
+	"warehouseai/ai/service/command/create"
 	"warehouseai/ai/service/command/execute"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,14 +20,14 @@ type Handler struct {
 }
 
 func (h *Handler) CreateCommandHandler(c *fiber.Ctx) error {
-	var commandCreds command.CreateCommandRequest
+	var commandCreds create.CreateCommandRequest
 
 	if err := c.BodyParser(&commandCreds); err != nil {
 		response := e.NewErrorResponse(e.HttpBadRequest, "Invalid request body.")
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 
-	if svcErr := command.CreateCommand(&commandCreds, h.CommandDB, h.Logger); svcErr != nil {
+	if svcErr := create.CreateCommand(&commandCreds, h.CommandDB, h.Logger); svcErr != nil {
 		return c.Status(svcErr.ErrorCode).JSON(svcErr)
 	}
 
