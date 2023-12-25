@@ -23,6 +23,7 @@ func TestRatingGet(t *testing.T) {
 	expectRating := float64(4.55555)
 	expectCount := int64(123)
 
+	aiMock.EXPECT().Get(map[string]interface{}{"id": request.AiId}).Return(nil, nil).Times(1)
 	ratingMock.EXPECT().GetAverageAiRating(request.AiId).Return(&expectRating, nil).Times(1)
 	ratingMock.EXPECT().GetCountAiRating(request.AiId).Return(&expectCount, nil).Times(1)
 
@@ -54,6 +55,7 @@ func TestRatingGetError(t *testing.T) {
 		logger := logrus.New()
 
 		t.Run(tCase.name, func(t *testing.T) {
+			aiMock.EXPECT().Get(map[string]interface{}{"id": tCase.request.AiId}).Return(nil, nil).Times(1)
 			ratingMock.EXPECT().GetAverageAiRating(tCase.request.AiId).Return(nil, tCase.expectedError).Times(1)
 			rating, err := GetAIRating(tCase.request, aiMock, ratingMock, logger)
 

@@ -58,6 +58,7 @@ func TestRatingSet(t *testing.T) {
 	userId := uuid.Must(uuid.NewV4()).String()
 	request := SetAiRatingRequest{AiId: uuid.Must(uuid.NewV4()).String(), Rate: 5}
 
+	aiMock.EXPECT().Get(map[string]interface{}{"id": request.AiId}).Return(nil, nil).Times(1)
 	ratingMock.EXPECT().Get(map[string]interface{}{"ai_id": request.AiId, "user_id": userId}).Return(nil, nil).Times(1)
 	ratingMock.EXPECT().Add(&m.RatingPerUser{
 		UserId: uuid.Must(uuid.FromString(userId)),
@@ -87,6 +88,7 @@ func TestRatingUpdate(t *testing.T) {
 		Rate:   5,
 	}
 
+	aiMock.EXPECT().Get(map[string]interface{}{"id": request.AiId}).Return(nil, nil).Times(1)
 	ratingMock.EXPECT().Get(map[string]interface{}{"ai_id": request.AiId, "user_id": userId.String()}).Return(existRating, nil).Times(1)
 	ratingMock.EXPECT().Update(existRating, request.Rate).Return(nil).Times(1)
 
