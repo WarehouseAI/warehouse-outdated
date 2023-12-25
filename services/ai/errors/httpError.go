@@ -11,6 +11,7 @@ const (
 	HttpBadRequest    int = fiber.StatusBadRequest
 	HttpForbidden     int = fiber.StatusForbidden
 	HttpUnauthorized  int = fiber.StatusUnauthorized
+	HttpTimeout       int = fiber.StatusGatewayTimeout
 )
 
 type (

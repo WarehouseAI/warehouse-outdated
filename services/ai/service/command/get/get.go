@@ -1,4 +1,4 @@
-package command
+package get
 
 import (
 	"time"
@@ -16,10 +16,10 @@ type GetCommandRequest struct {
 }
 
 type GetCommandResponse struct {
-	AI         *m.AI
-	Payload    m.Command
-	ApiKey     string
-	AuthScheme m.AuthScheme
+	AI                *m.AI
+	Command           m.Command
+	AuthHeaderContent string
+	AuthHeaderName    string
 }
 
 func GetCommand(getRequest GetCommandRequest, aiProvider dataservice.AiInterface, logger *logrus.Logger) (*GetCommandResponse, *e.ErrorResponse) {
@@ -30,9 +30,11 @@ func GetCommand(getRequest GetCommandRequest, aiProvider dataservice.AiInterface
 		return nil, e.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
 	}
 
+	// Bug: Крашится если нет такой команды
+
 	for i := 0; i <= len(existAI.Commands); i++ {
 		if existAI.Commands[i].Name == getRequest.Name {
-			return &GetCommandResponse{existAI, existAI.Commands[i], existAI.ApiKey, existAI.AuthScheme}, nil
+			return &GetCommandResponse{existAI, existAI.Commands[i], existAI.AuthHeaderContent, existAI.AuthHeaderName}, nil
 		}
 	}
 

@@ -6,8 +6,8 @@ message AI {
   string owner = 2;
   repeated Command commands = 3;
   string name = 4;
-  string api_key = 5 [json_name = "api_key"];
-  string auth_scheme = 6 [json_name = "auth_scheme"];
+  string auth_header_content = 5 [json_name = "api_key"];
+  string auth_header_name = 6 [json_name = "auth_header_name"];
   string created_at = 7 [json_name = "created_at"];
   string updated_at = 8 [json_name = "updated_at"];
 }

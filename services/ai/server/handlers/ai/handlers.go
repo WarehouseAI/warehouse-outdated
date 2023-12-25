@@ -8,7 +8,6 @@ import (
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/picturedata"
 	e "warehouseai/ai/errors"
-	"warehouseai/ai/model"
 	"warehouseai/ai/service/ai"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,11 +33,11 @@ func (h *Handler) CreateAiWithKeyHandler(c *fiber.Ctx) error {
 	}
 
 	request := ai.CreateWithKeyRequest{
-		Name:        form.Value["name"][0],
-		AuthScheme:  model.AuthScheme(form.Value["auth_scheme"][0]),
-		Description: form.Value["description"][0],
-		Image:       imageUrl,
-		ApiKey:      form.Value["api_key"][0],
+		Name:              form.Value["name"][0],
+		AuthHeaderName:    form.Value["auth_header_name"][0],
+		AuthHeaderContent: form.Value["auth_header_content"][0],
+		Description:       form.Value["description"][0],
+		Image:             imageUrl,
 	}
 
 	newAi, svcErr := ai.CreateWithOwnKey(&request, userId, h.DB, h.Logger)
@@ -61,10 +60,10 @@ func (h *Handler) CreateAiWithoutKeyHandler(c *fiber.Ctx) error {
 	}
 
 	request := ai.CreateWithoutKeyRequest{
-		Name:        form.Value["name"][0],
-		AuthScheme:  model.AuthScheme(form.Value["auth_scheme"][0]),
-		Description: form.Value["description"][0],
-		Image:       imageUrl,
+		Name:           form.Value["name"][0],
+		AuthHeaderName: form.Value["auth_header_name"][0],
+		Description:    form.Value["description"][0],
+		Image:          imageUrl,
 	}
 
 	newAi, svcErr := ai.CreateWithGeneratedKey(&request, userId, h.DB, h.Logger)

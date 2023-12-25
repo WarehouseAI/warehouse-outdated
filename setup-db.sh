@@ -36,7 +36,7 @@ function create_enums() {
 			CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 	    CREATE TYPE authscheme AS ENUM ('Bearer', 'Basic','ApiKey');
 			CREATE TYPE payloadtype AS ENUM ('JSON', 'FormData');
-			CREATE TYPE iotype AS ENUM ('Image', 'Text');
+			CREATE TYPE iotype AS ENUM ('Image', 'Text', 'Audio');
 			CREATE TYPE requestscheme AS ENUM ('POST', 'GET', 'PUT', 'UPDATE', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS');
 			CREATE TYPE userrole AS ENUM ('Developer', 'Base');
 EOSQL

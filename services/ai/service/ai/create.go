@@ -14,24 +14,26 @@ import (
 )
 
 type CreateWithoutKeyRequest struct {
-	Description string       `json:"description"`
-	Name        string       `json:"name"`
-	AuthScheme  m.AuthScheme `json:"auth_scheme"`
-	Image       string       `json:"image"`
+	Description       string `json:"description"`
+	Name              string `json:"name"`
+	AuthHeaderName    string `json:"auth_header_name"`
+	AuthHeaderContent string `json:"auth_header_content"`
+	Image             string `json:"image"`
 }
 
 type CreateWithKeyRequest struct {
-	Description string       `json:"description"`
-	Name        string       `json:"name"`
-	AuthScheme  m.AuthScheme `json:"auth_scheme"`
-	ApiKey      string       `json:"api_key"`
-	Image       string       `json:"image"`
+	Description       string `json:"description"`
+	Name              string `json:"name"`
+	AuthHeaderName    string `json:"auth_header_name"`
+	AuthHeaderContent string `json:"auth_header_content"`
+	ApiKey            string `json:"api_key"`
+	Image             string `json:"image"`
 }
 
 type CreateResponse struct {
-	ID         string `json:"id"`
-	ApiKey     string `json:"api_key"`
-	AuthScheme string `json:"auth_scheme"`
+	ID                string `json:"id"`
+	AuthHeaderContent string `json:"auth_header_content"`
+	AuthHeaderName    string `json:"auth_header_name"`
 }
 
 func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai dataservice.AiInterface, logger *logrus.Logger) (*CreateResponse, *e.ErrorResponse) {
@@ -45,14 +47,14 @@ func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai d
 	apiKey := fmt.Sprintf("wh.%s", key)
 
 	newAI := &m.AI{
-		Name:          aiInfo.Name,
-		Description:   aiInfo.Description,
-		Owner:         uuid.Must(uuid.FromString(userId)),
-		AuthScheme:    aiInfo.AuthScheme,
-		ApiKey:        apiKey,
-		BackgroundUrl: aiInfo.Image,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		Name:              aiInfo.Name,
+		Description:       aiInfo.Description,
+		Owner:             uuid.Must(uuid.FromString(userId)),
+		AuthHeaderName:    aiInfo.AuthHeaderName,
+		AuthHeaderContent: apiKey,
+		BackgroundUrl:     aiInfo.Image,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	if dbErr := ai.Create(newAI); err != nil {
@@ -61,22 +63,22 @@ func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai d
 	}
 
 	return &CreateResponse{
-		ID:         newAI.ID.String(),
-		ApiKey:     apiKey,
-		AuthScheme: string(newAI.AuthScheme),
+		ID:                newAI.ID.String(),
+		AuthHeaderContent: newAI.AuthHeaderContent,
+		AuthHeaderName:    newAI.AuthHeaderName,
 	}, nil
 }
 
 func CreateWithOwnKey(aiInfo *CreateWithKeyRequest, userId string, ai dataservice.AiInterface, logger *logrus.Logger) (*CreateResponse, *e.ErrorResponse) {
 	newAI := &m.AI{
-		Name:          aiInfo.Name,
-		Description:   aiInfo.Description,
-		Owner:         uuid.Must(uuid.FromString(userId)),
-		AuthScheme:    aiInfo.AuthScheme,
-		BackgroundUrl: aiInfo.Image,
-		ApiKey:        aiInfo.ApiKey,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		Name:              aiInfo.Name,
+		Description:       aiInfo.Description,
+		Owner:             uuid.Must(uuid.FromString(userId)),
+		AuthHeaderName:    aiInfo.AuthHeaderName,
+		BackgroundUrl:     aiInfo.Image,
+		AuthHeaderContent: aiInfo.AuthHeaderContent,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	if dbErr := ai.Create(newAI); dbErr != nil {
@@ -85,9 +87,9 @@ func CreateWithOwnKey(aiInfo *CreateWithKeyRequest, userId string, ai dataservic
 	}
 
 	return &CreateResponse{
-		ID:         newAI.ID.String(),
-		ApiKey:     aiInfo.ApiKey,
-		AuthScheme: string(newAI.AuthScheme),
+		ID:                newAI.ID.String(),
+		AuthHeaderContent: newAI.AuthHeaderContent,
+		AuthHeaderName:    newAI.AuthHeaderName,
 	}, nil
 }
 

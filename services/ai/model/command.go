@@ -29,6 +29,7 @@ const (
 
 const (
 	Image IOType = "Image"
+	Audio IOType = "Audio"
 	Text  IOType = "Text"
 )
 

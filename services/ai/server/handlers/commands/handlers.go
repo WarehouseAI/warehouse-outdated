@@ -5,11 +5,10 @@ import (
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/commanddata"
 	e "warehouseai/ai/errors"
-	m "warehouseai/ai/model"
 	"warehouseai/ai/service/command"
+	"warehouseai/ai/service/command/execute"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,49 +35,25 @@ func (h *Handler) CreateCommandHandler(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ExecuteCommandHandler(c *fiber.Ctx) error {
-	AiID := c.Query("ai_id")
+	aiID := c.Query("ai_id")
 	commandName := c.Query("command_name")
 
-	getCommandRequest := command.GetCommandRequest{
-		AiID: uuid.FromStringOrNil(AiID),
-		Name: commandName,
+	request := execute.ExecuteCommandRequest{
+		AiID:        aiID,
+		CommandName: commandName,
+		Raw:         c.Body(),
+		ContentType: c.Get("Content-Type"),
 	}
 
-	existCommand, svcErr := command.GetCommand(getCommandRequest, h.AiDB, h.Logger)
+	response, err := execute.ExecuteCommand(request, h.AiDB, h.Logger)
 
-	if svcErr != nil {
-		return c.Status(svcErr.ErrorCode).JSON(svcErr)
+	if err != nil {
+		return c.Status(err.ErrorCode).JSON(err)
 	}
 
-	if existCommand.Payload.PayloadType == m.FormData {
-		formData, err := c.MultipartForm()
-
-		if err != nil {
-			response := e.NewErrorResponse(e.HttpInternalError, err.Error())
-			return c.Status(response.ErrorCode).JSON(response)
-		}
-
-		response, svcErr := command.ExecuteFormDataCommand(formData, existCommand, h.AiDB, h.Logger)
-
-		if svcErr != nil {
-			return c.Status(svcErr.ErrorCode).JSON(svcErr)
-		}
-
-		return c.Status(fiber.StatusOK).Send(response.Bytes())
-	} else {
-		var json map[string]interface{} // не трогать мапу
-
-		if err := c.BodyParser(&json); err != nil {
-			response := e.NewErrorResponse(e.HttpInternalError, "Invalid request body.")
-			return c.Status(response.ErrorCode).JSON(response)
-		}
-
-		response, svcErr := command.ExecuteJSONCommand(json, existCommand, h.AiDB, h.Logger)
-
-		if svcErr != nil {
-			return c.Status(svcErr.ErrorCode).JSON(svcErr)
-		}
-
-		return c.Status(fiber.StatusOK).Send(response.Bytes())
+	for key, value := range response.Headers {
+		c.Response().Header.Add(key, value)
 	}
+
+	return c.Status(response.Status).Send(response.Raw.Bytes())
 }
