@@ -23,10 +23,15 @@ func validateSetRatingRequest(request *SetAiRatingRequest) *e.ErrorResponse {
 	return nil
 }
 
-func SetAiRating(userId string, request SetAiRatingRequest, ratingRepository d.RatingInterface, logger *logrus.Logger) *e.ErrorResponse {
+func SetAiRating(userId string, request SetAiRatingRequest, aiRepository d.AiInterface, ratingRepository d.RatingInterface, logger *logrus.Logger) *e.ErrorResponse {
 	if err := validateSetRatingRequest(&request); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": "Invalid rate value"}).Info("Get AI rating")
 		return err
+	}
+
+	if _, err := aiRepository.Get(map[string]interface{}{"id": request.AiId}); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": "Invalid rate value"}).Info("Get AI rating")
+		return e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
 	}
 
 	// Если такой рейтинг уже существует, то обновляем существующую оценку

@@ -17,14 +17,14 @@ func AiToProto(ai *m.AI) *gen.AI {
 	}
 
 	return &gen.AI{
-		Id:         ai.ID.String(),
-		Owner:      ai.Owner.String(),
-		Name:       ai.Name,
-		ApiKey:     ai.ApiKey,
-		AuthScheme: string(ai.AuthScheme),
-		CreatedAt:  ai.CreatedAt.String(),
-		UpdatedAt:  ai.UpdatedAt.String(),
-		Commands:   commands,
+		Id:                ai.ID.String(),
+		Owner:             ai.Owner.String(),
+		Name:              ai.Name,
+		AuthHeaderContent: ai.AuthHeaderContent,
+		AuthHeaderName:    ai.AuthHeaderName,
+		CreatedAt:         ai.CreatedAt.String(),
+		UpdatedAt:         ai.UpdatedAt.String(),
+		Commands:          commands,
 	}
 }
 
@@ -38,14 +38,14 @@ func ProtoToAi(ai *gen.AI) m.AI {
 	}
 
 	return m.AI{
-		ID:         uuid.FromStringOrNil(ai.Id),
-		Owner:      uuid.FromStringOrNil(ai.Owner),
-		Name:       ai.Name,
-		Commands:   commands,
-		ApiKey:     ai.ApiKey,
-		AuthScheme: m.AuthScheme(ai.AuthScheme),
-		CreatedAt:  createdAt,
-		UpdatedAt:  updatedAt,
+		ID:                uuid.FromStringOrNil(ai.Id),
+		Owner:             uuid.FromStringOrNil(ai.Owner),
+		Name:              ai.Name,
+		Commands:          commands,
+		AuthHeaderContent: ai.AuthHeaderContent,
+		AuthHeaderName:    ai.AuthHeaderName,
+		CreatedAt:         createdAt,
+		UpdatedAt:         updatedAt,
 	}
 }
 

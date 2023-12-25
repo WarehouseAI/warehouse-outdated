@@ -7,14 +7,14 @@ import (
 	"gorm.io/datatypes"
 )
 
-type RequestScheme string
-type IOType string
 type PayloadType string
 
 const (
 	FormData PayloadType = "FormData"
 	Json     PayloadType = "JSON"
 )
+
+type RequestScheme string
 
 const (
 	Post    RequestScheme = "POST"
@@ -27,9 +27,30 @@ const (
 	Options RequestScheme = "OPTIONS"
 )
 
+type IOType string
+
 const (
 	Image IOType = "Image"
+	Audio IOType = "Audio"
 	Text  IOType = "Text"
+)
+
+type FieldClass string
+
+const (
+	Permanent FieldClass = "permanent"
+	Optional  FieldClass = "optional"
+	Free      FieldClass = "free"
+)
+
+type DataType string
+
+const (
+	String DataType = "string"
+	Number DataType = "number"
+	File   DataType = "file"
+	Bool   DataType = "bool"
+	Object DataType = "object"
 )
 
 type Command struct {
@@ -44,4 +65,10 @@ type Command struct {
 	URL           string            `json:"url" gorm:"type:string;unique;not null"`
 	CreatedAt     time.Time         `json:"created_at" gorm:"type:time"`
 	UpdatedAt     time.Time         `json:"updated_at" gorm:"type:time"`
+}
+
+type CommandFieldParams struct {
+	Class    FieldClass    `json:"class"`
+	Values   []interface{} `json:"values"`
+	DataType DataType      `json:"data_type"`
 }

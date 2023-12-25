@@ -20,9 +20,15 @@ type GetAIRatingResponse struct {
 
 func GetAIRating(
 	request GetAIRatingRequest,
+	aiRepository d.AiInterface,
 	ratingRepository d.RatingInterface,
 	logger *logrus.Logger,
 ) (*GetAIRatingResponse, *e.ErrorResponse) {
+	if _, err := aiRepository.Get(map[string]interface{}{"id": request.AiId}); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Get AI rating")
+		return nil, e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
+	}
+
 	rating, err := ratingRepository.GetAverageAiRating(request.AiId)
 
 	if err != nil {
