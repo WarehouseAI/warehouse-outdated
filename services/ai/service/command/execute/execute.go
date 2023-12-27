@@ -48,13 +48,16 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 	headers := make(map[string]string)
 
 	if ai.Command.PayloadType == m.FormData {
-		if err := validateFormDataPayload(request.ContentType, body, ai.Command.Payload); err != nil {
+		newBody, boundary, err := validateFormDataPayload(request.ContentType, body, ai.Command.Payload)
+
+		if err != nil {
 			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Execute Command")
 			return nil, err
 		}
 
-		headers["Content-Type"] = "multipart/form-data"
+		headers["Content-Type"] = *boundary
 		headers[ai.AuthHeaderName] = ai.AuthHeaderContent
+		body = newBody
 	}
 
 	if ai.Command.PayloadType == m.Json {
@@ -96,7 +99,7 @@ func updateUsageCount(existAi *m.AI, ai d.AiInterface) *e.ErrorResponse {
 	return nil
 }
 
-func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod string, headers map[string]string, body io.Reader) (*http.Response, *e.ErrorResponse) {
+func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod string, headers map[string]string, body *bytes.Buffer) (*http.Response, *e.ErrorResponse) {
 	httpClient := http.Client{}
 
 	url, err := url.Parse(fullUrl)
@@ -153,7 +156,7 @@ func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod stri
 	}
 }
 
-// по дефолту возвращаем заголовок, что ответ формата JSON
+// по дефолту возвращаем заголово - ответ формата JSON
 func decodeHTTPResponse(response *http.Response, outputType m.IOType) (*bytes.Buffer, *map[string]string, *int, *e.ErrorResponse) {
 	var buffer bytes.Buffer
 	headers := map[string]string{
@@ -182,5 +185,4 @@ func decodeHTTPResponse(response *http.Response, outputType m.IOType) (*bytes.Bu
 	}
 
 	return &buffer, &headers, &response.StatusCode, nil
-
 }

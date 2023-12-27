@@ -11,18 +11,20 @@ import (
 	e "warehouseai/ai/errors"
 )
 
-func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, originPayload map[string]interface{}) *e.ErrorResponse {
+// Поддерживаем только формат "Text" в FormData
+func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, originPayload map[string]interface{}) (*bytes.Buffer, *string, *e.ErrorResponse) {
 	mediaType, params, err := mime.ParseMediaType(contentType)
 
 	if err != nil {
-		return e.NewErrorResponse(e.HttpInternalError, err.Error())
+		return nil, nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
 	}
 
 	if !strings.HasPrefix(mediaType, "multipart/") {
-		return e.NewErrorResponse(e.HttpBadRequest, `Invalid Content-Type for this command. No "multipart/" prefix`)
+		return nil, nil, e.NewErrorResponse(e.HttpBadRequest, `Invalid Content-Type for this command. No "multipart/" prefix`)
 	}
 
 	reader := multipart.NewReader(rawRequest, params["boundary"])
+	formData := make(map[string]string)
 
 	// Валидируем форм дату на сходство пейлоаду команды в БД
 	for {
@@ -34,19 +36,35 @@ func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, origi
 				break
 			}
 
-			return e.NewErrorResponse(e.HttpInternalError, err.Error())
-		}
-
-		if err != nil {
-			return e.NewErrorResponse(e.HttpInternalError, err.Error())
+			return nil, nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
 		}
 
 		if _, found := originPayload[part.FormName()]; !found {
-			return e.NewErrorResponse(e.HttpBadRequest, "Invalid command payload.")
+			return nil, nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid command payload.")
 		}
+
+		keyValue, readErr := io.ReadAll(part)
+
+		if readErr != nil {
+			return nil, nil, e.NewErrorResponse(e.HttpInternalError, readErr.Error())
+		}
+
+		formData[part.FormName()] = string(keyValue)
 	}
 
-	return nil
+	var newBuffer bytes.Buffer
+	writer := multipart.NewWriter(&newBuffer)
+	defer writer.Close()
+
+	for key, value := range formData {
+		writer.WriteField(key, value)
+	}
+	writer.FormDataContentType()
+
+	rawRequest = &newBuffer
+	boundary := writer.FormDataContentType()
+
+	return &newBuffer, &boundary, nil
 }
 
 func validateJSONPayload(rawRequest *bytes.Buffer, originPayload map[string]interface{}) *e.ErrorResponse {
