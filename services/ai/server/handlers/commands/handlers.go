@@ -41,7 +41,7 @@ func (h *Handler) ExecuteCommandHandler(c *fiber.Ctx) error {
 	request := execute.ExecuteCommandRequest{
 		AiID:        aiID,
 		CommandName: commandName,
-		Raw:         c.Body(),
+		Raw:         c.Request().Body(),
 		ContentType: c.Get("Content-Type"),
 	}
 
