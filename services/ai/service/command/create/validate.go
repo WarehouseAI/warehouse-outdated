@@ -17,7 +17,7 @@ func validateCreateRequest(request *CreateCommandRequest) *e.ErrorResponse {
 		}
 
 		if err := json.Unmarshal(jsonData, &fieldParameters); err != nil {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity, fmt.Sprintf(`Invalid decloration for "%s" field`, name))
+			return e.NewErrorResponse(e.HttpUnprocessableEntity, fmt.Sprintf(`Invalid decloration for "%s" field.`, name))
 		}
 
 		// Валидирование типов
