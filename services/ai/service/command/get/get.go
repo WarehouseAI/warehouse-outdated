@@ -31,8 +31,7 @@ func GetCommand(getRequest GetCommandRequest, aiProvider dataservice.AiInterface
 	}
 
 	// Bug: Крашится если нет такой команды
-
-	for i := 0; i <= len(existAI.Commands); i++ {
+	for i := 0; i < len(existAI.Commands); i++ {
 		if existAI.Commands[i].Name == getRequest.Name {
 			return &GetCommandResponse{existAI, existAI.Commands[i], existAI.AuthHeaderContent, existAI.AuthHeaderName}, nil
 		}
