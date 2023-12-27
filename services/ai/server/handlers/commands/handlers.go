@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"warehouseai/ai/adapter/grpc/client/auth"
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/commanddata"
@@ -37,6 +38,8 @@ func (h *Handler) CreateCommandHandler(c *fiber.Ctx) error {
 func (h *Handler) ExecuteCommandHandler(c *fiber.Ctx) error {
 	aiID := c.Query("ai_id")
 	commandName := c.Query("command_name")
+
+	fmt.Println(c.IP())
 
 	request := execute.ExecuteCommandRequest{
 		AiID:        aiID,
