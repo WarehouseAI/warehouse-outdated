@@ -23,7 +23,7 @@ type User struct {
 	Favorites []UserFavorite `json:"favorites" gorm:"foreignKey:UserId"`
 	Owned     []UserOwn      `json:"owned" gorm:"foreignKey:UserId"`
 	Email     string         `json:"email" gorm:"type:string;not null;unique"`
-	ViaGoogle bool           `json:"via_google;omitempty" gorm:"default:false;not null"`
+	ViaGoogle bool           `json:"via_google:omitempty" gorm:"default:false;not null"`
 	Verified  bool           `json:"-" gorm:"default:false;not null"`
 	Role      UserRole       `json:"role" gorm:"type:UserRole;default:Base;not null"`
 	CreatedAt time.Time      `json:"created_at" gorm:"type:time"`
