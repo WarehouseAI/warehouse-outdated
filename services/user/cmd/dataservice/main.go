@@ -22,9 +22,6 @@ func NewUserDatabase() *userdata.Database {
 	}
 
 	db.AutoMigrate(&model.User{})
-	// //TODO:переместить этот код в sh-файлы
-	db.Exec("ALTER SYSTEM SET wal_level = logical")         //Это в файл с сетапом
-	db.Exec("CREATE PUBLICATION users_pub FOR TABLE users") //Для этого нужен новый файл
 
 	return &userdata.Database{DB: db}
 }

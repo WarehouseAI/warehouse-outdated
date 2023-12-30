@@ -10,6 +10,8 @@ type DatabaseCfg struct {
 	User     string
 	Password string
 	Port     string
+	SubName  string
+	PubName  string
 }
 
 func NewStatDatabaseCfg() DatabaseCfg {
@@ -22,23 +24,26 @@ func NewStatDatabaseCfg() DatabaseCfg {
 	}
 }
 
-// TODO: Этот моментик мне не нравится, но пока я не могу придумать как делать по другому
-func UserDatabaseCfg() DatabaseCfg {
+func NewUserDatabaseCfg() DatabaseCfg {
 	return DatabaseCfg{
 		Host:     os.Getenv("USERS_DB_HOST"),
 		Name:     os.Getenv("USERS_DB_NAME"),
 		User:     os.Getenv("USERS_DB_USER"),
 		Password: os.Getenv("USERS_DB_PASS"),
+		SubName:  os.Getenv("USERS_DB_SUB_NAME"),
+		PubName:  os.Getenv("USERS_DB_PUB_NAME"),
 		Port:     "5432",
 	}
 }
 
-func AiDatabaseCfg() DatabaseCfg {
+func NewAiDatabaseCfg() DatabaseCfg {
 	return DatabaseCfg{
 		Host:     os.Getenv("AI_DB_HOST"),
 		Name:     os.Getenv("AI_DB_NAME"),
 		User:     os.Getenv("AI_DB_USER"),
 		Password: os.Getenv("AI_DB_PASS"),
+		SubName:  os.Getenv("AI_DB_SUB_NAME"),
+		PubName:  os.Getenv("AI_DB_PUB_NAME"),
 		Port:     "5432",
 	}
 }

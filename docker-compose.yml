@@ -79,6 +79,9 @@ services:
     networks:
       - server-network
     restart: always
+    depends_on:
+      - db-ai
+      - db-users
     env_file:
       - .env
     environment:

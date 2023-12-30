@@ -2,16 +2,20 @@ package dataservice
 
 import (
 	"fmt"
+	"time"
 	"warehouseai/stat/config"
 	"warehouseai/stat/dataservice/statdata"
 
+	e "warehouseai/stat/errors"
 	m "warehouseai/stat/model"
 
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func NewStatDatabase() *statdata.Database {
+func NewStatDatabase(logger *logrus.Logger) *statdata.Database {
 	cfg := config.NewStatDatabaseCfg()
 	DSN := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port)
 
@@ -21,19 +25,38 @@ func NewStatDatabase() *statdata.Database {
 		panic(err)
 	}
 
-	db.AutoMigrate(&m.User{}, &m.AI{})
+	//TODO: подумать над тем, чтобы сделать запускать репликации по запросу от реплицируемого
 
-	//TODO:Переместить эту ересь в sh-файлы
+	db.AutoMigrate(&m.User{}, &m.AI{}, &m.Command{}, &m.RatingPerUser{}, &m.UserFavorite{})
 
-	db.Exec("ALTER SYSTEM SET wal_level = logical")
+	if err := CreateSub(config.NewAiDatabaseCfg(), db); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("User subcription create")
+	}
 
-	userDbCfg := config.UserDatabaseCfg()
-	rawSqlUserSub := fmt.Sprintf("CREATE SUBSCRIPTION users_sub \n CONNECTION 'port=%s user=%s dbname=%s host=%s password=%s' \n PUBLICATION users_pub", userDbCfg.Port, userDbCfg.User, userDbCfg.Name, userDbCfg.Host, userDbCfg.Password)
-	db.Exec(rawSqlUserSub)
-
-	aiDbCfg := config.AiDatabaseCfg()
-	rawSqlAiSub := fmt.Sprintf("CREATE SUBSCRIPTION ais_sub \n CONNECTION 'port=%s user=%s dbname=%s host=%s password=%s' \n PUBLICATION ais_pub", aiDbCfg.Port, aiDbCfg.User, aiDbCfg.Name, aiDbCfg.Host, aiDbCfg.Password)
-	db.Exec(rawSqlAiSub)
+	if err := CreateSub(config.NewUserDatabaseCfg(), db); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Ai subcription create")
+	}
 
 	return &statdata.Database{DB: db}
+}
+
+func CreateSub(c config.DatabaseCfg, db *gorm.DB) *e.DBError {
+	rawSql := fmt.Sprintf("CREATE SUBSCRIPTION %s CONNECTION 'port=%s user=%s dbname=%s host=%s password=%s' PUBLICATION %s", c.SubName, c.Port, c.User, c.Name, c.Host, c.Password, c.PubName)
+
+	if err := db.Exec(rawSql).Error; err != nil {
+		if !isDuplicateSubError(err) {
+			return e.NewDBError(e.DbSystem, "Something went wrong with subscription.", err.Error())
+		}
+	}
+	return nil
+}
+
+func isDuplicateSubError(err error) bool {
+	pgErr, ok := err.(*pgconn.PgError)
+	if ok {
+		// unique_violation = 42710
+		return pgErr.Code == "42710"
+
+	}
+	return false
 }

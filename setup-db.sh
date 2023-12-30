@@ -42,8 +42,40 @@ function create_enums() {
 EOSQL
 }
 
+function change_wal_level() {
+	local database=$1;
+	echo "Changing wal level in '$database' to logi";
+
+	psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$database" <<-EOSQL
+		ALTER SYSTEM SET wal_level = logical;
+EOSQL
+}
+
+function create_publication() {
+	local database=$1;
+	local pub_name=$2;
+
+	echo "Creating a publication on '$database' of all tables";
+    
+	psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$database"  <<-EOSQL
+		CREATE PUBLICATION $pub_name FOR All TABLES;
+EOSQL
+}
+
 if [ -n "$POSTGRES_DB" ]; then
 	create_enums $POSTGRES_DB;
-	create_user_service_user $POSTGRES_USER_SERVICE_USER $POSTGRES_USER_SERVICE_PASS $POSTGRES_DB;
-	create_ai_service_user $POSTGRES_AI_SERVICE_USER $POSTGRES_AI_SERVICE_PASS $POSTGRES_DB;
+
+	if [ $POSTGRES_DB = "ai_db" ]; then
+		change_wal_level $POSTGRES_DB
+		create_publication $POSTGRES_DB $AI_DB_PUB_NAME
+	fi
+
+	if [ $POSTGRES_DB = "users_db" ]; then
+		change_wal_level $POSTGRES_DB
+		create_publication $POSTGRES_DB $USERS_DB_PUB_NAME
+	fi
+
+	if [ $POSTGRES_DB = "stat_db" ]; then
+		change_wal_level $POSTGRES_DB
+	fi
 fi

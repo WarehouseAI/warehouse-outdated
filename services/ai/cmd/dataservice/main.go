@@ -28,9 +28,6 @@ func NewAiDatabase() *aidata.Database {
 	}
 
 	db.AutoMigrate(&model.AI{})
-	// //TODO:переместить этот код в sh-файлы
-	db.Exec("ALTER SYSTEM SET wal_level = logical")     //Это в файл с сетапом
-	db.Exec("CREATE PUBLICATION ais_pub FOR TABLE ais") //Для этого нужен новый файл
 
 	return &aidata.Database{DB: db}
 }

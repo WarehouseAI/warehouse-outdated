@@ -22,10 +22,12 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	statDB := dataservice.NewStatDatabase()
+	statDB := dataservice.NewStatDatabase(log)
+	fmt.Println("✅Database successfully connected.")
+
 	if err := server.StartServer(":8020", statDB, log); err != nil {
 		fmt.Println("❌Failed to start the HTTP Handler.")
-		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("AI Microservice")
+		log.WithFields(logrus.Fields{"time": time.Now().String(), "error": err.Error()}).Info("STAT Microservice")
 		panic(err)
 	}
 
