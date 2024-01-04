@@ -53,18 +53,18 @@ const (
 	Object DataType = "object"
 )
 
-type Command struct {
-	ID            uuid.UUID         `json:"id" gorm:"type:uuid;primarykey;default:uuid_generate_v4()"`
-	AIID          uuid.UUID         `json:"ai_id" gorm:"type:uuid"`
-	Name          string            `json:"name" gorm:"type:string"`
-	Payload       datatypes.JSONMap `json:"payload" gorm:"type:json;not null"`
-	PayloadType   PayloadType       `json:"payload_type" gorm:"type:PayloadType;not null"`
-	RequestScheme RequestScheme     `json:"request_type" gorm:"type:RequestScheme;not null"`
-	InputType     IOType            `json:"input_type" gorm:"type:IOType;not null"`
-	OutputType    IOType            `json:"output_type" gorm:"type:IOType;not null"`
-	URL           string            `json:"url" gorm:"type:string;unique;not null"`
-	CreatedAt     time.Time         `json:"created_at" gorm:"type:time"`
-	UpdatedAt     time.Time         `json:"updated_at" gorm:"type:time"`
+type AiCommand struct {
+	ID          uuid.UUID         `json:"id" gorm:"type:uuid;primarykey;default:uuid_generate_v4()"`
+	AIID        uuid.UUID         `json:"ai_id" gorm:"type:uuid"`
+	Name        string            `json:"name" gorm:"type:string"`
+	Payload     datatypes.JSONMap `json:"payload" gorm:"type:json;not null"`
+	PayloadType string            `json:"payload_type" gorm:"type:string;not null"`
+	RequestType string            `json:"request_type" gorm:"type:string;not null"`
+	InputType   string            `json:"input_type" gorm:"type:string;not null"`
+	OutputType  string            `json:"output_type" gorm:"type:string;not null"`
+	URL         string            `json:"url" gorm:"type:string;unique;not null"`
+	CreatedAt   time.Time         `json:"created_at" gorm:"type:time"`
+	UpdatedAt   time.Time         `json:"updated_at" gorm:"type:time"`
 }
 
 type CommandFieldParams struct {

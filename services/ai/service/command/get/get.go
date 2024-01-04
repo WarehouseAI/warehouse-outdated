@@ -16,8 +16,8 @@ type GetCommandRequest struct {
 }
 
 type GetCommandResponse struct {
-	AI                *m.AI
-	Command           m.Command
+	AI                *m.AiProduct
+	Command           m.AiCommand
 	AuthHeaderContent string
 	AuthHeaderName    string
 }

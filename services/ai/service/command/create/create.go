@@ -44,17 +44,17 @@ func CreateCommand(request *CreateCommandRequest, command dataservice.CommandInt
 		return err
 	}
 
-	newCommand := &m.Command{
-		Name:          request.Name,
-		AIID:          uuid.FromStringOrNil(request.AiID),
-		RequestScheme: request.RequestType,
-		InputType:     request.InputType,
-		OutputType:    request.OutputType,
-		Payload:       request.Payload,
-		PayloadType:   request.PayloadType,
-		URL:           request.URL,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+	newCommand := &m.AiCommand{
+		Name:        request.Name,
+		AIID:        uuid.FromStringOrNil(request.AiID),
+		RequestType: string(request.RequestType),
+		InputType:   string(request.InputType),
+		OutputType:  string(request.OutputType),
+		Payload:     request.Payload,
+		PayloadType: string(request.PayloadType),
+		URL:         request.URL,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	if dbErr := command.Create(newCommand); dbErr != nil {

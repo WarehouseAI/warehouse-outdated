@@ -3,6 +3,8 @@ version: '3'
 networks:
   server-network:
     driver: bridge
+volumes:
+  migrations:
 
 services:
   proxy:
@@ -15,7 +17,7 @@ services:
     depends_on:
       - auth
       - user
-      # - ai
+      - ai
     volumes:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
@@ -23,7 +25,7 @@ services:
       - server-network
 
   db-auth:
-    image: postgres:14.1-alpine
+    image: postgres:14.10-alpine3.19
     container_name: token-database
     networks:
       - server-network
@@ -37,10 +39,10 @@ services:
     ports:
       - '${AUTH_DB_PORT}:5432'
     volumes:
-      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+      - ./migrations/setup-auth-db.sql:/docker-entrypoint-initdb.d/setup-auth-db.sql
 
   db-users:
-    image: postgres:14.1-alpine
+    image: postgres:14.10-alpine3.19
     container_name: users-database
     networks:
       - server-network
@@ -54,10 +56,10 @@ services:
     ports:
       - '${USERS_DB_PORT}:5432'
     volumes:
-      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+      - ./migrations/setup-users-db.sql:/docker-entrypoint-initdb.d/setup-users-db.sql
 
   db-ai:
-    image: postgres:14.1-alpine
+    image: postgres:14.10-alpine3.19
     container_name: ai-database
     networks:
       - server-network
@@ -71,7 +73,7 @@ services:
     ports:
       - '${AI_DB_PORT}:5432'
     volumes:
-      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+      - ./migrations/setup-ai-db.sql:/docker-entrypoint-initdb.d/setup-ai-db.sql
 
   session:
     image: redis:6.2-alpine

@@ -5,7 +5,6 @@ import (
 	"warehouseai/user/config"
 	"warehouseai/user/dataservice/favoritesdata"
 	"warehouseai/user/dataservice/userdata"
-	"warehouseai/user/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -21,8 +20,6 @@ func NewUserDatabase() *userdata.Database {
 		panic(err)
 	}
 
-	db.AutoMigrate(&model.User{})
-
 	return &userdata.Database{DB: db}
 }
 
@@ -35,8 +32,6 @@ func NewFavoritesDatabase() *favoritesdata.Database {
 		fmt.Println("❌Failed to connect to the database.")
 		panic(err)
 	}
-
-	db.AutoMigrate(&model.UserFavorite{})
 
 	return &favoritesdata.Database{DB: db}
 }

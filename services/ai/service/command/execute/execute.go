@@ -47,7 +47,7 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 	body := bytes.NewBuffer(request.Raw)
 	headers := make(map[string]string)
 
-	if ai.Command.PayloadType == m.FormData {
+	if ai.Command.PayloadType == string(m.FormData) {
 		newBody, boundary, err := validateFormDataPayload(request.ContentType, body, ai.Command.Payload)
 
 		if err != nil {
@@ -60,7 +60,7 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 		body = newBody
 	}
 
-	if ai.Command.PayloadType == m.Json {
+	if ai.Command.PayloadType == string(m.Json) {
 		if err := validateJSONPayload(body, ai.Command.Payload); err != nil {
 			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Execute Command")
 			return nil, err
@@ -70,7 +70,7 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 		headers[ai.AuthHeaderName] = ai.AuthHeaderContent
 	}
 
-	reqResponse, reqErr := makeHTTPRequest(executeCtx, ai.Command.URL, string(ai.Command.RequestScheme), headers, body)
+	reqResponse, reqErr := makeHTTPRequest(executeCtx, ai.Command.URL, string(ai.Command.RequestType), headers, body)
 
 	if reqErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": reqErr.ErrorMessage}).Info("Execute Command")
@@ -91,7 +91,7 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 	}, nil
 }
 
-func updateUsageCount(existAi *m.AI, ai d.AiInterface) *e.ErrorResponse {
+func updateUsageCount(existAi *m.AiProduct, ai d.AiInterface) *e.ErrorResponse {
 	if err := ai.Update(existAi, map[string]interface{}{"used": existAi.Used + 1}); err != nil {
 		return e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
 	}
@@ -157,7 +157,7 @@ func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod stri
 }
 
 // по дефолту возвращаем заголово - ответ формата JSON
-func decodeHTTPResponse(response *http.Response, outputType m.IOType) (*bytes.Buffer, *map[string]string, *int, *e.ErrorResponse) {
+func decodeHTTPResponse(response *http.Response, outputType string) (*bytes.Buffer, *map[string]string, *int, *e.ErrorResponse) {
 	var buffer bytes.Buffer
 	headers := map[string]string{
 		"Content-Type": "application/json",
@@ -174,12 +174,12 @@ func decodeHTTPResponse(response *http.Response, outputType m.IOType) (*bytes.Bu
 	}
 
 	if response.StatusCode == 200 {
-		if outputType == m.Audio {
+		if outputType == string(m.Audio) {
 			headers["Content-Type"] = "audio/mp3"
 			headers["Content-Length"] = strconv.Itoa(len(rawResponse))
 		}
 
-		if outputType == m.Image {
+		if outputType == string(m.Image) {
 			headers["Content-Type"] = "image/png"
 		}
 	}

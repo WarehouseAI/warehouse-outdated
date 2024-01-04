@@ -13,7 +13,7 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func (d *Database) Add(rate *m.RatingPerUser) *e.DBError {
+func (d *Database) Add(rate *m.AiRate) *e.DBError {
 	if err := d.DB.Create(rate).Error; err != nil {
 		if isDuplicateKeyError(err) {
 			return e.NewDBError(e.DbExist, "AI with this key/keys already exists.", err.Error())
@@ -25,8 +25,8 @@ func (d *Database) Add(rate *m.RatingPerUser) *e.DBError {
 	return nil
 }
 
-func (d *Database) Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.DBError) {
-	var rate m.RatingPerUser
+func (d *Database) Get(conditions map[string]interface{}) (*m.AiRate, *e.DBError) {
+	var rate m.AiRate
 
 	if err := d.DB.Where(conditions).First(&rate).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -42,7 +42,7 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.
 func (d *Database) GetAverageAiRating(aiId string) (*float64, *e.DBError) {
 	var result float64
 
-	if err := d.DB.Model(&m.RatingPerUser{}).Select("COALESCE(AVG(rate), 0)").Where("ai_id = ?", aiId).Scan(&result).Error; err != nil {
+	if err := d.DB.Model(&m.AiRate{}).Select("COALESCE(AVG(rate), 0)").Where("ai_id = ?", aiId).Scan(&result).Error; err != nil {
 		return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 	}
 
@@ -52,7 +52,7 @@ func (d *Database) GetAverageAiRating(aiId string) (*float64, *e.DBError) {
 func (d *Database) GetCountAiRating(aiId string) (*int64, *e.DBError) {
 	var result int64
 
-	if err := d.DB.Model(&m.RatingPerUser{}).Where("ai_id = ?", aiId).Distinct("user_id").Count(&result).Error; err != nil {
+	if err := d.DB.Model(&m.AiRate{}).Where("ai_id = ?", aiId).Distinct("user_id").Count(&result).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
 		}
@@ -63,7 +63,7 @@ func (d *Database) GetCountAiRating(aiId string) (*int64, *e.DBError) {
 	return &result, nil
 }
 
-func (d *Database) Update(existRate *m.RatingPerUser, newRate int16) *e.DBError {
+func (d *Database) Update(existRate *m.AiRate, newRate int16) *e.DBError {
 	if err := d.DB.Model(existRate).Updates(map[string]interface{}{"rate": newRate}).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())

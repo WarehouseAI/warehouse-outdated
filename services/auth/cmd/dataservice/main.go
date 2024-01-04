@@ -69,8 +69,6 @@ func NewResetTokenDatabase() *tokendata.Database[m.ResetToken] {
 		panic(err)
 	}
 
-	db.AutoMigrate(&m.ResetToken{})
-
 	return &tokendata.Database[m.ResetToken]{DB: db}
 }
 
@@ -83,8 +81,6 @@ func NewVerificationTokenDatabase() *tokendata.Database[m.VerificationToken] {
 		fmt.Println("❌Failed to connect to the database.")
 		panic(err)
 	}
-
-	db.AutoMigrate(&m.VerificationToken{})
 
 	return &tokendata.Database[m.VerificationToken]{DB: db}
 }

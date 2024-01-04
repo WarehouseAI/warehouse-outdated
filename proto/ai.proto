@@ -18,7 +18,7 @@ message Command {
   string name = 3;
   string payload = 4;
   string payload_type = 5 [json_name = "payload_type"];
-  string request_scheme = 6 [json_name = "request_scheme"];
+  string request_type = 6 [json_name = "request_scheme"];
   string input_type = 7 [json_name = "input_type"];
   string output_type = 8 [json_name = "output_type"];
   string url = 9;
