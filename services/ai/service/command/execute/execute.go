@@ -84,6 +84,10 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 		return nil, decErr
 	}
 
+	if err := updateUsageCount(ai.AI, aiRepository); err != nil {
+		return nil, e.NewErrorResponse(err.ErrorCode, err.ErrorMessage)
+	}
+
 	return &ExecuteCommandResponse{
 		Raw:     cmdResponse,
 		Headers: *responseHeaders,
