@@ -16,6 +16,7 @@ services:
       - auth
       - user
       - ai
+      - stat
     volumes:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
@@ -210,7 +211,7 @@ services:
     build:
       context: .
       dockerfile: dockerfiles/stat.Dockerfile
-    command: ./wait-4-postgres.sh db-ai ./stat
+    command: ./wait-4-postgres.sh db-stat ./stat
     depends_on:
       - db-stat
     env_file: .env

@@ -22,7 +22,7 @@ func main() {
 	log.Out = file
 	fmt.Println("✅Logger successfully set up.")
 
-	statDB := dataservice.NewStatDatabase(log)
+	statDB := dataservice.NewStatDatabase()
 	fmt.Println("✅Database successfully connected.")
 
 	if err := server.StartServer(":8020", statDB, log); err != nil {

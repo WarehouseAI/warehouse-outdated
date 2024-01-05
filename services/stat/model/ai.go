@@ -14,7 +14,6 @@ const (
 	Basic  AuthScheme = "Basic"
 )
 
-// TODO: Подумать над синхронизацией с сервисом пользователей.
 type AI struct {
 	ID            uuid.UUID  `json:"id" gorm:"type:uuid;primarykey;default:uuid_generate_v4()"`
 	Owner         uuid.UUID  `json:"owner" gorm:"type:uuid;not null"`

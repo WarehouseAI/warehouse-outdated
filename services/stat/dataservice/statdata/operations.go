@@ -13,10 +13,10 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func (pvd *Database) GetNumOfUsers() (uint, *e.DBError) {
+func (d *Database) GetNumOfUsers() (uint, *e.DBError) {
 	var num uint
 
-	if err := pvd.DB.Model(m.User{}).Select("COUNT(*)").Scan(&num).Error; err != nil {
+	if err := d.DB.Model(m.User{}).Select("COUNT(*)").Scan(&num).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, e.NewDBError(e.DbSystem, "Something went wrong", err.Error())
 		}
@@ -27,10 +27,10 @@ func (pvd *Database) GetNumOfUsers() (uint, *e.DBError) {
 	return num, nil
 }
 
-func (pvd *Database) GetNumOfDevelopers() (uint, *e.DBError) {
+func (d *Database) GetNumOfDevelopers() (uint, *e.DBError) {
 	var num uint
 
-	if err := pvd.DB.Model(m.User{}).Select("COUNT(*)").Where("role = ?", "Developer").Find(&num).Error; err != nil {
+	if err := d.DB.Model(m.User{}).Select("COUNT(*)").Where("role = ?", "Developer").Find(&num).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, e.NewDBError(e.DbSystem, "Something went wrong", err.Error())
 		}
@@ -41,9 +41,9 @@ func (pvd *Database) GetNumOfDevelopers() (uint, *e.DBError) {
 	return num, nil
 }
 
-func (pvd *Database) GetNumOfAiUses(id uuid.UUID) (uint, *e.DBError) {
+func (d *Database) GetNumOfAiUses(id uuid.UUID) (uint, *e.DBError) {
 	var ai m.AI
-	if err := pvd.DB.Model(m.AI{}).Where("id = ?", id).Find(&ai).Error; err != nil {
+	if err := d.DB.Model(m.AI{}).Where("id = ?", id).Find(&ai).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, e.NewDBError(e.DbSystem, "Something went wrong", err.Error())
 		}
@@ -53,13 +53,3 @@ func (pvd *Database) GetNumOfAiUses(id uuid.UUID) (uint, *e.DBError) {
 
 	return uint(ai.Used), nil
 }
-
-// func isDuplicateKeyError(err error) bool {
-// 	pgErr, ok := err.(*pgconn.PgError)
-// 	if ok {
-// 		// unique_violation = 23505
-// 		return pgErr.Code == "23505"
-
-// 	}
-// 	return false
-// }
