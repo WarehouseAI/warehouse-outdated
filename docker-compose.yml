@@ -54,6 +54,7 @@ services:
       POSTGRES_USER: '${USERS_DB_USER}'
       POSTGRES_PASSWORD: '${USERS_DB_PASS}'
       POSTGRES_DB: '${USERS_DB_NAME}'
+      POSTGRES_PUB_NAME: '${USERS_DB_PUB_NAME}'
     ports:
       - '${USERS_DB_PORT}:5432'
     volumes:
@@ -72,6 +73,7 @@ services:
       POSTGRES_USER: '${AI_DB_USER}'
       POSTGRES_PASSWORD: '${AI_DB_PASS}'
       POSTGRES_DB: '${AI_DB_NAME}'
+      POSTGRES_PUB_NAME: '${AI_DB_PUB_NAME}'
     ports:
       - '${AI_DB_PORT}:5432'
     volumes:
@@ -96,8 +98,7 @@ services:
     ports:
       - '${STAT_DB_PORT}:5432'
     volumes:
-      - ./migrations/setup-ai-db.sql:/docker-entrypoint-initdb.d/setup-ai-db.sql
-      - ./migrations/setup-users-db.sql:/docker-entrypoint-initdb.d/setup-users-db.sql
+      - ./migrations/setup-stat-db.sql:/docker-entrypoint-initdb.d/setup-stat-db.sql
       - ./migrations/setup-stat-sub.sql:/docker-entrypoint-initdb.d/setup-stat-sub.sql
 
   session:
