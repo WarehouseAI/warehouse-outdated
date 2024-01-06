@@ -5,4 +5,5 @@ use (
 	./services/auth
 	./services/mail
 	./services/user
+	./services/stat
 )

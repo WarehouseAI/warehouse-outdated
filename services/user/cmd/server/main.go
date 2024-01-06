@@ -51,7 +51,7 @@ func newHttpHandler(userDb *userdata.Database, favoritesDB *favoritesdata.Databa
 func setupCORS() func(*fiber.Ctx) error {
 	return cors.New(cors.Config{
 		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin,Authorization",
-		AllowOrigins:     "http://localhost:3000, https://warehouse-ai-frontend.vercel.app",
+		AllowOrigins:     "http://localhost:3000, https://warehouse-ai-frontend.vercel.app, https://warehousai.com",
 		AllowCredentials: true,
 		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	})

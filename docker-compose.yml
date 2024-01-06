@@ -18,6 +18,7 @@ services:
       - auth
       - user
       - ai
+      - stat
     volumes:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
@@ -74,6 +75,26 @@ services:
       - '${AI_DB_PORT}:5432'
     volumes:
       - ./migrations/setup-ai-db.sql:/docker-entrypoint-initdb.d/setup-ai-db.sql
+
+  db-stat:
+    image: postgres:14.1-alpine
+    container_name: stat-database
+    networks:
+      - server-network
+    restart: always
+    depends_on:
+      - db-ai
+      - db-users
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: '${STAT_DB_USER}'
+      POSTGRES_PASSWORD: '${STAT_DB_PASS}'
+      POSTGRES_DB: '${STAT_DB_NAME}'
+    ports:
+      - '${STAT_DB_PORT}:5432'
+    volumes:
+      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
 
   session:
     image: redis:6.2-alpine
@@ -183,3 +204,19 @@ services:
     ports:
       - 8020:8020
       - 8021:8021
+
+  stat:
+    restart: always
+    container_name: stat
+    networks:
+      - server-network
+    build:
+      context: .
+      dockerfile: dockerfiles/stat.Dockerfile
+    command: ./wait-4-postgres.sh db-stat ./stat
+    depends_on:
+      - db-stat
+    env_file: .env
+    ports:
+      - 8022:8022
+      - 8023:8023
