@@ -2,6 +2,7 @@ package register
 
 import (
 	"context"
+	"fmt"
 	"time"
 	"warehouseai/auth/adapter"
 	"warehouseai/auth/dataservice"
@@ -43,6 +44,15 @@ func RegisterVerify(
 	if dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Register verify user")
 		return nil, e.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)
+	}
+
+	fmt.Println(time.Now())
+	fmt.Println(existVerificationToken.ExpiresAt)
+
+	// Удаляем токен, если он протух. Пользователю нужно отправлять запрос еще раз.
+	if time.Now().After(existVerificationToken.ExpiresAt) {
+		verificationToken.Delete(map[string]interface{}{"id": existVerificationToken.ID})
+		return nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid or expired verification token.")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(existVerificationToken.Token), []byte(request.Token)); err != nil {

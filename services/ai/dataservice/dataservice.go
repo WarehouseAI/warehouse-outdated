@@ -7,18 +7,18 @@ import (
 )
 
 type AiInterface interface {
-	Create(token *m.AI) *e.DBError
-	Get(conditions map[string]interface{}) (*m.AI, *e.DBError)
-	GetMany(ids []string) (*[]m.AI, *e.DBError)
-	GetLike(field string, value string) (*[]m.AI, *e.DBError)
-	GetWithPreload(conditions map[string]interface{}, preload string) (*m.AI, *e.DBError)
-	Update(ai *m.AI, updatedFields map[string]interface{}) *e.DBError
+	Create(token *m.AiProduct) *e.DBError
+	Get(conditions map[string]interface{}) (*m.AiProduct, *e.DBError)
+	GetMany(ids []string) (*[]m.AiProduct, *e.DBError)
+	GetLike(field string, value string) (*[]m.AiProduct, *e.DBError)
+	GetWithPreload(conditions map[string]interface{}, preload string) (*m.AiProduct, *e.DBError)
+	Update(ai *m.AiProduct, updatedFields map[string]interface{}) *e.DBError
 }
 
 type CommandInterface interface {
-	Create(token *m.Command) *e.DBError
-	Get(conditions map[string]interface{}) (*m.Command, *e.DBError)
-	GetWithPreload(conditions map[string]interface{}, preload string) (*m.Command, *e.DBError)
+	Create(token *m.AiCommand) *e.DBError
+	Get(conditions map[string]interface{}) (*m.AiCommand, *e.DBError)
+	GetWithPreload(conditions map[string]interface{}, preload string) (*m.AiCommand, *e.DBError)
 }
 
 type PictureInterface interface {
@@ -27,9 +27,9 @@ type PictureInterface interface {
 }
 
 type RatingInterface interface {
-	Update(existRate *m.RatingPerUser, newRate int16) *e.DBError
+	Update(existRate *m.AiRate, newRate int16) *e.DBError
 	GetAverageAiRating(aiId string) (*float64, *e.DBError)
 	GetCountAiRating(aiId string) (*int64, *e.DBError)
-	Get(conditions map[string]interface{}) (*m.RatingPerUser, *e.DBError)
-	Add(rate *m.RatingPerUser) *e.DBError
+	Get(conditions map[string]interface{}) (*m.AiRate, *e.DBError)
+	Add(rate *m.AiRate) *e.DBError
 }

@@ -102,10 +102,8 @@ func Register(
 
 	// Store verification token
 	verificationTokenItem := m.VerificationToken{
-		UserId:    userId,
-		Token:     string(tokenHash),
-		ExpiresAt: time.Now().Add(time.Minute * 10),
-		CreatedAt: time.Now(),
+		UserId: userId,
+		Token:  string(tokenHash),
 	}
 
 	if err := tokenRepository.Create(&verificationTokenItem); err != nil {

@@ -60,10 +60,10 @@ func TestRatingSet(t *testing.T) {
 
 	aiMock.EXPECT().Get(map[string]interface{}{"id": request.AiId}).Return(nil, nil).Times(1)
 	ratingMock.EXPECT().Get(map[string]interface{}{"ai_id": request.AiId, "user_id": userId}).Return(nil, nil).Times(1)
-	ratingMock.EXPECT().Add(&m.RatingPerUser{
-		UserId: uuid.Must(uuid.FromString(userId)),
-		AiId:   uuid.Must(uuid.FromString(request.AiId)),
-		Rate:   request.Rate,
+	ratingMock.EXPECT().Add(&m.AiRate{
+		ByUserId: uuid.Must(uuid.FromString(userId)),
+		AiId:     uuid.Must(uuid.FromString(request.AiId)),
+		Rate:     request.Rate,
 	}).Return(nil).Times(1)
 
 	err := SetAiRating(userId, request, aiMock, ratingMock, logger)
@@ -81,11 +81,11 @@ func TestRatingUpdate(t *testing.T) {
 	userId := uuid.Must(uuid.NewV4())
 	request := SetAiRatingRequest{AiId: uuid.Must(uuid.NewV4()).String(), Rate: 4}
 
-	existRating := &m.RatingPerUser{
-		ID:     uuid.Must(uuid.NewV4()),
-		AiId:   uuid.Must(uuid.FromString(request.AiId)),
-		UserId: uuid.Must(uuid.NewV4()),
-		Rate:   5,
+	existRating := &m.AiRate{
+		ID:       0,
+		AiId:     uuid.Must(uuid.FromString(request.AiId)),
+		ByUserId: uuid.Must(uuid.NewV4()),
+		Rate:     5,
 	}
 
 	aiMock.EXPECT().Get(map[string]interface{}{"id": request.AiId}).Return(nil, nil).Times(1)

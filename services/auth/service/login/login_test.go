@@ -68,18 +68,18 @@ func TestLogin(t *testing.T) {
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte("12345678"), 12)
 	expUser := &gen.User{
-		Id:        uuid.Must(uuid.NewV4()).String(),
-		Firstname: "Firstname",
-		Lastname:  "Lastname",
-		Username:  "Username",
-		Password:  string(hash),
-		Email:     request.Email,
-		ViaGoogle: false,
-		Picture:   "",
-		Verified:  true,
-		Role:      "Base",
-		CreatedAt: time.Now().String(),
-		UpdatedAt: time.Now().String(),
+		Id:          uuid.Must(uuid.NewV4()).String(),
+		Firstname:   "Firstname",
+		Lastname:    "Lastname",
+		Username:    "Username",
+		Password:    string(hash),
+		Email:       request.Email,
+		ViaGoogle:   false,
+		Picture:     "",
+		Verified:    true,
+		IsDeveloper: false,
+		CreatedAt:   time.Now().String(),
+		UpdatedAt:   time.Now().String(),
 	}
 
 	sessionPayload := m.SessionPayload{
