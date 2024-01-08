@@ -58,6 +58,7 @@ services:
       - '${USERS_DB_PORT}:5432'
     volumes:
       - ./migrations/setup-users-db.sql:/docker-entrypoint-initdb.d/setup-users-db.sql
+      - ./migrations/setup-users-pub.sql:/docker-entrypoint-initdb.d/setup-users-pub.sql
 
   db-ai:
     image: postgres:14.10-alpine3.19
@@ -75,6 +76,7 @@ services:
       - '${AI_DB_PORT}:5432'
     volumes:
       - ./migrations/setup-ai-db.sql:/docker-entrypoint-initdb.d/setup-ai-db.sql
+      - ./migrations/setup-ai-pub.sql:/docker-entrypoint-initdb.d/setup-ai-pub.sql
 
   db-stat:
     image: postgres:14.1-alpine
@@ -94,7 +96,8 @@ services:
     ports:
       - '${STAT_DB_PORT}:5432'
     volumes:
-      - ./setup-db.sh:/docker-entrypoint-initdb.d/1-setup-db.sh
+      - ./migrations/setup-stat-db.sql:/docker-entrypoint-initdb.d/setup-stat-db.sql
+      - ./migrations/setup-stat-sub.sql:/docker-entrypoint-initdb.d/setup-stat-sub.sql
 
   session:
     image: redis:6.2-alpine
