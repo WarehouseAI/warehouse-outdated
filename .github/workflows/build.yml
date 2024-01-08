@@ -209,7 +209,7 @@ jobs:
   send-webhook:
     name: 📨Notify the backend server
     runs-on: ubuntu-22.04
-    needs: [build-auth, build-user, build-ai, build-mail]
+    needs: [build-auth, build-user, build-ai, build-mail, build-stat]
     steps:
       - uses: actions/checkout@v2
 
