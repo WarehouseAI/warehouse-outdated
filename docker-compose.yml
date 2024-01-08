@@ -54,7 +54,6 @@ services:
       POSTGRES_USER: '${USERS_DB_USER}'
       POSTGRES_PASSWORD: '${USERS_DB_PASS}'
       POSTGRES_DB: '${USERS_DB_NAME}'
-      POSTGRES_PUB_NAME: '${USERS_DB_PUB_NAME}'
     ports:
       - '${USERS_DB_PORT}:5432'
     volumes:
@@ -73,7 +72,6 @@ services:
       POSTGRES_USER: '${AI_DB_USER}'
       POSTGRES_PASSWORD: '${AI_DB_PASS}'
       POSTGRES_DB: '${AI_DB_NAME}'
-      POSTGRES_PUB_NAME: '${AI_DB_PUB_NAME}'
     ports:
       - '${AI_DB_PORT}:5432'
     volumes:

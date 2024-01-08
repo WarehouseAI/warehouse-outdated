@@ -1,6 +1,9 @@
 ALTER DATABASE stat_db SET timezone TO 'Europe/Moscow';
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+ALTER SYSTEM SET wal_level = logical;
+ALTER SYSTEM SET max_logical_replication_workers = 5;
+
 /*USERS DB*/
 
 CREATE TABLE IF NOT EXISTS users (
