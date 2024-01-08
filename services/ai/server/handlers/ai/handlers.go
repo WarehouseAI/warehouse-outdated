@@ -80,7 +80,7 @@ func (h *Handler) GetAIHandler(c *fiber.Ctx) error {
 	sessionId := c.Cookies("sessionId")
 
 	var existAi *ai.GetAiResponse
-	var svcErr *e.ErrorResponse
+	var svcErr *e.HttpErrorResponse
 
 	if sessionId == "" {
 		existAi, svcErr = ai.GetByIdPreload(aiId, h.DB, h.Logger)

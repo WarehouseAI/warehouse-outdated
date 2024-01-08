@@ -35,7 +35,7 @@ type CreateResponse struct {
 	AuthHeaderName    string `json:"auth_header_name"`
 }
 
-func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai dataservice.AiInterface, logger *logrus.Logger) (*CreateResponse, *e.ErrorResponse) {
+func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai dataservice.AiInterface, logger *logrus.Logger) (*CreateResponse, *e.HttpErrorResponse) {
 	key, err := generateToken(32)
 
 	if err != nil {
@@ -68,7 +68,7 @@ func CreateWithGeneratedKey(aiInfo *CreateWithoutKeyRequest, userId string, ai d
 	}, nil
 }
 
-func CreateWithOwnKey(aiInfo *CreateWithKeyRequest, userId string, ai dataservice.AiInterface, logger *logrus.Logger) (*CreateResponse, *e.ErrorResponse) {
+func CreateWithOwnKey(aiInfo *CreateWithKeyRequest, userId string, ai dataservice.AiInterface, logger *logrus.Logger) (*CreateResponse, *e.HttpErrorResponse) {
 	newAI := &m.AiProduct{
 		Name:              aiInfo.Name,
 		Description:       aiInfo.Description,

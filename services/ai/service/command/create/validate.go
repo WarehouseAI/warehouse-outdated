@@ -7,60 +7,146 @@ import (
 	m "warehouseai/ai/model"
 )
 
-func validateCreateRequest(request *CreateCommandRequest) *e.ErrorResponse {
+type rule func(field m.AiCommandField, fieldName string) error
+
+type validator struct {
+	rules []rule
+}
+
+func newValidator(rules []rule) validator {
+	return validator{
+		rules: rules,
+	}
+}
+
+func (v *validator) validateField(field m.AiCommandField, fieldName string) []error {
+	var errors []error
+
+	for _, rule := range v.rules {
+		if err := rule(field, fieldName); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	return errors
+}
+
+func validateRequest(request *CreateCommandRequest) *e.HttpErrorResponse {
+	v := newValidator([]rule{
+		validateFieldData(),
+		validateFieldRequirement(),
+		validateFieldType(),
+		validatePayloadCompability(request),
+		validateSelectionType(),
+		validateInputType(),
+		validateDefaultRequirement(),
+		validateFileDataIsNotDefault(),
+	})
+
 	for name, value := range request.Payload {
-		var fieldParameters m.CommandFieldParams
-		jsonData, err := json.Marshal(value)
+		var field m.AiCommandField
+		fieldJson, err := json.Marshal(value)
 
 		if err != nil {
 			return e.NewErrorResponse(e.HttpInternalError, err.Error())
 		}
 
-		if err := json.Unmarshal(jsonData, &fieldParameters); err != nil {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity, fmt.Sprintf(`Invalid decloration for "%s" field.`, name))
+		if err := json.Unmarshal(fieldJson, &field); err != nil {
+			return e.NewErrorResponse(e.HttpInternalError, err.Error())
 		}
 
-		// Валидирование типов
-		if valid := isValidFieldClass(string(fieldParameters.Class)); !valid {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity,
-				fmt.Sprintf(`Invalid class in "%s" field. Class "%s" does not exists.`, name, string(fieldParameters.Class)))
-		}
+		fmt.Println(name, field)
 
-		if valid := isValidDataType(string(fieldParameters.DataType)); !valid {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity,
-				fmt.Sprintf(`Invalid data_type in "%s" field. Data type "%s" does not exists.`, name, string(fieldParameters.Class)))
-		}
+		if errors := v.validateField(field, name); len(errors) != 0 {
+			var messages []string
 
-		// Если тип данных у полян не текст. тогда тип данных у запроса должен быть FormData
-		if fieldParameters.DataType == m.File && request.PayloadType == m.Json {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity,
-				"Invalid payload_type. If you want to send an image when executing commands - use FormData as payload_type.")
-		}
+			for _, err := range errors {
+				messages = append(messages, err.Error())
+			}
 
-		if fieldParameters.DataType == m.Object && request.PayloadType == m.FormData {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity,
-				`Invalid payload_type. If you want to use "object" data type - use JSON as payload_type.`)
+			return e.NewErrorResponseMultiple(e.HttpUnprocessableEntity, messages)
 		}
-
-		// Нельзя использовать классы "permanent" и "optional" для файлов
-		if fieldParameters.DataType == m.File && fieldParameters.Class != m.Free {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity,
-				fmt.Sprintf(`Invalid data_type in %s field. Fields with the data type "Image" must be "free" class.`, name))
-		}
-
-		// Для полей свободного класса нельзя добавить возможные значения
-		if fieldParameters.Class == m.Free && len(fieldParameters.Values) != 0 {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity,
-				fmt.Sprintf(`Invalid values for %s field. If you are using a free class for a field, leave the "values" field blank.`, name))
-		}
-
-		// Для полей перманентного класса нужно использовать только одно значение
-		if fieldParameters.Class == m.Permanent && len(fieldParameters.Values) != 1 {
-			return e.NewErrorResponse(e.HttpUnprocessableEntity,
-				fmt.Sprintf(`Invalid values for %s field. Only one value is used for permanent fields.`, name))
-		}
-
 	}
 
 	return nil
+}
+
+func validateFieldType() rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if field.Type != m.Input && field.Type != m.Selection {
+			return fmt.Errorf(`field "%s" has incorrect. Use input/selection in "type" parameter.`, fieldName)
+		}
+
+		return nil
+	}
+}
+
+func validateFieldRequirement() rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if field.Requirement != m.Default && field.Requirement != m.Require && field.Requirement != m.Optional {
+			return fmt.Errorf(`field "%s" is incorrect. Use default/require/optional in "requirement" parameter.`, fieldName)
+		}
+
+		return nil
+	}
+}
+
+func validateFieldData() rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if field.Data != m.Bool && field.Data != m.File && field.Data != m.Number && field.Data != m.Object && field.Data != m.String {
+			return fmt.Errorf(`field "%s" is incorrect. At now support string/number/file/bool/object in "data" parameter.`, fieldName)
+		}
+
+		return nil
+	}
+}
+
+func validatePayloadCompability(newCommand *CreateCommandRequest) rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if newCommand.PayloadType == m.Json && field.Data == m.File {
+			return fmt.Errorf(`field "%s" is incorrect. JSON payload type is not support files, use FormData instead.`, fieldName)
+		}
+
+		return nil
+	}
+}
+
+func validateSelectionType() rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if field.Type == m.Selection && len(field.Values) == 0 {
+			return fmt.Errorf(`field "%s" is incorrect. Add at least one value to be selected in the "values" parameter.`, fieldName)
+		}
+
+		return nil
+	}
+}
+
+func validateInputType() rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if field.Type == m.Input && len(field.Values) != 0 {
+			return fmt.Errorf(`field "%s" is incorrect. Do not provide a "values" parameter if the field type is "input".`, fieldName)
+		}
+
+		return nil
+	}
+}
+
+func validateDefaultRequirement() rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if field.Requirement == m.Default && len(field.Values) != 0 {
+			return fmt.Errorf(`field "%s" is incorrect. Add one standard value that will be added automatically when the request is submitted.`, fieldName)
+		}
+
+		return nil
+	}
+}
+
+func validateFileDataIsNotDefault() rule {
+	return func(field m.AiCommandField, fieldName string) error {
+		if field.Requirement == m.Default && field.Data == m.File {
+			return fmt.Errorf(`field "%s" is incorrect. The file data cannot be a "default" value.`, fieldName)
+		}
+
+		return nil
+	}
 }

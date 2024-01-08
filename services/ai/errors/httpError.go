@@ -16,9 +16,9 @@ const (
 )
 
 type (
-	ErrorResponse struct {
-		ErrorCode    int    `json:"error_code"`
-		ErrorMessage string `json:"err_msg"`
+	HttpErrorResponse struct {
+		ErrorCode    int      `json:"error_code"`
+		ErrorMessage []string `json:"err_msg"`
 	}
 )
 
@@ -29,16 +29,23 @@ var dbErrorMapper = map[DBErrorType]int{
 	DbSystem:   HttpInternalError,
 }
 
-func NewErrorResponseFromDBError(errorType DBErrorType, message string) *ErrorResponse {
-	return &ErrorResponse{
+func NewErrorResponseFromDBError(errorType DBErrorType, message string) *HttpErrorResponse {
+	return &HttpErrorResponse{
 		ErrorCode:    dbErrorMapper[errorType],
-		ErrorMessage: message,
+		ErrorMessage: []string{message},
 	}
 }
 
-func NewErrorResponse(errorType int, message string) *ErrorResponse {
-	return &ErrorResponse{
+func NewErrorResponse(errorType int, message string) *HttpErrorResponse {
+	return &HttpErrorResponse{
 		ErrorCode:    errorType,
-		ErrorMessage: message,
+		ErrorMessage: []string{message},
+	}
+}
+
+func NewErrorResponseMultiple(errorType int, messages []string) *HttpErrorResponse {
+	return &HttpErrorResponse{
+		ErrorCode:    errorType,
+		ErrorMessage: messages,
 	}
 }

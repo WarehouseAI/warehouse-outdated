@@ -32,10 +32,10 @@ type ExecuteCommandResponse struct {
 
 type makeRequestResponse struct {
 	payload *http.Response
-	err     *e.ErrorResponse
+	err     *e.HttpErrorResponse
 }
 
-func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, logger *logrus.Logger) (*ExecuteCommandResponse, *e.ErrorResponse) {
+func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, logger *logrus.Logger) (*ExecuteCommandResponse, *e.HttpErrorResponse) {
 	ai, dbErr := get.GetCommand(get.GetCommandRequest{AiID: uuid.Must(uuid.FromString(request.AiID)), Name: request.CommandName}, aiRepository, logger)
 
 	if dbErr != nil {
@@ -85,7 +85,7 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 	}
 
 	if err := updateUsageCount(ai.AI, aiRepository); err != nil {
-		return nil, e.NewErrorResponse(err.ErrorCode, err.ErrorMessage)
+		return nil, err
 	}
 
 	return &ExecuteCommandResponse{
@@ -95,7 +95,7 @@ func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, l
 	}, nil
 }
 
-func updateUsageCount(existAi *m.AiProduct, ai d.AiInterface) *e.ErrorResponse {
+func updateUsageCount(existAi *m.AiProduct, ai d.AiInterface) *e.HttpErrorResponse {
 	if err := ai.Update(existAi, map[string]interface{}{"used": existAi.Used + 1}); err != nil {
 		return e.NewErrorResponseFromDBError(err.ErrorType, err.Message)
 	}
@@ -103,7 +103,7 @@ func updateUsageCount(existAi *m.AiProduct, ai d.AiInterface) *e.ErrorResponse {
 	return nil
 }
 
-func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod string, headers map[string]string, body *bytes.Buffer) (*http.Response, *e.ErrorResponse) {
+func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod string, headers map[string]string, body *bytes.Buffer) (*http.Response, *e.HttpErrorResponse) {
 	httpClient := http.Client{}
 
 	url, err := url.Parse(fullUrl)
@@ -161,7 +161,7 @@ func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod stri
 }
 
 // по дефолту возвращаем заголово - ответ формата JSON
-func decodeHTTPResponse(response *http.Response, outputType string) (*bytes.Buffer, *map[string]string, *int, *e.ErrorResponse) {
+func decodeHTTPResponse(response *http.Response, outputType string) (*bytes.Buffer, *map[string]string, *int, *e.HttpErrorResponse) {
 	var buffer bytes.Buffer
 	headers := map[string]string{
 		"Content-Type": "application/json",

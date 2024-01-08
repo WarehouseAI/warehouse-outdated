@@ -12,7 +12,7 @@ import (
 )
 
 // Поддерживаем только формат "Text" в FormData
-func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, originPayload map[string]interface{}) (*bytes.Buffer, *string, *e.ErrorResponse) {
+func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, originPayload map[string]interface{}) (*bytes.Buffer, *string, *e.HttpErrorResponse) {
 	mediaType, params, err := mime.ParseMediaType(contentType)
 
 	if err != nil {
@@ -67,7 +67,7 @@ func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, origi
 	return &newBuffer, &boundary, nil
 }
 
-func validateJSONPayload(rawRequest *bytes.Buffer, originPayload map[string]interface{}) *e.ErrorResponse {
+func validateJSONPayload(rawRequest *bytes.Buffer, originPayload map[string]interface{}) *e.HttpErrorResponse {
 	jsonRequest := make(map[string]interface{})
 
 	if err := json.Unmarshal(rawRequest.Bytes(), &jsonRequest); err != nil {

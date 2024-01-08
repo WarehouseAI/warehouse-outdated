@@ -23,7 +23,7 @@ func GetAIRating(
 	aiRepository d.AiInterface,
 	ratingRepository d.RatingInterface,
 	logger *logrus.Logger,
-) (*GetAIRatingResponse, *e.ErrorResponse) {
+) (*GetAIRatingResponse, *e.HttpErrorResponse) {
 	if _, err := aiRepository.Get(map[string]interface{}{"id": request.AiId}); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Payload}).Info("Get AI rating")
 		return nil, e.NewErrorResponseFromDBError(err.ErrorType, err.Message)

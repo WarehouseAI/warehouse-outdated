@@ -27,7 +27,7 @@ func NewUserGrpcClient(grpcUrl string) *UserGrpcClient {
 	}
 }
 
-func (s *UserGrpcClient) GetFavorite(aiId string, userId string) (bool, *e.ErrorResponse) {
+func (s *UserGrpcClient) GetFavorite(aiId string, userId string) (bool, *e.HttpErrorResponse) {
 	client := gen.NewUserServiceClient(s.conn)
 
 	if _, err := client.GetFavorite(context.Background(), &gen.GetFavoriteRequest{UserId: userId, AiId: aiId}); err != nil {

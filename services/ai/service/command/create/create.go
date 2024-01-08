@@ -21,26 +21,8 @@ type CreateCommandRequest struct {
 	URL         string                 `json:"url"`
 }
 
-func isValidDataType(value string) bool {
-	switch m.DataType(value) {
-	case m.String, m.Bool, m.File, m.Number, m.Object:
-		return true
-	default:
-		return false
-	}
-}
-
-func isValidFieldClass(value string) bool {
-	switch m.FieldClass(value) {
-	case m.Permanent, m.Optional, m.Free:
-		return true
-	default:
-		return false
-	}
-}
-
-func CreateCommand(request *CreateCommandRequest, command dataservice.CommandInterface, logger *logrus.Logger) *e.ErrorResponse {
-	if err := validateCreateRequest(request); err != nil {
+func CreateCommand(request *CreateCommandRequest, command dataservice.CommandInterface, logger *logrus.Logger) *e.HttpErrorResponse {
+	if err := validateRequest(request); err != nil {
 		return err
 	}
 
@@ -57,6 +39,7 @@ func CreateCommand(request *CreateCommandRequest, command dataservice.CommandInt
 		UpdatedAt:   time.Now(),
 	}
 
+	// TODO: Пофиксить 500 ошибку на добавление команды к несуществующей нейронке
 	if dbErr := command.Create(newCommand); dbErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.Payload}).Info("Add new command to AI")
 		return e.NewErrorResponseFromDBError(dbErr.ErrorType, dbErr.Message)

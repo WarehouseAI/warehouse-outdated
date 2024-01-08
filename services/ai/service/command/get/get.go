@@ -22,7 +22,7 @@ type GetCommandResponse struct {
 	AuthHeaderName    string
 }
 
-func GetCommand(getRequest GetCommandRequest, aiProvider dataservice.AiInterface, logger *logrus.Logger) (*GetCommandResponse, *e.ErrorResponse) {
+func GetCommand(getRequest GetCommandRequest, aiProvider dataservice.AiInterface, logger *logrus.Logger) (*GetCommandResponse, *e.HttpErrorResponse) {
 	existAI, dbErr := aiProvider.GetWithPreload(map[string]interface{}{"id": getRequest.AiID}, "Commands")
 
 	if dbErr != nil {

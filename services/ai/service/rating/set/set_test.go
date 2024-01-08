@@ -24,7 +24,7 @@ func TestRatingValidateError(t *testing.T) {
 	cases := []struct {
 		name          string
 		request       *SetAiRatingRequest
-		expectedError *e.ErrorResponse
+		expectedError *e.HttpErrorResponse
 	}{
 		{
 			name:          "Rate greater than 5.",

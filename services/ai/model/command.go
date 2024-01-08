@@ -35,22 +35,29 @@ const (
 	Text  IOType = "Text"
 )
 
-type FieldClass string
+type FieldData string
 
 const (
-	Permanent FieldClass = "permanent"
-	Optional  FieldClass = "optional"
-	Free      FieldClass = "free"
+	String FieldData = "string"
+	Number FieldData = "number"
+	File   FieldData = "file"
+	Bool   FieldData = "bool"
+	Object FieldData = "object"
 )
 
-type DataType string
+type FieldType string
 
 const (
-	String DataType = "string"
-	Number DataType = "number"
-	File   DataType = "file"
-	Bool   DataType = "bool"
-	Object DataType = "object"
+	Input     FieldType = "input"
+	Selection FieldType = "selection"
+)
+
+type FieldRequirement string
+
+const (
+	Optional FieldRequirement = "optional"
+	Require  FieldRequirement = "require"
+	Default  FieldRequirement = "default"
 )
 
 type AiCommand struct {
@@ -67,8 +74,10 @@ type AiCommand struct {
 	UpdatedAt   time.Time         `json:"updated_at" gorm:"type:time"`
 }
 
-type CommandFieldParams struct {
-	Class    FieldClass    `json:"class"`
-	Values   []interface{} `json:"values"`
-	DataType DataType      `json:"data_type"`
+type AiCommandField struct {
+	Type        FieldType        `json:"type"`
+	Requirement FieldRequirement `json:"requirement"`
+	Description string           `json:"description"`
+	Data        FieldData        `json:"data"`
+	Values      []string         `json:"values;omitempty"`
 }
