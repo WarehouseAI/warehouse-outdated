@@ -84,6 +84,19 @@ func (d *Database) RawUpdate(userId string, updatedFields interface{}) (*m.User,
 	return &item, nil
 }
 
+func (d *Database) Update(userId string, newValues map[string]interface{}) *e.DBError {
+	// TODO: Добавить ошибку, что такого поля из newValues не существует, если её нет в модели пользователя
+	if err := d.DB.Model(&m.User{}).Where(map[string]interface{}{"id": userId}).Updates(newValues).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
+		}
+
+		return e.NewDBError(e.DbNotFound, "User not found.", err.Error())
+	}
+
+	return nil
+}
+
 func (d *Database) Delete(condition map[string]interface{}) *e.DBError {
 	var user m.User
 
