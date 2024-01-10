@@ -13,7 +13,7 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func (d *Database) Create(token *m.Command) *e.DBError {
+func (d *Database) Create(token *m.AiCommand) *e.DBError {
 	if err := d.DB.Create(token).Error; err != nil {
 		if isDuplicateKeyError(err) {
 			return e.NewDBError(e.DbExist, "Entity with this key/keys already exists.", err.Error())
@@ -25,8 +25,8 @@ func (d *Database) Create(token *m.Command) *e.DBError {
 	return nil
 }
 
-func (d *Database) Get(conditions map[string]interface{}) (*m.Command, *e.DBError) {
-	var cmd m.Command
+func (d *Database) Get(conditions map[string]interface{}) (*m.AiCommand, *e.DBError) {
+	var cmd m.AiCommand
 
 	if err := d.DB.Where(conditions).First(&cmd).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -39,8 +39,8 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.Command, *e.DBErro
 	return &cmd, nil
 }
 
-func (d *Database) GetWithPreload(conditions map[string]interface{}, preload string) (*m.Command, *e.DBError) {
-	var cmd m.Command
+func (d *Database) GetWithPreload(conditions map[string]interface{}, preload string) (*m.AiCommand, *e.DBError) {
+	var cmd m.AiCommand
 
 	result := d.DB.Where(conditions).Preload(preload).First(&cmd)
 

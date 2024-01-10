@@ -98,11 +98,8 @@ func SendResetEmail(req ResetAttemptRequest, resetToken dataservice.ResetTokenIn
 	}
 
 	newResetToken := &model.ResetToken{
-		ID:        uuid.Must(uuid.NewV4()),
-		UserId:    uuid.FromStringOrNil(existUser.Id),
-		Token:     string(hash),
-		ExpiresAt: time.Now().Add(time.Minute * 5),
-		CreatedAt: time.Now(),
+		UserId: uuid.FromStringOrNil(existUser.Id),
+		Token:  string(hash),
 	}
 
 	if err := resetToken.Create(newResetToken); err != nil {

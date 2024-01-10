@@ -41,7 +41,7 @@ func (m *MockAiInterface) EXPECT() *MockAiInterfaceMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockAiInterface) Create(token *model.AI) *errors.DBError {
+func (m *MockAiInterface) Create(token *model.AiProduct) *errors.DBError {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", token)
 	ret0, _ := ret[0].(*errors.DBError)
@@ -55,10 +55,10 @@ func (mr *MockAiInterfaceMockRecorder) Create(token any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockAiInterface) Get(conditions map[string]any) (*model.AI, *errors.DBError) {
+func (m *MockAiInterface) Get(conditions map[string]any) (*model.AiProduct, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", conditions)
-	ret0, _ := ret[0].(*model.AI)
+	ret0, _ := ret[0].(*model.AiProduct)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }
@@ -70,10 +70,10 @@ func (mr *MockAiInterfaceMockRecorder) Get(conditions any) *gomock.Call {
 }
 
 // GetLike mocks base method.
-func (m *MockAiInterface) GetLike(field, value string) (*[]model.AI, *errors.DBError) {
+func (m *MockAiInterface) GetLike(field, value string) (*[]model.AiProduct, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLike", field, value)
-	ret0, _ := ret[0].(*[]model.AI)
+	ret0, _ := ret[0].(*[]model.AiProduct)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }
@@ -85,10 +85,10 @@ func (mr *MockAiInterfaceMockRecorder) GetLike(field, value any) *gomock.Call {
 }
 
 // GetMany mocks base method.
-func (m *MockAiInterface) GetMany(ids []string) (*[]model.AI, *errors.DBError) {
+func (m *MockAiInterface) GetMany(ids []string) (*[]model.AiProduct, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMany", ids)
-	ret0, _ := ret[0].(*[]model.AI)
+	ret0, _ := ret[0].(*[]model.AiProduct)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }
@@ -100,10 +100,10 @@ func (mr *MockAiInterfaceMockRecorder) GetMany(ids any) *gomock.Call {
 }
 
 // GetWithPreload mocks base method.
-func (m *MockAiInterface) GetWithPreload(conditions map[string]any, preload string) (*model.AI, *errors.DBError) {
+func (m *MockAiInterface) GetWithPreload(conditions map[string]any, preload string) (*model.AiProduct, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithPreload", conditions, preload)
-	ret0, _ := ret[0].(*model.AI)
+	ret0, _ := ret[0].(*model.AiProduct)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }
@@ -115,7 +115,7 @@ func (mr *MockAiInterfaceMockRecorder) GetWithPreload(conditions, preload any) *
 }
 
 // Update mocks base method.
-func (m *MockAiInterface) Update(ai *model.AI, updatedFields map[string]any) *errors.DBError {
+func (m *MockAiInterface) Update(ai *model.AiProduct, updatedFields map[string]any) *errors.DBError {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ai, updatedFields)
 	ret0, _ := ret[0].(*errors.DBError)
@@ -152,7 +152,7 @@ func (m *MockCommandInterface) EXPECT() *MockCommandInterfaceMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockCommandInterface) Create(token *model.Command) *errors.DBError {
+func (m *MockCommandInterface) Create(token *model.AiCommand) *errors.DBError {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", token)
 	ret0, _ := ret[0].(*errors.DBError)
@@ -166,10 +166,10 @@ func (mr *MockCommandInterfaceMockRecorder) Create(token any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockCommandInterface) Get(conditions map[string]any) (*model.Command, *errors.DBError) {
+func (m *MockCommandInterface) Get(conditions map[string]any) (*model.AiCommand, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", conditions)
-	ret0, _ := ret[0].(*model.Command)
+	ret0, _ := ret[0].(*model.AiCommand)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }
@@ -181,10 +181,10 @@ func (mr *MockCommandInterfaceMockRecorder) Get(conditions any) *gomock.Call {
 }
 
 // GetWithPreload mocks base method.
-func (m *MockCommandInterface) GetWithPreload(conditions map[string]any, preload string) (*model.Command, *errors.DBError) {
+func (m *MockCommandInterface) GetWithPreload(conditions map[string]any, preload string) (*model.AiCommand, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithPreload", conditions, preload)
-	ret0, _ := ret[0].(*model.Command)
+	ret0, _ := ret[0].(*model.AiCommand)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }
@@ -271,7 +271,7 @@ func (m *MockRatingInterface) EXPECT() *MockRatingInterfaceMockRecorder {
 }
 
 // Add mocks base method.
-func (m *MockRatingInterface) Add(rate *model.RatingPerUser) *errors.DBError {
+func (m *MockRatingInterface) Add(rate *model.AiRate) *errors.DBError {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", rate)
 	ret0, _ := ret[0].(*errors.DBError)
@@ -285,10 +285,10 @@ func (mr *MockRatingInterfaceMockRecorder) Add(rate any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockRatingInterface) Get(conditions map[string]any) (*model.RatingPerUser, *errors.DBError) {
+func (m *MockRatingInterface) Get(conditions map[string]any) (*model.AiRate, *errors.DBError) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", conditions)
-	ret0, _ := ret[0].(*model.RatingPerUser)
+	ret0, _ := ret[0].(*model.AiRate)
 	ret1, _ := ret[1].(*errors.DBError)
 	return ret0, ret1
 }
@@ -330,7 +330,7 @@ func (mr *MockRatingInterfaceMockRecorder) GetCountAiRating(aiId any) *gomock.Ca
 }
 
 // Update mocks base method.
-func (m *MockRatingInterface) Update(existRate *model.RatingPerUser, newRate int16) *errors.DBError {
+func (m *MockRatingInterface) Update(existRate *model.AiRate, newRate int16) *errors.DBError {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", existRate, newRate)
 	ret0, _ := ret[0].(*errors.DBError)

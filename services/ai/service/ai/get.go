@@ -11,11 +11,11 @@ import (
 )
 
 type GetAiResponse struct {
-	m.AI
+	m.AiProduct
 	IsFavorite bool `json:"is_favorite"`
 }
 
-func GetById(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*m.AI, *e.ErrorResponse) {
+func GetById(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*m.AiProduct, *e.ErrorResponse) {
 	existAI, dbErr := ai.Get(map[string]interface{}{"id": id})
 
 	if dbErr != nil {
@@ -26,7 +26,7 @@ func GetById(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*m.A
 	return existAI, nil
 }
 
-func GetManyById(ids []string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AI, *e.ErrorResponse) {
+func GetManyById(ids []string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AiProduct, *e.ErrorResponse) {
 	existAis, dbErr := ai.GetMany(ids)
 
 	if dbErr != nil {
@@ -37,7 +37,7 @@ func GetManyById(ids []string, ai dataservice.AiInterface, logger *logrus.Logger
 	return existAis, nil
 }
 
-func GetLike(field string, value string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AI, *e.ErrorResponse) {
+func GetLike(field string, value string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AiProduct, *e.ErrorResponse) {
 	if field == "auth_scheme" || field == "api_key" {
 		return nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid parameters")
 	}

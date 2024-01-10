@@ -2,8 +2,6 @@ package tokendata
 
 import (
 	"errors"
-	"fmt"
-	"time"
 	e "warehouseai/auth/errors"
 	m "warehouseai/auth/model"
 
@@ -55,25 +53,6 @@ func (d *Database[T]) Delete(condition map[string]interface{}) *e.DBError {
 	}
 
 	return nil
-}
-
-func (d *Database[T]) Flusher(duration time.Duration) func() {
-	var items []T
-
-	ticker := time.NewTicker(duration)
-	done := make(chan bool)
-
-	return func() {
-		for {
-			select {
-			case <-done:
-				return
-			case <-ticker.C:
-				err := d.DB.Where("expires_at < ?", time.Now()).Delete(&items).Error
-				fmt.Println(err)
-			}
-		}
-	}
 }
 
 func isDuplicateKeyError(err error) bool {

@@ -7,7 +7,6 @@ import (
 	"warehouseai/ai/dataservice/commanddata"
 	"warehouseai/ai/dataservice/picturedata"
 	"warehouseai/ai/dataservice/ratingdata"
-	"warehouseai/ai/model"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -27,8 +26,6 @@ func NewAiDatabase() *aidata.Database {
 		panic(err)
 	}
 
-	db.AutoMigrate(&model.AI{})
-
 	return &aidata.Database{DB: db}
 }
 
@@ -42,8 +39,6 @@ func NewCommandDatabase() *commanddata.Database {
 		panic(err)
 	}
 
-	db.AutoMigrate(&model.Command{})
-
 	return &commanddata.Database{DB: db}
 }
 
@@ -56,8 +51,6 @@ func NewRatingDatabase() *ratingdata.Database {
 		fmt.Println("❌Failed to connect to the database.")
 		panic(err)
 	}
-
-	db.AutoMigrate(&model.RatingPerUser{})
 
 	return &ratingdata.Database{DB: db}
 }

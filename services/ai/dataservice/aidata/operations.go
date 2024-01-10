@@ -15,7 +15,7 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func (d *Database) Create(ai *m.AI) *e.DBError {
+func (d *Database) Create(ai *m.AiProduct) *e.DBError {
 	if err := d.DB.Create(ai).Error; err != nil {
 		if isDuplicateKeyError(err) {
 			return e.NewDBError(e.DbExist, "AI with this key/keys already exists.", err.Error())
@@ -27,8 +27,8 @@ func (d *Database) Create(ai *m.AI) *e.DBError {
 	return nil
 }
 
-func (d *Database) Get(conditions map[string]interface{}) (*m.AI, *e.DBError) {
-	var ai m.AI
+func (d *Database) Get(conditions map[string]interface{}) (*m.AiProduct, *e.DBError) {
+	var ai m.AiProduct
 
 	if err := d.DB.Where(conditions).First(&ai).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -41,8 +41,8 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.AI, *e.DBError) {
 	return &ai, nil
 }
 
-func (d *Database) GetWithPreload(conditions map[string]interface{}, preload string) (*m.AI, *e.DBError) {
-	var ai m.AI
+func (d *Database) GetWithPreload(conditions map[string]interface{}, preload string) (*m.AiProduct, *e.DBError) {
+	var ai m.AiProduct
 
 	if err := d.DB.Where(conditions).Preload(preload).First(&ai).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -55,8 +55,8 @@ func (d *Database) GetWithPreload(conditions map[string]interface{}, preload str
 	return &ai, nil
 }
 
-func (d *Database) GetMany(ids []string) (*[]m.AI, *e.DBError) {
-	var ais []m.AI
+func (d *Database) GetMany(ids []string) (*[]m.AiProduct, *e.DBError) {
+	var ais []m.AiProduct
 
 	if err := d.DB.Where("id IN ?", ids).Preload("Commands").Find(&ais).Error; err != nil {
 		return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
@@ -69,8 +69,8 @@ func (d *Database) GetMany(ids []string) (*[]m.AI, *e.DBError) {
 	return &ais, nil
 }
 
-func (d *Database) GetLike(field string, value string) (*[]m.AI, *e.DBError) {
-	var ais []m.AI
+func (d *Database) GetLike(field string, value string) (*[]m.AiProduct, *e.DBError) {
+	var ais []m.AiProduct
 
 	if err := d.DB.Where(fmt.Sprintf("LOWER(%s) LIKE ?", field), strings.ToLower(value)).Preload("Commands").Find(&ais).Error; err != nil {
 		if !isFieldNotFoundError(err) {
@@ -83,7 +83,7 @@ func (d *Database) GetLike(field string, value string) (*[]m.AI, *e.DBError) {
 	return &ais, nil
 }
 
-func (d *Database) Update(ai *m.AI, updatedFields map[string]interface{}) *e.DBError {
+func (d *Database) Update(ai *m.AiProduct, updatedFields map[string]interface{}) *e.DBError {
 	if err := d.DB.Model(ai).Updates(updatedFields).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())

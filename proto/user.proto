@@ -10,7 +10,7 @@ message User {
   string email = 6;
   bool via_google = 7 [json_name="via_google"];
   bool verified = 8;
-  string role = 9;
+  bool is_developer = 9;
   string created_at = 10 [json_name="created_at"];
   string updated_at = 11 [json_name="updated_at"];
   string password = 12;

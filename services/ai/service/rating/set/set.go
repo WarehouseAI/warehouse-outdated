@@ -51,10 +51,10 @@ func SetAiRating(userId string, request SetAiRatingRequest, aiRepository d.AiInt
 		return nil
 	}
 
-	newRate := model.RatingPerUser{
-		UserId: uuid.Must(uuid.FromString(userId)),
-		AiId:   uuid.Must(uuid.FromString(request.AiId)),
-		Rate:   request.Rate,
+	newRate := model.AiRate{
+		ByUserId: uuid.Must(uuid.FromString(userId)),
+		AiId:     uuid.Must(uuid.FromString(request.AiId)),
+		Rate:     request.Rate,
 	}
 
 	if err := ratingRepository.Add(&newRate); err != nil {
