@@ -24,7 +24,7 @@ func (h *Handler) CreateCommandHandler(c *fiber.Ctx) error {
 	var commandCreds create.CreateCommandRequest
 
 	if err := c.BodyParser(&commandCreds); err != nil {
-		response := e.NewErrorResponse(e.HttpBadRequest, "Invalid request body.")
+		response := e.NewErrorResponse(e.HttpBadRequest, err.Error())
 		return c.Status(response.ErrorCode).JSON(response)
 	}
 

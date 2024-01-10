@@ -57,7 +57,6 @@ type FieldRequirement string
 const (
 	Optional FieldRequirement = "optional"
 	Require  FieldRequirement = "require"
-	Default  FieldRequirement = "default"
 )
 
 type AiCommand struct {
@@ -79,5 +78,5 @@ type AiCommandField struct {
 	Requirement FieldRequirement `json:"requirement"`
 	Description string           `json:"description"`
 	Data        FieldData        `json:"data"`
-	Values      []string         `json:"values;omitempty"`
+	Values      []interface{}    `json:"values"`
 }

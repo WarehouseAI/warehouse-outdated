@@ -39,7 +39,11 @@ func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, origi
 			return nil, nil, e.NewErrorResponse(e.HttpInternalError, err.Error())
 		}
 
-		if _, found := originPayload[part.FormName()]; !found {
+		fieldDeclaration, found := originPayload[part.FormName()]
+
+		json.Marshal(fieldDeclaration)
+
+		if !found {
 			return nil, nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid command payload.")
 		}
 
@@ -65,20 +69,4 @@ func validateFormDataPayload(contentType string, rawRequest *bytes.Buffer, origi
 	boundary := writer.FormDataContentType()
 
 	return &newBuffer, &boundary, nil
-}
-
-func validateJSONPayload(rawRequest *bytes.Buffer, originPayload map[string]interface{}) *e.HttpErrorResponse {
-	jsonRequest := make(map[string]interface{})
-
-	if err := json.Unmarshal(rawRequest.Bytes(), &jsonRequest); err != nil {
-		return e.NewErrorResponse(e.HttpInternalError, err.Error())
-	}
-
-	for key := range jsonRequest {
-		if _, found := originPayload[key]; !found {
-			return e.NewErrorResponse(e.HttpBadRequest, "Invalid command payload.")
-		}
-	}
-
-	return nil
 }
