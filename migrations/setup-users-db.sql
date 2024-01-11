@@ -1,6 +1,8 @@
 ALTER DATABASE users_db SET timezone TO 'Europe/Moscow';
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+ALTER SYSTEM SET wal_level = logical;
+
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   firstname VARCHAR(255) NOT NULL,

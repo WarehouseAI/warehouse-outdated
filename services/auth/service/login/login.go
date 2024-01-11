@@ -2,6 +2,7 @@ package login
 
 import (
 	"context"
+	"fmt"
 	"net/mail"
 	"time"
 	"warehouseai/auth/adapter"
@@ -48,6 +49,7 @@ func Login(req *LoginRequest, user adapter.UserGrpcInterface, session dataservic
 
 	if err := bcrypt.CompareHashAndPassword([]byte(existUser.Password), []byte(req.Password)); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Login user")
+		fmt.Println(err.Error())
 		return nil, nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid credentials")
 	}
 
