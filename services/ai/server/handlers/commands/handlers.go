@@ -1,13 +1,15 @@
 package commands
 
 import (
-	"fmt"
+	"mime/multipart"
 	"warehouseai/ai/adapter/grpc/client/auth"
 	"warehouseai/ai/dataservice/aidata"
 	"warehouseai/ai/dataservice/commanddata"
 	e "warehouseai/ai/errors"
+	m "warehouseai/ai/model"
 	"warehouseai/ai/service/command/create"
 	"warehouseai/ai/service/command/execute"
+	"warehouseai/ai/service/command/get"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -35,28 +37,68 @@ func (h *Handler) CreateCommandHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusCreated)
 }
 
+// Решил логику определения типа запроса для корректного парсинга перенести сюда.
+// Все таки она не относится к бизнес-логике, а скорее к логике обработки запросов, и код в общем становится чище.
 func (h *Handler) ExecuteCommandHandler(c *fiber.Ctx) error {
 	aiID := c.Query("ai_id")
 	commandName := c.Query("command_name")
 
-	fmt.Println(c.IP())
-
-	request := execute.ExecuteCommandRequest{
-		AiID:        aiID,
-		CommandName: commandName,
-		Raw:         c.Request().Body(),
-		ContentType: c.Get("Content-Type"),
-	}
-
-	response, err := execute.ExecuteCommand(request, h.AiDB, h.Logger)
+	existCommandInfo, err := get.GetCommand(get.GetCommandRequest{AiID: aiID, Name: commandName}, h.AiDB, h.Logger)
 
 	if err != nil {
-		return c.Status(err.ErrorCode).JSON(err)
+		c.Status(err.ErrorCode).JSON(err)
 	}
 
-	for key, value := range response.Headers {
-		c.Response().Header.Add(key, value)
-	}
+	if existCommandInfo.Command.PayloadType == string(m.FormData) {
+		formPayload, err := c.MultipartForm()
 
-	return c.Status(response.Status).Send(response.Raw.Bytes())
+		if err != nil {
+			resp := e.NewErrorResponse(e.HttpInternalError, err.Error())
+			return c.Status(resp.ErrorCode).JSON(resp.ErrorMessage)
+		}
+
+		boundary := string(c.Request().Header.MultipartFormBoundary())
+		request := execute.ExecuteCommandRequest[*multipart.Form]{
+			AI:      existCommandInfo.AI,
+			Command: existCommandInfo.Command,
+			Payload: formPayload,
+		}
+
+		resp, exeErr := execute.ExecuteFormCommand(request, boundary, h.AiDB, h.Logger)
+
+		if exeErr != nil {
+			return c.Status(exeErr.ErrorCode).JSON(exeErr)
+		}
+
+		for key, value := range resp.Headers {
+			c.Response().Header.Add(key, value)
+		}
+
+		return c.Status(resp.Status).Send(resp.Raw.Bytes())
+	} else {
+		var jsonPayload map[string]interface{}
+
+		if err := c.BodyParser(&jsonPayload); err != nil {
+			resp := e.NewErrorResponse(e.HttpInternalError, err.Error())
+			return c.Status(resp.ErrorCode).JSON(resp.ErrorMessage)
+		}
+
+		request := execute.ExecuteCommandRequest[map[string]interface{}]{
+			AI:      existCommandInfo.AI,
+			Command: existCommandInfo.Command,
+			Payload: jsonPayload,
+		}
+
+		resp, exeErr := execute.ExecuteJSONCommand(request, h.AiDB, h.Logger)
+
+		if exeErr != nil {
+			return c.Status(exeErr.ErrorCode).JSON(exeErr)
+		}
+
+		for key, value := range resp.Headers {
+			c.Response().Header.Add(key, value)
+		}
+
+		return c.Status(resp.Status).Send(resp.Raw.Bytes())
+	}
 }

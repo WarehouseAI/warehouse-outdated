@@ -118,16 +118,18 @@ func validatePayloadCompability(newCommand *CreateCommandRequest) rule {
 			return fmt.Errorf(`field "%s" is incorrect. JSON payload type is not support files, use FormData instead.`, fieldName)
 		}
 
+		if newCommand.PayloadType == m.FormData && field.Data == m.Object {
+			return fmt.Errorf(`field "%s" is incorrect. FormData payload type is not support JSON Objects, use JSON instead.`, fieldName)
+		}
+
 		return nil
 	}
 }
 
 func validateSelectionType() rule {
 	return func(field m.AiCommandField, fieldName string) error {
-		if field.Type == m.Selection {
-			if len(field.Values) == 0 {
-				return fmt.Errorf(`field "%s" is incorrect. Add at least one value to be selected in the "values" parameter.`, fieldName)
-			}
+		if field.Type == m.Selection && len(field.Values) == 0 {
+			return fmt.Errorf(`field "%s" is incorrect. Add at least one value to be selected in the "values" parameter.`, fieldName)
 		}
 
 		return nil

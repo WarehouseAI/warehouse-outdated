@@ -3,7 +3,10 @@ package execute
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,17 +14,14 @@ import (
 	d "warehouseai/ai/dataservice"
 	e "warehouseai/ai/errors"
 	m "warehouseai/ai/model"
-	"warehouseai/ai/service/command/get"
 
-	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-type ExecuteCommandRequest struct {
-	AiID        string
-	CommandName string
-	Raw         []byte
-	ContentType string
+type ExecuteCommandRequest[T *multipart.Form | map[string]interface{}] struct {
+	AI      *m.AiProduct
+	Command *m.AiCommand
+	Payload T
 }
 
 type ExecuteCommandResponse struct {
@@ -35,56 +35,120 @@ type makeRequestResponse struct {
 	err     *e.HttpErrorResponse
 }
 
-func ExecuteCommand(request ExecuteCommandRequest, aiRepository d.AiInterface, logger *logrus.Logger) (*ExecuteCommandResponse, *e.HttpErrorResponse) {
-	ai, dbErr := get.GetCommand(get.GetCommandRequest{AiID: uuid.Must(uuid.FromString(request.AiID)), Name: request.CommandName}, aiRepository, logger)
+func ExecuteJSONCommand(
+	request ExecuteCommandRequest[map[string]interface{}],
+	aiRepository d.AiInterface,
+	logger *logrus.Logger,
+) (*ExecuteCommandResponse, *e.HttpErrorResponse) {
+	if err := validateJSONPayload(&request); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Execute Command")
+		return nil, err
+	}
 
-	if dbErr != nil {
-		logger.WithFields(logrus.Fields{"time": time.Now(), "error": dbErr.ErrorMessage}).Info("Execute Command")
-		return nil, dbErr
+	headers := make(map[string]string)
+	headers["Content-Type"] = "application/json"
+	headers[request.AI.AuthHeaderName] = request.AI.AuthHeaderContent
+
+	var buffer bytes.Buffer
+
+	if err := json.NewEncoder(&buffer).Encode(request.Payload); err != nil {
+		return nil, e.NewErrorResponse(e.HttpInternalError, fmt.Sprintf("Error encoding map to JSON: %s", err))
 	}
 
 	executeCtx := context.Background()
-	body := bytes.NewBuffer(request.Raw)
-	headers := make(map[string]string)
-
-	if ai.Command.PayloadType == string(m.FormData) {
-		newBody, boundary, err := validateFormDataPayload(request.ContentType, body, ai.Command.Payload)
-
-		if err != nil {
-			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Execute Command")
-			return nil, err
-		}
-
-		headers["Content-Type"] = *boundary
-		headers[ai.AuthHeaderName] = ai.AuthHeaderContent
-		body = newBody
-	}
-
-	if ai.Command.PayloadType == string(m.Json) {
-		if err := validateJSONPayload(body, ai.Command.Payload); err != nil {
-			logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Execute Command")
-			return nil, err
-		}
-
-		headers["Content-Type"] = "application/json"
-		headers[ai.AuthHeaderName] = ai.AuthHeaderContent
-	}
-
-	reqResponse, reqErr := makeHTTPRequest(executeCtx, ai.Command.URL, string(ai.Command.RequestType), headers, body)
+	reqResponse, reqErr := makeHTTPRequest(executeCtx, request.Command.URL, request.Command.RequestType, headers, &buffer)
 
 	if reqErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": reqErr.ErrorMessage}).Info("Execute Command")
 		return nil, reqErr
 	}
 
-	cmdResponse, responseHeaders, responseStatus, decErr := decodeHTTPResponse(reqResponse, ai.Command.OutputType)
+	cmdResponse, responseHeaders, responseStatus, decErr := decodeHTTPResponse(reqResponse, request.Command.OutputType)
 
 	if decErr != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": decErr.ErrorMessage}).Info("Execute Command")
 		return nil, decErr
 	}
 
-	if err := updateUsageCount(ai.AI, aiRepository); err != nil {
+	if err := updateUsageCount(request.AI, aiRepository); err != nil {
+		return nil, err
+	}
+
+	return &ExecuteCommandResponse{
+		Raw:     cmdResponse,
+		Headers: *responseHeaders,
+		Status:  *responseStatus,
+	}, nil
+}
+
+func ExecuteFormCommand(
+	request ExecuteCommandRequest[*multipart.Form],
+	boundary string,
+	aiRepository d.AiInterface,
+	logger *logrus.Logger,
+) (*ExecuteCommandResponse, *e.HttpErrorResponse) {
+	if err := validateFormDataPayload(&request); err != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.ErrorMessage}).Info("Execute Command")
+		return nil, err
+	}
+
+	headers := make(map[string]string)
+	headers["Content-Type"] = fmt.Sprintf("multipart/form-data; boundary=%s", boundary)
+	headers[request.AI.AuthHeaderName] = request.AI.AuthHeaderContent
+
+	// Конвертим mutlipart/form-data в буффер
+	var buffer bytes.Buffer
+	writer := multipart.NewWriter(&buffer)
+
+	// Iterate over the form fields and add them to the writer
+	for fieldName, fieldValues := range request.Payload.Value {
+		for _, fieldValue := range fieldValues {
+			writer.WriteField(fieldName, fieldValue)
+		}
+	}
+
+	// Iterate over the form files and add them to the writer
+	for fieldName, fileHeaders := range request.Payload.File {
+		for _, fileHeader := range fileHeaders {
+			fileWriter, err := writer.CreateFormFile(fieldName, fileHeader.Filename)
+			if err != nil {
+				logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute Command")
+				return nil, e.NewErrorResponse(e.HttpInternalError, fmt.Sprintf("Error creating form file: %s", err))
+			}
+
+			// Open the file and copy its content to the form
+			file, err := fileHeader.Open()
+			if err != nil {
+				logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute Command")
+				return nil, e.NewErrorResponse(e.HttpInternalError, fmt.Sprintf("Error opening file: %s", err))
+			}
+			defer file.Close()
+
+			_, err = io.Copy(fileWriter, file)
+			if err != nil {
+				logger.WithFields(logrus.Fields{"time": time.Now(), "error": err.Error()}).Info("Execute Command")
+				return nil, e.NewErrorResponse(e.HttpInternalError, fmt.Sprintf("Error copying file: %s", err))
+			}
+		}
+	}
+
+	writer.Close()
+	executeCtx := context.Background()
+	reqResponse, reqErr := makeHTTPRequest(executeCtx, request.Command.URL, request.Command.RequestType, headers, &buffer)
+
+	if reqErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": reqErr.ErrorMessage}).Info("Execute Command")
+		return nil, reqErr
+	}
+
+	cmdResponse, responseHeaders, responseStatus, decErr := decodeHTTPResponse(reqResponse, request.Command.OutputType)
+
+	if decErr != nil {
+		logger.WithFields(logrus.Fields{"time": time.Now(), "error": decErr.ErrorMessage}).Info("Execute Command")
+		return nil, decErr
+	}
+
+	if err := updateUsageCount(request.AI, aiRepository); err != nil {
 		return nil, err
 	}
 
@@ -160,7 +224,7 @@ func makeHTTPRequest(executeCtx context.Context, fullUrl string, httpMethod stri
 	}
 }
 
-// по дефолту возвращаем заголово - ответ формата JSON
+// по дефолту возвращаем заголовок - ответ формата JSON
 func decodeHTTPResponse(response *http.Response, outputType string) (*bytes.Buffer, *map[string]string, *int, *e.HttpErrorResponse) {
 	var buffer bytes.Buffer
 	headers := map[string]string{
