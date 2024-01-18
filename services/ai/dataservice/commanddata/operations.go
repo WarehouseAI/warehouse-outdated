@@ -1,7 +1,6 @@
 package commanddata
 
 import (
-	"errors"
 	e "warehouseai/ai/errors"
 	m "warehouseai/ai/model"
 
@@ -13,13 +12,31 @@ type Database struct {
 	DB *gorm.DB
 }
 
+func (d *Database) errorHandle(err error) *e.DBError {
+	if err == nil {
+		return nil
+	}
+
+	pgErr, ok := err.(*pgconn.PgError)
+	if ok {
+		switch pgErr.Code {
+		case "23505":
+			return e.NewDBError(e.DbExist, "Entity with this key/keys already exists.", err.Error())
+
+		case "23503":
+			return e.NewDBError(e.DbNotFound, "Invalid key id", err.Error())
+
+		case "20000":
+			return e.NewDBError(e.DbNotFound, "Entity not found", err.Error())
+		}
+	}
+
+	return e.NewDBError(e.DbSystem, "Something went wrong", err.Error())
+}
+
 func (d *Database) Create(token *m.AiCommand) *e.DBError {
 	if err := d.DB.Create(token).Error; err != nil {
-		if isDuplicateKeyError(err) {
-			return e.NewDBError(e.DbExist, "Entity with this key/keys already exists.", err.Error())
-		} else {
-			return e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
-		}
+		return d.errorHandle(err)
 	}
 
 	return nil
@@ -29,11 +46,7 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.AiCommand, *e.DBEr
 	var cmd m.AiCommand
 
 	if err := d.DB.Where(conditions).First(&cmd).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", err.Error())
-		}
-
-		return nil, e.NewDBError(e.DbNotFound, "Entity not found.", err.Error())
+		return nil, d.errorHandle(err)
 	}
 
 	return &cmd, nil
@@ -42,25 +55,9 @@ func (d *Database) Get(conditions map[string]interface{}) (*m.AiCommand, *e.DBEr
 func (d *Database) GetWithPreload(conditions map[string]interface{}, preload string) (*m.AiCommand, *e.DBError) {
 	var cmd m.AiCommand
 
-	result := d.DB.Where(conditions).Preload(preload).First(&cmd)
-
-	if result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, e.NewDBError(e.DbSystem, "Something went wrong.", result.Error.Error())
-		}
-
-		return nil, e.NewDBError(e.DbNotFound, "Entity not found.", result.Error.Error())
+	if err := d.DB.Where(conditions).Preload(preload).First(&cmd).Error; err != nil {
+		return nil, d.errorHandle(err)
 	}
 
 	return &cmd, nil
-}
-
-func isDuplicateKeyError(err error) bool {
-	pgErr, ok := err.(*pgconn.PgError)
-	if ok {
-		// unique_violation = 23505
-		return pgErr.Code == "23505"
-
-	}
-	return false
 }
