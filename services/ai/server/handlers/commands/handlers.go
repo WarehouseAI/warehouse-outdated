@@ -37,7 +37,7 @@ func (h *Handler) CreateCommandHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusCreated)
 }
 
-// Решил логику определения типа запроса для корректного парсинга перенести сюда.
+// Решил логику определения типа запроса, для корректного парсинга, перенести сюда.
 // Все таки она не относится к бизнес-логике, а скорее к логике обработки запросов, и код в общем становится чище.
 func (h *Handler) ExecuteCommandHandler(c *fiber.Ctx) error {
 	aiID := c.Query("ai_id")
@@ -46,7 +46,7 @@ func (h *Handler) ExecuteCommandHandler(c *fiber.Ctx) error {
 	existCommandInfo, err := get.GetCommand(get.GetCommandRequest{AiID: aiID, Name: commandName}, h.AiDB, h.Logger)
 
 	if err != nil {
-		c.Status(err.ErrorCode).JSON(err)
+		return c.Status(err.ErrorCode).JSON(err)
 	}
 
 	if existCommandInfo.Command.PayloadType == string(m.FormData) {

@@ -74,9 +74,10 @@ type AiCommand struct {
 }
 
 type AiCommandField struct {
-	Type        FieldType        `json:"type"`
-	Requirement FieldRequirement `json:"requirement"`
-	Description string           `json:"description"`
-	Data        FieldData        `json:"data"`
-	Values      []interface{}    `json:"values"`
+	Type        FieldType              `json:"type"`
+	Requirement FieldRequirement       `json:"requirement"`
+	Description string                 `json:"description"`
+	Data        FieldData              `json:"data"`
+	Values      []interface{}          `json:"values,omitempty"`
+	Payload     map[string]interface{} `json:"payload,omitempty"`
 }

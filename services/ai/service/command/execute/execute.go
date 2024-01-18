@@ -99,6 +99,7 @@ func ExecuteFormCommand(
 	// Конвертим mutlipart/form-data в буффер
 	var buffer bytes.Buffer
 	writer := multipart.NewWriter(&buffer)
+	defer writer.Close()
 
 	// Iterate over the form fields and add them to the writer
 	for fieldName, fieldValues := range request.Payload.Value {
@@ -132,7 +133,6 @@ func ExecuteFormCommand(
 		}
 	}
 
-	writer.Close()
 	executeCtx := context.Background()
 	reqResponse, reqErr := makeHTTPRequest(executeCtx, request.Command.URL, request.Command.RequestType, headers, &buffer)
 
