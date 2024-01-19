@@ -3,8 +3,8 @@ package commands
 import (
 	"mime/multipart"
 	"warehouseai/ai/adapter/grpc/client/auth"
-	"warehouseai/ai/dataservice/aidata"
-	"warehouseai/ai/dataservice/commanddata"
+	"warehouseai/ai/dataservice/psql/aidata"
+	"warehouseai/ai/dataservice/psql/commanddata"
 	e "warehouseai/ai/errors"
 	m "warehouseai/ai/model"
 	"warehouseai/ai/service/command/create"

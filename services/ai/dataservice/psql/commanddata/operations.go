@@ -17,17 +17,18 @@ func (d *Database) errorHandle(err error) *e.DBError {
 		return nil
 	}
 
+	// Добавлять новые ошибки в этот свитч и использовать потом внутри if с ошибкой
 	pgErr, ok := err.(*pgconn.PgError)
 	if ok {
 		switch pgErr.Code {
 		case "23505":
-			return e.NewDBError(e.DbExist, "Entity with this key/keys already exists.", err.Error())
+			return e.NewDBError(e.DbExist, "Command with this key/keys already exists.", err.Error())
 
 		case "23503":
-			return e.NewDBError(e.DbNotFound, "Invalid key id", err.Error())
+			return e.NewDBError(e.DbNotFound, "Invalid ai_id value", err.Error())
 
 		case "20000":
-			return e.NewDBError(e.DbNotFound, "Entity not found", err.Error())
+			return e.NewDBError(e.DbNotFound, "Command not found", err.Error())
 		}
 	}
 

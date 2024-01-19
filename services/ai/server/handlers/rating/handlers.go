@@ -1,8 +1,8 @@
 package rating
 
 import (
-	"warehouseai/ai/dataservice/aidata"
-	"warehouseai/ai/dataservice/ratingdata"
+	"warehouseai/ai/dataservice/psql/aidata"
+	"warehouseai/ai/dataservice/psql/ratingdata"
 	e "warehouseai/ai/errors"
 	"warehouseai/ai/service/rating/get"
 	"warehouseai/ai/service/rating/set"

@@ -3,10 +3,10 @@ package server
 import (
 	"warehouseai/ai/adapter/grpc/client/auth"
 	"warehouseai/ai/adapter/grpc/client/user"
-	"warehouseai/ai/dataservice/aidata"
-	"warehouseai/ai/dataservice/commanddata"
-	"warehouseai/ai/dataservice/picturedata"
-	"warehouseai/ai/dataservice/ratingdata"
+	"warehouseai/ai/dataservice/psql/aidata"
+	"warehouseai/ai/dataservice/psql/commanddata"
+	"warehouseai/ai/dataservice/psql/ratingdata"
+	"warehouseai/ai/dataservice/s3/picturedata"
 	"warehouseai/ai/server/handlers/ai"
 	"warehouseai/ai/server/handlers/commands"
 	"warehouseai/ai/server/handlers/rating"
@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TODO: Добавить error handler в инициализацию app - https://docs.gofiber.io/guide/error-handling/#custom-error-handler
 func StartServer(port string, ratingDB *ratingdata.Database, aiDB *aidata.Database, commandDB *commanddata.Database, pictureStorage *picturedata.Storage, logger *logrus.Logger) error {
 	aiHandler := newHttpAiHandler(aiDB, pictureStorage, logger)
 	commandHandler := newHttpCommandHandler(commandDB, aiDB, logger)

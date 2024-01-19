@@ -5,8 +5,8 @@ import (
 	"strings"
 	"warehouseai/ai/adapter/grpc/client/auth"
 	"warehouseai/ai/adapter/grpc/client/user"
-	"warehouseai/ai/dataservice/aidata"
-	"warehouseai/ai/dataservice/picturedata"
+	"warehouseai/ai/dataservice/psql/aidata"
+	"warehouseai/ai/dataservice/s3/picturedata"
 	e "warehouseai/ai/errors"
 	"warehouseai/ai/service/ai"
 
