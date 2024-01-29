@@ -15,7 +15,7 @@ type SetAiRatingRequest struct {
 	Rate int16  `json:"rate"`
 }
 
-func validateSetRatingRequest(request *SetAiRatingRequest) *e.ErrorResponse {
+func validateSetRatingRequest(request *SetAiRatingRequest) *e.HttpErrorResponse {
 	if request.Rate < 1 || request.Rate > 5 {
 		return e.NewErrorResponse(e.HttpBadRequest, "Invalid rate value, provide value between 1 and 5")
 	}
@@ -23,7 +23,7 @@ func validateSetRatingRequest(request *SetAiRatingRequest) *e.ErrorResponse {
 	return nil
 }
 
-func SetAiRating(userId string, request SetAiRatingRequest, aiRepository d.AiInterface, ratingRepository d.RatingInterface, logger *logrus.Logger) *e.ErrorResponse {
+func SetAiRating(userId string, request SetAiRatingRequest, aiRepository d.AiInterface, ratingRepository d.RatingInterface, logger *logrus.Logger) *e.HttpErrorResponse {
 	if err := validateSetRatingRequest(&request); err != nil {
 		logger.WithFields(logrus.Fields{"time": time.Now(), "error": "Invalid rate value"}).Info("Get AI rating")
 		return err

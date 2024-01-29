@@ -28,10 +28,10 @@ func (s *AiGrpcServer) GetAiById(ctx context.Context, req *gen.GetAiByIdMsg) (*g
 
 	if err != nil {
 		if err.ErrorCode == e.HttpNotFound {
-			return nil, status.Errorf(codes.NotFound, err.ErrorMessage)
+			return nil, status.Errorf(codes.NotFound, err.ErrorMessage[0])
 		}
 
-		return nil, status.Errorf(codes.Internal, err.ErrorMessage)
+		return nil, status.Errorf(codes.Internal, err.ErrorMessage[0])
 	}
 
 	return mapper.AiToProto(&ai.AiProduct), nil

@@ -27,7 +27,7 @@ func NewAuthGrpcClient(grpcUrl string) *AuthGrpcClient {
 	}
 }
 
-func (c *AuthGrpcClient) Authenticate(sessionId string) (string, string, *e.ErrorResponse) {
+func (c *AuthGrpcClient) Authenticate(sessionId string) (string, string, *e.HttpErrorResponse) {
 	client := gen.NewAuthServiceClient(c.conn)
 	resp, err := client.Authenticate(context.Background(), &gen.AuthenticationRequest{SessionId: sessionId})
 

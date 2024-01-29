@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func UploadImage(pic *multipart.FileHeader, picture dataservice.PictureInterface, logger *logrus.Logger) (string, *e.ErrorResponse) {
+func UploadImage(pic *multipart.FileHeader, picture dataservice.PictureInterface, logger *logrus.Logger) (string, *e.HttpErrorResponse) {
 	picPayload, err := pic.Open()
 
 	if err != nil {

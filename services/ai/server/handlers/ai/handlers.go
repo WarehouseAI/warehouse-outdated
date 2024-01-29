@@ -5,8 +5,8 @@ import (
 	"strings"
 	"warehouseai/ai/adapter/grpc/client/auth"
 	"warehouseai/ai/adapter/grpc/client/user"
-	"warehouseai/ai/dataservice/aidata"
-	"warehouseai/ai/dataservice/picturedata"
+	"warehouseai/ai/dataservice/psql/aidata"
+	"warehouseai/ai/dataservice/s3/picturedata"
 	e "warehouseai/ai/errors"
 	"warehouseai/ai/service/ai"
 
@@ -80,7 +80,7 @@ func (h *Handler) GetAIHandler(c *fiber.Ctx) error {
 	sessionId := c.Cookies("sessionId")
 
 	var existAi *ai.GetAiResponse
-	var svcErr *e.ErrorResponse
+	var svcErr *e.HttpErrorResponse
 
 	if sessionId == "" {
 		existAi, svcErr = ai.GetByIdPreload(aiId, h.DB, h.Logger)

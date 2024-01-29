@@ -16,7 +16,7 @@ func SendEmail(
 ) error {
 	m := gomail.NewMessage()
 
-	m.SetHeader("From", from)
+	m.SetHeader("From", m.FormatAddress(from, "WarehouseAI Team"))
 	m.SetHeader("To", email.To)
 	m.SetHeader("Subject", email.Subject)
 	m.SetBody("text/plain", email.Message)

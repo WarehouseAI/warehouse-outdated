@@ -3,10 +3,10 @@ package dataservice
 import (
 	"fmt"
 	"warehouseai/ai/config"
-	"warehouseai/ai/dataservice/aidata"
-	"warehouseai/ai/dataservice/commanddata"
-	"warehouseai/ai/dataservice/picturedata"
-	"warehouseai/ai/dataservice/ratingdata"
+	"warehouseai/ai/dataservice/psql/aidata"
+	"warehouseai/ai/dataservice/psql/commanddata"
+	"warehouseai/ai/dataservice/psql/ratingdata"
+	"warehouseai/ai/dataservice/s3/picturedata"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"

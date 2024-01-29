@@ -15,7 +15,7 @@ type GetAiResponse struct {
 	IsFavorite bool `json:"is_favorite"`
 }
 
-func GetById(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*m.AiProduct, *e.ErrorResponse) {
+func GetById(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*m.AiProduct, *e.HttpErrorResponse) {
 	existAI, dbErr := ai.Get(map[string]interface{}{"id": id})
 
 	if dbErr != nil {
@@ -26,7 +26,7 @@ func GetById(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*m.A
 	return existAI, nil
 }
 
-func GetManyById(ids []string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AiProduct, *e.ErrorResponse) {
+func GetManyById(ids []string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AiProduct, *e.HttpErrorResponse) {
 	existAis, dbErr := ai.GetMany(ids)
 
 	if dbErr != nil {
@@ -37,7 +37,7 @@ func GetManyById(ids []string, ai dataservice.AiInterface, logger *logrus.Logger
 	return existAis, nil
 }
 
-func GetLike(field string, value string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AiProduct, *e.ErrorResponse) {
+func GetLike(field string, value string, ai dataservice.AiInterface, logger *logrus.Logger) (*[]m.AiProduct, *e.HttpErrorResponse) {
 	if field == "auth_scheme" || field == "api_key" {
 		return nil, e.NewErrorResponse(e.HttpBadRequest, "Invalid parameters")
 	}
@@ -56,7 +56,7 @@ func GetLike(field string, value string, ai dataservice.AiInterface, logger *log
 	return existAis, nil
 }
 
-func GetByIdPreload(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*GetAiResponse, *e.ErrorResponse) {
+func GetByIdPreload(id string, ai dataservice.AiInterface, logger *logrus.Logger) (*GetAiResponse, *e.HttpErrorResponse) {
 	existAI, dbErr := ai.GetWithPreload(map[string]interface{}{"id": id}, "Commands")
 
 	if dbErr != nil {
@@ -67,7 +67,7 @@ func GetByIdPreload(id string, ai dataservice.AiInterface, logger *logrus.Logger
 	return &GetAiResponse{*existAI, false}, nil
 }
 
-func GetByIdPreloadAuthed(userId string, aiId string, ai dataservice.AiInterface, user adapter.UserGrpcInterface, logger *logrus.Logger) (*GetAiResponse, *e.ErrorResponse) {
+func GetByIdPreloadAuthed(userId string, aiId string, ai dataservice.AiInterface, user adapter.UserGrpcInterface, logger *logrus.Logger) (*GetAiResponse, *e.HttpErrorResponse) {
 	existAI, dbErr := ai.GetWithPreload(map[string]interface{}{"id": aiId}, "Commands")
 	isAiFavorite, gwErr := user.GetFavorite(aiId, userId)
 
